@@ -44,3 +44,24 @@ vmSpec = describe "vm" $ do
                 let vm  = makeVm [MoveI 0 7, MoveI 1 2, MoveI 2 3, StoreBaseIdx 0 1 2] [0, 0, 0, 0, 0, 0]
                     vm' = run vm
                 (VM.mem vm') `shouldBe` Mem.fromList [0, 0, 0, 0, 0, 7]
+
+        context "ALU instructions" $ do
+            it "interprets Add" $ do
+                let vm  = makeVm [MoveI 0 1, MoveI 1 2, Add 2 0 1] []
+                    vm' = run vm
+                (VM.reg 2 vm') `shouldBe` 3
+
+            it "interprets AddI" $ do
+                let vm  = makeVm [MoveI 0 1, AddI 1 0 3] []
+                    vm' = run vm
+                (VM.reg 1 vm') `shouldBe` 4
+
+            it "interprets Sub" $ do
+                let vm  = makeVm [MoveI 0 5, MoveI 1 3, Sub 2 0 1] []
+                    vm' = run vm
+                (VM.reg 2 vm') `shouldBe` 2
+
+            it "interprets SubI" $ do
+                let vm  = makeVm [MoveI 0 5, SubI 1 0 2] []
+                    vm' = run vm
+                (VM.reg 1 vm') `shouldBe` 3
