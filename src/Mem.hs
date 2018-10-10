@@ -5,7 +5,7 @@ import Data.Array
 
 type Addr = Word32
 data Mem a = Mem { arr :: Array Addr a, maxAddr :: Addr }
-           deriving (Show)
+           deriving (Eq, Show)
 
 fromList :: [a] -> Mem a
 fromList xs = Mem { arr = array (0, len) (zip [0..] xs), maxAddr = len } where
