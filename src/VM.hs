@@ -36,10 +36,10 @@ next vm = exec instr vm where
 exec :: Instr -> VM -> VM
 -- Memory
 exec (MoveI r val)                 vm = inc $ vm { regs = Reg.write (regs vm) r val }
-exec (LoadIdx r base offset)       vm = load  r (base + offset) vm
-exec (LoadBaseIdx r base rOffset)  vm = load  r (base + reg rOffset vm) vm
-exec (StoreIdx r base offset)      vm = store r (base + offset) vm
-exec (StoreBaseIdx r base rOffset) vm = store r (base + reg rOffset vm) vm
+exec (LoadIdx r base offset)       vm = load  r (reg base vm + offset) vm
+exec (LoadBaseIdx r base rOffset)  vm = load  r (reg base vm + reg rOffset vm) vm
+exec (StoreIdx r base offset)      vm = store r (reg base vm + offset) vm
+exec (StoreBaseIdx r base rOffset) vm = store r (reg base vm + reg rOffset vm) vm
 -- Arithmetic/Logic
 exec (Add r x y)  vm = op r x (+) (reg y vm) vm
 exec (AddI r x i) vm = op r x (+) i vm
