@@ -1,4 +1,4 @@
-module Mem (Mem, zeroed) where
+module Mem (Word32, Mem, zeroed, load, store) where
 
 import Data.Word (Word32)
 import Data.Array
