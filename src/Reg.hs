@@ -1,4 +1,4 @@
-module Reg (RegFile, RegIdx, file, Reg.read) where
+module Reg (RegFile, RegIdx, file, Reg.read, Reg.write) where
 
 import Mem
 
