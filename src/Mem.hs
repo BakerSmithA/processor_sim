@@ -3,7 +3,14 @@ module Mem (Mem, zeroed) where
 import Data.Word (Word32)
 import Data.Array
 
-newtype Mem = Mem (Array Word32 Word32)
+type Addr = Word32
+newtype Mem = Mem (Array Addr Word32)
 
-zeroed :: Word32 -> Mem
-zeroed size = Mem (array (0, size-1) [(i, 0) | i <- [0..size-1]])
+zeroed :: Addr -> Mem
+zeroed maxAddr = Mem (array (0, maxAddr) [(i, 0) | i <- [0..maxAddr]])
+
+load :: Mem -> Addr -> Word32
+load (Mem mem) addr = mem ! addr
+
+store :: Mem -> Addr -> Word32 -> Mem
+store (Mem mem) addr val = Mem (mem // [(addr, val)])
