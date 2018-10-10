@@ -3,7 +3,7 @@ module Reg (RegFile, RegIdx, file, Reg.read) where
 import Mem
 
 type RegIdx = Word32
-newtype RegFile = RegFile Mem
+newtype RegFile = RegFile (Mem Word32)
 
 file :: RegIdx -> RegFile
 file maxIdx = RegFile (zeroed maxIdx)

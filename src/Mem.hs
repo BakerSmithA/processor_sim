@@ -4,13 +4,17 @@ import Data.Word (Word32)
 import Data.Array
 
 type Addr = Word32
-newtype Mem = Mem (Array Addr Word32)
+newtype Mem a = Mem (Array Addr a)
 
-zeroed :: Addr -> Mem
-zeroed maxAddr = Mem (array (0, maxAddr) [(i, 0) | i <- [0..maxAddr]])
+containing :: [a] -> Mem a
+containing xs = Mem $ array (0, len) (zip [0..] xs) where
+    len = fromIntegral $ length xs
 
-load :: Mem -> Addr -> Word32
+zeroed :: Addr -> Mem Word32
+zeroed maxAddr = containing [0..maxAddr]
+
+load :: Mem a -> Addr -> a
 load (Mem mem) addr = mem ! addr
 
-store :: Mem -> Addr -> Word32 -> Mem
+store :: Mem a -> Addr -> a -> Mem a
 store (Mem mem) addr val = Mem (mem // [(addr, val)])
