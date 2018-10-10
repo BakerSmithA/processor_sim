@@ -1,20 +1,20 @@
-module Mem (Word32, Mem, Addr, zeroed, load, store) where
+module Mem (Word32, Mem, Addr, zeroed, load, store, maxAddr) where
 
 import Data.Word (Word32)
 import Data.Array
 
 type Addr = Word32
-newtype Mem a = Mem (Array Addr a)
+data Mem a = Mem { arr :: Array Addr a, maxAddr :: Addr }
 
 fromList :: [a] -> Mem a
-fromList xs = Mem $ array (0, len) (zip [0..] xs) where
+fromList xs = Mem { arr = array (0, len) (zip [0..] xs), maxAddr = len } where
     len = fromIntegral $ length xs
 
 zeroed :: Addr -> Mem Word32
 zeroed maxAddr = fromList [0..maxAddr]
 
 load :: Mem a -> Addr -> a
-load (Mem mem) addr = mem ! addr
+load (Mem mem _) addr = mem ! addr
 
 store :: Mem a -> Addr -> a -> Mem a
-store (Mem mem) addr val = Mem (mem // [(addr, val)])
+store mem addr val = mem { arr = (arr mem) // [(addr, val)] }

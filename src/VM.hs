@@ -20,13 +20,17 @@ data VM = VM {
 
 -- Runs instructions until the pc points past the instructions.
 run :: VM -> VM
-run = undefined
+run vm | (pc vm) == Mem.maxAddr (instrs vm) + 1 = vm -- End of instructions.
+       | otherwise = run (next vm)
+
+-- Returns address of current instruction.
+pc :: VM -> Word32
+pc vm = reg (pcIdx vm) vm
 
 -- Advances the state of the VM by executing the instruction pointed to by the pc.
 next :: VM -> VM
 next vm = exec instr vm where
-    instr = Mem.load (instrs vm) instrAddr
-    instrAddr = reg (pcIdx vm) vm
+    instr = Mem.load (instrs vm) (pc vm)
 
 -- Executes instruction and advances program counter.
 exec :: Instr -> VM -> VM
