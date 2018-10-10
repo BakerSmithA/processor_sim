@@ -1,4 +1,4 @@
-module VM where
+module VM (VM(..), run) where
 
 import Mem (Mem, Addr, Word32)
 import qualified Mem as Mem
@@ -16,7 +16,7 @@ data VM = VM {
   , pcIdx  :: Word32 -- Program Counter
   , spIdx  :: Word32 -- Stack Pointer
   , lrIdx  :: Word32 -- Link Register
-}
+} deriving (Show)
 
 -- Runs instructions until the pc points past the instructions.
 run :: VM -> VM

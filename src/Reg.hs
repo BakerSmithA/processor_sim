@@ -4,6 +4,7 @@ import Mem
 
 type RegIdx = Word32
 newtype RegFile = RegFile (Mem Word32)
+                deriving (Show)
 
 file :: RegIdx -> RegFile
 file maxIdx = RegFile (zeroed maxIdx)
