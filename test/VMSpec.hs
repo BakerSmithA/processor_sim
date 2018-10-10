@@ -19,4 +19,6 @@ vmSpec :: Spec
 vmSpec = describe "vm" $ do
     context "interpreting instructions" $ do
         it "interprets MoveI" $ do
-            pending
+            let vm = makeVm [MoveI 1 5]
+                vm' = run vm
+            (VM.reg 1 vm') `shouldBe` 5

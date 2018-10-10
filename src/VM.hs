@@ -1,4 +1,4 @@
-module VM (VM(..), run) where
+module VM where
 
 import Mem (Mem, Addr, Word32)
 import qualified Mem as Mem

@@ -6,4 +6,4 @@ import VMSpec
 main :: IO ()
 main = hspec specs where
     specs = do
-        undefined
+        vmSpec
