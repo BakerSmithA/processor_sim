@@ -26,6 +26,7 @@ next = undefined
 -- Executes instruction and advances program counter.
 exec :: Instr -> VM -> VM
 -- Memory
+exec (MoveI r val)                 vm = vm { regs = Reg.write (regs vm) r val }
 exec (LoadIdx r base offset)       vm = load  r (base + offset) vm
 exec (LoadBaseIdx r base rOffset)  vm = load  r (base + reg rOffset vm) vm
 exec (StoreIdx r base offset)      vm = store r (base + offset) vm

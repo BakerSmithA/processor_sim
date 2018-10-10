@@ -5,7 +5,8 @@ import Reg (RegIdx)
 
 data Instr
     -- Memory
-    = LoadIdx      { r :: RegIdx, base :: RegIdx, offset :: Addr }   -- r <- [base + offset]
+    = MoveI        { r :: RegIdx, val :: Word32 }                    -- r <- val
+    | LoadIdx      { r :: RegIdx, base :: RegIdx, offset :: Addr }   -- r <- [base + offset]
     | LoadBaseIdx  { r :: RegIdx, base :: RegIdx, offset :: RegIdx } -- r <- [base + R_offset]
     | StoreIdx     { r :: RegIdx, base :: RegIdx, offset :: Addr }   -- r -> [base + offset]
     | StoreBaseIdx { r :: RegIdx, base :: RegIdx, offset :: RegIdx } -- r -> [base + R_offset]
