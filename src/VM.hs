@@ -47,7 +47,7 @@ exec (Sub r x y)  vm = op r x (-) (reg y vm) vm
 exec (SubI r x i) vm = op r x (-) i vm
 -- Control
 exec (B addr)     vm = vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
-exec (BLT r addr) vm = if reg r vm > 0
+exec (BGT r addr) vm = if reg r vm > 0
                            then vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
                            else inc vm
 exec (Ret)        vm = vm { regs = Reg.write (regs vm) (pcIdx vm) (lrIdx vm) }

@@ -16,7 +16,7 @@ makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx where
 
 main :: IO ()
 main = do
-    let instrs = [MoveI 0 10, MoveI 1 0, SubI 0 0 1, AddI 1 1 1, BLT 0 2]
+    let instrs = [MoveI 0 10, MoveI 1 0, SubI 0 0 1, AddI 1 1 1, BGT 0 2]
     let vm = makeVm instrs
     putStrLn (show vm)
     let vm' = run vm

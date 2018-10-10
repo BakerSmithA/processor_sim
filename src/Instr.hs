@@ -11,12 +11,12 @@ data Instr
     | StoreIdx     { r :: RegIdx, base :: RegIdx, offset :: Addr }   -- r -> [base + offset]
     | StoreBaseIdx { r :: RegIdx, base :: RegIdx, offset :: RegIdx } -- r -> [base + R_offset]
     -- Arithmetic/Logic
-    | Add  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- x + y
-    | AddI { r :: RegIdx, x :: RegIdx, i :: Word32 } -- r <- x + i
-    | Sub  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- x - y
-    | SubI { r :: RegIdx, x :: RegIdx, i :: Word32 } -- r <- x - i
+    | Add  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] + [y]
+    | AddI { r :: RegIdx, x :: RegIdx, i :: Word32 } -- r <- [x] + i
+    | Sub  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] - [y]
+    | SubI { r :: RegIdx, x :: RegIdx, i :: Word32 } -- r <- [x] - i
     -- Control
     | B   { addr :: Addr }              -- Unconditional branch to addr
-    | BLT { r :: RegIdx, addr :: Addr } -- Branch to addr if r > 0
+    | BGT { r :: RegIdx, addr :: Addr } -- Branch to addr if r > 0
     | Ret                               -- Branch to address in link register.
     deriving (Show)
