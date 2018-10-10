@@ -1,9 +1,9 @@
 module VM where
 
-import Mem (Mem, Word32)
-import qualified Mem as Mem (load)
-import Reg (RegFile)
-import qualified Reg as Reg (write)
+import Mem (Mem, Addr, Word32)
+import qualified Mem as Mem
+import Reg (RegFile, RegIdx)
+import qualified Reg as Reg
 import Instr
 
 -- Stores current state of virtual machine.
@@ -24,5 +24,30 @@ next :: VM -> VM
 next = undefined
 
 exec :: Instr -> VM -> VM
-exec (LoadIdx r base offset) vm = vm { regs = Reg.write (regs vm) r memVal } where
-    memVal = Mem.load (mem vm) (base + offset)
+-- Memory
+exec (LoadIdx r base offset)       vm = load  r (base + offset) vm
+exec (LoadBaseIdx r base rOffset)  vm = load  r (base + reg rOffset vm) vm
+exec (StoreIdx r base offset)      vm = store r (base + offset) vm
+exec (StoreBaseIdx r base rOffset) vm = store r (base + reg rOffset vm) vm
+-- Arithmetic/Logic
+exec (Add r x y)  vm = op r x (+) (reg y vm) vm
+exec (AddI r x i) vm = op r x (+) i vm
+exec (Sub r x y)  vm = op r x (-) (reg y vm) vm
+exec (SubI r x i) vm = op r x (-) i vm
+
+-- Returns contents of register.
+reg :: RegIdx -> VM -> Word32
+reg r vm = Reg.read (regs vm) r
+
+-- Loads contents of memory at address into register.
+load :: RegIdx -> Addr -> VM -> VM
+load r addr vm = vm { regs = Reg.write (regs vm) r memVal } where
+    memVal = Mem.load (mem vm) addr
+
+-- Stores contents of register into memory at address.
+store :: RegIdx -> Addr -> VM -> VM
+store r addr vm = vm { mem = Mem.store (mem vm) addr (reg r vm) }
+
+op :: RegIdx -> RegIdx -> (Word32 -> Word32 -> Word32) -> Word32 -> VM -> VM
+op r x operation y vm = vm { regs = Reg.write (regs vm) r result } where
+    result = operation (reg x vm) y
