@@ -15,7 +15,7 @@ data Instr
     | AddI { r :: RegIdx, x :: RegIdx, i :: Word32 } -- r <- [x] + i
     | Sub  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] - [y]
     | SubI { r :: RegIdx, x :: RegIdx, i :: Word32 } -- r <- [x] - i
-    -- Control
+    -- Branching
     | B   { addr :: Addr }              -- Unconditional branch to addr
     | BGT { r :: RegIdx, addr :: Addr } -- Branch to addr if r > 0
     | Ret                               -- Branch to address in link register.

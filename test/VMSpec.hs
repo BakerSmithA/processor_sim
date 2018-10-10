@@ -65,3 +65,28 @@ vmSpec = describe "vm" $ do
                 let vm  = makeVm [MoveI 0 5, SubI 1 0 2] []
                     vm' = run vm
                 (VM.reg 1 vm') `shouldBe` 3
+
+        context "branch instructions" $ do
+            it "interprets B" $ do
+                -- Branch should cause MoveI instruction to be skipped.
+                let vm  = makeVm [B 2, MoveI 0 5] []
+                    vm' = run vm
+                (VM.reg 0 vm') `shouldBe` 0
+
+            it "interprets BGT and takes branch" $ do
+                -- BGT instruction should cause MoveI to be skipped.
+                let vm  = makeVm [MoveI 0 1, BGT 0 3, MoveI 1 5] []
+                    vm' = run vm
+                (VM.reg 1 vm') `shouldBe` 0
+
+            it "interprets BGT and does not take branch" $ do
+                let vm  = makeVm [BGT 0 3, MoveI 1 5] []
+                    vm' = run vm
+                (VM.reg 1 vm') `shouldBe` 5
+
+            it "interprets Ret" $ do
+                -- Ret instruction should cause MoveI to be skipped.
+                let lrIdx = 8
+                    vm    = makeVm [MoveI lrIdx 3, Ret, MoveI 0 5] []
+                    vm'   = run vm
+                (VM.reg 0 vm') `shouldBe` 0

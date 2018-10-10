@@ -50,7 +50,7 @@ exec (B addr)     vm = vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
 exec (BGT r addr) vm = if reg r vm > 0
                            then vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
                            else inc vm
-exec (Ret)        vm = vm { regs = Reg.write (regs vm) (pcIdx vm) (lrIdx vm) }
+exec (Ret)        vm = vm { regs = Reg.write (regs vm) (pcIdx vm) (reg (lrIdx vm) vm) }
 
 -- Advances instruction pointer by 1.
 inc :: VM -> VM
