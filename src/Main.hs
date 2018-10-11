@@ -17,15 +17,16 @@ makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx where
     spIdx = 7
     lrIdx = 8
 
-runVm :: [Instr] -> VM
-runVm = run . makeVm
+runVm :: [Instr] -> IO ()
+runVm []     = putStrLn "No instructions to run"
+runVm instrs = putStrLn $ show $ run $ makeVm instrs
 
 runBytecode :: FilePath -> IO ()
 runBytecode path = do
     contents <- B.readFile path
     case P.parse P.instrs contents of
         Nothing -> putStrLn "Could not parse file"
-        Just is -> putStrLn (show $ runVm is)
+        Just is -> runVm is
 
 main :: IO ()
 main = do
