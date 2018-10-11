@@ -8,7 +8,7 @@ type Val = Word32
 
 data Instr
     -- Memory
-    = MoveI        { r :: RegIdx, val :: Val }                     -- r <- val
+    = MoveI        { r :: RegIdx, val :: Val }                        -- r <- val
     | LoadIdx      { r :: RegIdx, base :: RegIdx, offset :: Addr }    -- r <- [[base] + offset]
     | LoadBaseIdx  { r :: RegIdx, base :: RegIdx, rOffset :: RegIdx } -- r <- [[base] + [R_offset]]
     | StoreIdx     { r :: RegIdx, base :: RegIdx, offset :: Addr }    -- r -> [[base] + offset]
