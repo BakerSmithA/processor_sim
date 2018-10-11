@@ -4,7 +4,9 @@ import qualified Mem as Mem
 import qualified Reg as Reg
 import Instr
 import VM as VM
-import Parser
+import qualified Parser as P
+import qualified Data.ByteString as B
+import System.Environment
 
 makeVm :: [Instr] -> VM
 makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx where
@@ -15,10 +17,20 @@ makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx where
     spIdx = 7
     lrIdx = 8
 
+runVm :: [Instr] -> VM
+runVm = run . makeVm
+
+runBytecode :: FilePath -> IO ()
+runBytecode path = do
+    contents <- B.readFile path
+    case P.parse P.instrs contents of
+        Nothing -> putStrLn "Could not parse file"
+        Just is -> putStrLn (show $ runVm is)
+
 main :: IO ()
 main = do
-    let instrs = [MoveI 0 10, MoveI 1 0, SubI 0 0 1, AddI 1 1 1, BGT 0 2]
-    let vm = makeVm instrs
-    putStrLn (show vm)
-    let vm' = run vm
-    putStrLn (show vm')
+    args <- getArgs
+    let usageMsg = "Useage example: vm <bytecode_file>"
+    case args of
+        [path] -> runBytecode path
+        _      -> error usageMsg
