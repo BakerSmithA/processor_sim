@@ -4,6 +4,7 @@ import qualified Mem as Mem
 import qualified Reg as Reg
 import Instr
 import VM as VM
+import Parser
 
 makeVm :: [Instr] -> VM
 makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx where
