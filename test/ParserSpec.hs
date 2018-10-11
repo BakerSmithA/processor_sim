@@ -44,5 +44,35 @@ byteSpec = describe "byte" $ do
 instrSpec :: Spec
 instrSpec = describe "instr" $ do
     it "parses MoveI" $ do
-        let bs = pack [0, 0, 0, 0, 2, 0, 0, 0, 3]
-        parse moveI bs `shouldBe` Just (MoveI 2 3)
+        let bs = pack [0,
+                       0, 0, 0, 2, -- reg idx
+                       0, 0, 0, 3] -- val
+        parse instr bs `shouldBe` Just (MoveI 2 3)
+
+    it "parses LoadIdx" $ do
+        let bs = pack [1,
+                       0, 0, 0, 2, -- reg idx
+                       0, 0, 0, 4, -- base idx
+                       0, 0, 0, 6] -- offset
+        parse instr bs `shouldBe` Just (LoadIdx 2 4 6)
+
+    it "parses LoadBaseIdx" $ do
+        let bs = pack [2,
+                       0, 0, 0, 2, -- reg idx
+                       0, 0, 0, 4, -- base idx
+                       0, 0, 0, 6] -- offset idx
+        parse instr bs `shouldBe` Just (LoadBaseIdx 2 4 6)
+
+    it "parses StoreIdx" $ do
+        let bs = pack [3,
+                       0, 0, 0, 2, -- reg idx
+                       0, 0, 0, 4, -- base idx
+                       0, 0, 0, 6] -- offset
+        parse instr bs `shouldBe` Just (StoreIdx 2 4 6)
+
+    it "parses StoreBaseIdx" $ do
+        let bs = pack [4,
+                       0, 0, 0, 2, -- reg idx
+                       0, 0, 0, 4, -- base idx
+                       0, 0, 0, 6] -- offset idx
+        parse instr bs `shouldBe` Just (StoreBaseIdx 2 4 6)

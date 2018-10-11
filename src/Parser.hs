@@ -70,9 +70,6 @@ byte w = do
         then return w
         else failure
 
-moveI :: Parser Instr
-moveI = MoveI <$ byte 0 <*> word32 <*> word32
-
 instr :: Parser Instr
 instr =
     -- Memory
