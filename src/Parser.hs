@@ -3,6 +3,7 @@ module Parser where
 import Data.Word
 import Data.ByteString
 import Data.Bits
+import Control.Applicative
 import Instr
 
 newtype Parser a = Parser { runParser :: ByteString -> Maybe (a, ByteString) }
@@ -28,6 +29,15 @@ instance Monad Parser where
         (x, bs') <- px bs
         let Parser px' = f x
         px' bs'
+
+instance Alternative Parser where
+    empty = failure
+
+    -- (<|>) :: m a -> m a -> m a
+    Parser px <|> Parser py = Parser $ \bs ->
+        case px bs of
+            Nothing -> py bs
+            Just r -> return r
 
 failure :: Parser a
 failure = Parser $ \bs -> Nothing
@@ -57,5 +67,20 @@ byte w = do
         then return w
         else failure
 
-wordI :: Parser Instr
-wordI = MoveI <$ byte 0 <*> word32 <*> word32
+instr :: Parser Instr
+instr =
+    -- Memory
+        MoveI        <$ byte 0 <*> word32 <*> word32
+    <|> LoadIdx      <$ byte 1 <*> word32 <*> word32 <*> word32
+    <|> LoadBaseIdx  <$ byte 2 <*> word32 <*> word32 <*> word32
+    <|> StoreIdx     <$ byte 3 <*> word32 <*> word32 <*> word32
+    <|> StoreBaseIdx <$ byte 4 <*> word32 <*> word32 <*> word32
+    -- Arithmetic/Logic
+    <|> Add  <$ byte 5 <*> word32 <*> word32 <*> word32
+    <|> AddI <$ byte 6 <*> word32 <*> word32 <*> word32
+    <|> Sub  <$ byte 7 <*> word32 <*> word32 <*> word32
+    <|> SubI <$ byte 8 <*> word32 <*> word32 <*> word32
+    -- Branching
+    <|> B   <$ byte 9  <*> word32
+    <|> BGT <$ byte 10 <*> word32 <*> word32
+    <|> Ret <$ byte 11
