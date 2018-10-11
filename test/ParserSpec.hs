@@ -76,3 +76,46 @@ instrSpec = describe "instr" $ do
                        0, 0, 0, 4, -- base idx
                        0, 0, 0, 6] -- offset idx
         parse instr bs `shouldBe` Just (StoreBaseIdx 2 4 6)
+
+    it "parses Add" $ do
+        let bs = pack [5,
+                       0, 0, 0, 2, -- reg idx
+                       0, 0, 0, 4, -- x idx
+                       0, 0, 0, 6] -- y idx
+        parse instr bs `shouldBe` Just (Add 2 4 6)
+
+    it "parses AddI" $ do
+        let bs = pack [6,
+                       0, 0, 0, 2, -- reg idx
+                       0, 0, 0, 4, -- x idx
+                       0, 0, 0, 6] -- y operand
+        parse instr bs `shouldBe` Just (AddI 2 4 6)
+
+    it "parses Sub" $ do
+        let bs = pack [7,
+                       0, 0, 0, 2, -- reg idx
+                       0, 0, 0, 4, -- x idx
+                       0, 0, 0, 6] -- y idx
+        parse instr bs `shouldBe` Just (Sub 2 4 6)
+
+    it "parses SubI" $ do
+        let bs = pack [8,
+                       0, 0, 0, 2, -- reg idx
+                       0, 0, 0, 4, -- x idx
+                       0, 0, 0, 6] -- y operand
+        parse instr bs `shouldBe` Just (SubI 2 4 6)
+
+    it "parses B" $ do
+        let bs = pack [9,
+                       0, 0, 0, 5] -- branch address
+        parse instr bs `shouldBe` Just (B 5)
+
+    it "parses BGT" $ do
+        let bs = pack [10,
+                       0, 0, 0, 2, -- reg idx
+                       0, 0, 0, 6] -- branch address
+        parse instr bs `shouldBe` Just (BGT 2 6)
+
+    it "parses Ret" $ do
+        let bs = pack [11]
+        parse instr bs `shouldBe` Just Ret
