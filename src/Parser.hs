@@ -84,3 +84,6 @@ instr =
     <|> B   <$ byte 9  <*> word32
     <|> BGT <$ byte 10 <*> word32 <*> word32
     <|> Ret <$ byte 11
+
+instrs :: Parser [Instr]
+instrs = many instr
