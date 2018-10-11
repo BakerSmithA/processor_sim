@@ -55,9 +55,12 @@ fromOctets = foldl' accum 0 where
 -- Parses 4 bytes from string into Word32.
 word32 :: Parser Word32
 word32 = Parser $ \bs -> do
-    let octets = Data.ByteString.take 4 bs
-        rest   = Data.ByteString.drop 4 bs
-    return (fromOctets octets, rest)
+    if Data.ByteString.length bs < 4
+        then Nothing
+        else do
+            let octets = Data.ByteString.take 4 bs
+                rest   = Data.ByteString.drop 4 bs
+            return (fromOctets octets, rest)
 
 -- Parses if the byte at the start of the string is the supplied byte, otherwise fails.
 byte :: Word8 -> Parser Word8
@@ -87,3 +90,6 @@ instr =
 
 instrs :: Parser [Instr]
 instrs = many instr
+
+parse :: Parser a -> ByteString -> Maybe a
+parse (Parser p) bs = fmap fst (p bs)
