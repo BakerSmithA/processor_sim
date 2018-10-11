@@ -73,19 +73,19 @@ byte w = do
 instr :: Parser Instr
 instr =
     -- Memory
-        MoveI        <$ byte 0 <*> word32 <*> word32
-    <|> LoadIdx      <$ byte 1 <*> word32 <*> word32 <*> word32
-    <|> LoadBaseIdx  <$ byte 2 <*> word32 <*> word32 <*> word32
-    <|> StoreIdx     <$ byte 3 <*> word32 <*> word32 <*> word32
-    <|> StoreBaseIdx <$ byte 4 <*> word32 <*> word32 <*> word32
+        MoveI        <$ byte 0 <*> word8 <*> word32
+    <|> LoadIdx      <$ byte 1 <*> word8 <*> word8 <*> word32
+    <|> LoadBaseIdx  <$ byte 2 <*> word8 <*> word8 <*> word8
+    <|> StoreIdx     <$ byte 3 <*> word8 <*> word8 <*> word32
+    <|> StoreBaseIdx <$ byte 4 <*> word8 <*> word8 <*> word8
     -- Arithmetic/Logic
-    <|> Add  <$ byte 5 <*> word32 <*> word32 <*> word32
-    <|> AddI <$ byte 6 <*> word32 <*> word32 <*> word32
-    <|> Sub  <$ byte 7 <*> word32 <*> word32 <*> word32
-    <|> SubI <$ byte 8 <*> word32 <*> word32 <*> word32
+    <|> Add  <$ byte 5 <*> word8 <*> word8 <*> word8
+    <|> AddI <$ byte 6 <*> word8 <*> word8 <*> word32
+    <|> Sub  <$ byte 7 <*> word8 <*> word8 <*> word8
+    <|> SubI <$ byte 8 <*> word8 <*> word8 <*> word32
     -- Branching
     <|> B   <$ byte 9  <*> word32
-    <|> BGT <$ byte 10 <*> word32 <*> word32
+    <|> BGT <$ byte 10 <*> word8 <*> word32
     <|> Ret <$ byte 11
 
 instrs :: Parser [Instr]

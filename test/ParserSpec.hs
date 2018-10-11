@@ -46,63 +46,63 @@ instrSpec :: Spec
 instrSpec = describe "instr" $ do
     it "parses MoveI" $ do
         let bs = pack [0,
-                       0, 0, 0, 2, -- reg idx
+                       2,          -- reg idx
                        0, 0, 0, 3] -- val
         parse instr bs `shouldBe` Just (MoveI 2 3)
 
     it "parses LoadIdx" $ do
         let bs = pack [1,
-                       0, 0, 0, 2, -- reg idx
-                       0, 0, 0, 4, -- base idx
+                       2,          -- reg idx
+                       4,          -- base idx
                        0, 0, 0, 6] -- offset
         parse instr bs `shouldBe` Just (LoadIdx 2 4 6)
 
     it "parses LoadBaseIdx" $ do
         let bs = pack [2,
-                       0, 0, 0, 2, -- reg idx
-                       0, 0, 0, 4, -- base idx
-                       0, 0, 0, 6] -- offset idx
+                       2, -- reg idx
+                       4, -- base idx
+                       6] -- offset idx
         parse instr bs `shouldBe` Just (LoadBaseIdx 2 4 6)
 
     it "parses StoreIdx" $ do
         let bs = pack [3,
-                       0, 0, 0, 2, -- reg idx
-                       0, 0, 0, 4, -- base idx
+                       2,          -- reg idx
+                       4,          -- base idx
                        0, 0, 0, 6] -- offset
         parse instr bs `shouldBe` Just (StoreIdx 2 4 6)
 
     it "parses StoreBaseIdx" $ do
         let bs = pack [4,
-                       0, 0, 0, 2, -- reg idx
-                       0, 0, 0, 4, -- base idx
-                       0, 0, 0, 6] -- offset idx
+                       2, -- reg idx
+                       4, -- base idx
+                       6] -- offset idx
         parse instr bs `shouldBe` Just (StoreBaseIdx 2 4 6)
 
     it "parses Add" $ do
         let bs = pack [5,
-                       0, 0, 0, 2, -- reg idx
-                       0, 0, 0, 4, -- x idx
-                       0, 0, 0, 6] -- y idx
+                       2, -- reg idx
+                       4, -- x idx
+                       6] -- y idx
         parse instr bs `shouldBe` Just (Add 2 4 6)
 
     it "parses AddI" $ do
         let bs = pack [6,
-                       0, 0, 0, 2, -- reg idx
-                       0, 0, 0, 4, -- x idx
+                       2,          -- reg idx
+                       4,          -- x idx
                        0, 0, 0, 6] -- y operand
         parse instr bs `shouldBe` Just (AddI 2 4 6)
 
     it "parses Sub" $ do
         let bs = pack [7,
-                       0, 0, 0, 2, -- reg idx
-                       0, 0, 0, 4, -- x idx
-                       0, 0, 0, 6] -- y idx
+                       2, -- reg idx
+                       4, -- x idx
+                       6] -- y idx
         parse instr bs `shouldBe` Just (Sub 2 4 6)
 
     it "parses SubI" $ do
         let bs = pack [8,
-                       0, 0, 0, 2, -- reg idx
-                       0, 0, 0, 4, -- x idx
+                       2,          -- reg idx
+                       4,          -- x idx
                        0, 0, 0, 6] -- y operand
         parse instr bs `shouldBe` Just (SubI 2 4 6)
 
@@ -113,7 +113,7 @@ instrSpec = describe "instr" $ do
 
     it "parses BGT" $ do
         let bs = pack [10,
-                       0, 0, 0, 2, -- reg idx
+                       2,          -- reg idx
                        0, 0, 0, 6] -- branch address
         parse instr bs `shouldBe` Just (BGT 2 6)
 
@@ -125,8 +125,8 @@ instrsSpec :: Spec
 instrsSpec = describe "instrs" $ do
     it "parses many instructions" $ do
         let bs = pack [6,          -- Add
-                       0, 0, 0, 2, -- reg idx
-                       0, 0, 0, 4, -- x idx
+                       2,          -- reg idx
+                       4,          -- x idx
                        0, 0, 0, 6, -- y operand
                        9,          -- B
                        0, 0, 0, 2] -- branch address

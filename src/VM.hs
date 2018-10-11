@@ -1,6 +1,6 @@
 module VM where
 
-import Mem (Mem, Addr, Word32)
+import Mem (Mem)
 import qualified Mem as Mem
 import Reg (RegFile, RegIdx)
 import qualified Reg as Reg
@@ -9,13 +9,13 @@ import Instr
 -- Stores current state of virtual machine.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
 data VM = VM {
-    mem    :: Mem Word32
+    mem    :: Mem Addr Val
   , regs   :: RegFile
-  , instrs :: Mem Instr
+  , instrs :: Mem Addr Instr
     -- Register indices
-  , pcIdx  :: Word32 -- Program Counter
-  , spIdx  :: Word32 -- Stack Pointer
-  , lrIdx  :: Word32 -- Link Register
+  , pcIdx  :: RegIdx -- Program Counter
+  , spIdx  :: RegIdx -- Stack Pointer
+  , lrIdx  :: RegIdx -- Link Register
 } deriving (Show)
 
 -- Runs instructions until the pc points past the instructions.
@@ -24,7 +24,7 @@ run vm | (pc vm) == Mem.maxAddr (instrs vm) + 1 = vm -- End of instructions.
        | otherwise = run (next vm)
 
 -- Returns address of current instruction.
-pc :: VM -> Word32
+pc :: VM -> Val
 pc vm = reg (pcIdx vm) vm
 
 -- Advances the state of the VM by executing the instruction pointed to by the pc.
@@ -58,7 +58,7 @@ inc vm = vm { regs = Reg.write (regs vm) pc (reg pc vm + 1) } where
     pc = pcIdx vm
 
 -- Returns contents of register.
-reg :: RegIdx -> VM -> Word32
+reg :: RegIdx -> VM -> Val
 reg r vm = Reg.read (regs vm) r
 
 -- Loads contents of memory at address into register.
@@ -70,6 +70,6 @@ load r addr vm = inc $ vm { regs = Reg.write (regs vm) r memVal } where
 store :: RegIdx -> Addr -> VM -> VM
 store r addr vm = inc $ vm { mem = Mem.store (mem vm) addr (reg r vm) }
 
-op :: RegIdx -> RegIdx -> (Word32 -> Word32 -> Word32) -> Word32 -> VM -> VM
+op :: RegIdx -> RegIdx -> (Val -> Val -> Val) -> Val -> VM -> VM
 op r x operation y vm = inc $ vm { regs = Reg.write (regs vm) r result } where
     result = operation (reg x vm) y

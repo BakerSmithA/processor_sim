@@ -1,9 +1,12 @@
 module Reg (RegFile, RegIdx, file, Reg.read, Reg.write) where
-
+    
+import Data.Word
 import Mem
 
-type RegIdx = Word32
-newtype RegFile = RegFile (Mem Word32)
+type RegIdx = Word8
+type RegVal = Word32
+
+newtype RegFile = RegFile (Mem RegIdx RegVal)
                 deriving (Show)
 
 file :: RegIdx -> RegFile

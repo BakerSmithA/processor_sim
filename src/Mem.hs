@@ -1,22 +1,20 @@
-module Mem (Word32, Mem, Addr, fromList, zeroed, load, store, maxAddr) where
+module Mem (Mem, fromList, zeroed, load, store, maxAddr) where
 
-import Data.Word (Word32)
 import Data.Array
 
-type Addr = Word32
-data Mem a = Mem { arr :: Array Addr a, maxAddr :: Addr }
+data Mem k v = Mem { arr :: Array k v, maxAddr :: k }
            deriving (Eq, Show)
 
-fromList :: [a] -> Mem a
+fromList :: (Ix k, Num k, Enum k, Integral k) => [v] -> Mem k v
 fromList xs = Mem { arr = array (0, len) (zip [0..] xs), maxAddr = len } where
     len = fromIntegral $ (length xs) - 1
 
-zeroed :: Addr -> Mem Word32
+zeroed :: (Ix k, Num k, Enum k, Num v, Integral k) => k -> Mem k v
 zeroed maxAddr = fromList (take n (repeat 0)) where
     n = fromIntegral maxAddr + 1
 
-load :: Mem a -> Addr -> a
+load :: (Ix k) => Mem k v -> k -> v
 load (Mem mem _) addr = mem ! addr
 
-store :: Mem a -> Addr -> a -> Mem a
+store :: (Ix k) => Mem k v -> k -> v -> Mem k v
 store mem addr val = mem { arr = (arr mem) // [(addr, val)] }
