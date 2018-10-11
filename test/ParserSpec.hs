@@ -11,6 +11,7 @@ parserSpec = describe "parser" $ do
     word32Spec
     byteSpec
     instrSpec
+    instrsSpec
 
 word8Spec :: Spec
 word8Spec = describe "word8" $ do
@@ -119,3 +120,14 @@ instrSpec = describe "instr" $ do
     it "parses Ret" $ do
         let bs = pack [11]
         parse instr bs `shouldBe` Just Ret
+
+instrsSpec :: Spec
+instrsSpec = describe "instrs" $ do
+    it "parses many instructions" $ do
+        let bs = pack [6,          -- Add
+                       0, 0, 0, 2, -- reg idx
+                       0, 0, 0, 4, -- x idx
+                       0, 0, 0, 6, -- y operand
+                       9,          -- B
+                       0, 0, 0, 2] -- branch address
+        parse instrs bs `shouldBe` Just [AddI 2 4 6, B 2]
