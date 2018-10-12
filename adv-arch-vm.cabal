@@ -15,7 +15,7 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md, README.md
 cabal-version:       >=1.10
 
-executable adv-arch-vm
+executable vm
   main-is:             Main.hs
   other-modules:       Instr
                      , Mem

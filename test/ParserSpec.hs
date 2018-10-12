@@ -121,6 +121,10 @@ instrSpec = describe "instr" $ do
         let bs = pack [11]
         parse instr bs `shouldBe` Just Ret
 
+    it "parses Print" $ do
+        let bs = pack [12, 3]
+        parse instr bs `shouldBe` Just (Print 3)
+
 instrsSpec :: Spec
 instrsSpec = describe "instrs" $ do
     it "parses many instructions" $ do

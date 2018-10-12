@@ -5,6 +5,7 @@ import qualified Mem as Mem
 import Reg (RegFile, RegIdx)
 import qualified Reg as Reg
 import Instr
+import Debug.Trace
 
 -- Stores current state of virtual machine.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -51,6 +52,7 @@ exec (BGT r addr) vm = if reg r vm > 0
                            then vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
                            else inc vm
 exec (Ret)        vm = vm { regs = Reg.write (regs vm) (pcIdx vm) (reg (lrIdx vm) vm) }
+exec (Print r)    vm = trace ("Reg " ++ show r ++ " = " ++ show (reg r vm)) $ inc vm
 
 -- Advances instruction pointer by 1.
 inc :: VM -> VM

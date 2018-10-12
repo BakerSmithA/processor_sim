@@ -22,4 +22,6 @@ data Instr
     | B   { addr :: Addr }              -- Unconditional branch to addr
     | BGT { r :: RegIdx, addr :: Addr } -- Branch to addr if r > 0
     | Ret                               -- Branch to address in link register.
+    -- Debugging
+    | Print { r :: RegIdx } -- Print value in a register.
     deriving (Eq, Show)

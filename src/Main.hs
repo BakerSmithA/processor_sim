@@ -26,7 +26,9 @@ runBytecode path = do
     contents <- B.readFile path
     case P.parse P.instrs contents of
         Nothing -> putStrLn "Could not parse file"
-        Just is -> runVm is
+        Just is -> do
+            putStrLn (show is)
+            runVm is
 
 main :: IO ()
 main = do
