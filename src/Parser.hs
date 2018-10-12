@@ -83,11 +83,14 @@ instr =
     <|> AddI <$ byte 6 <*> word8 <*> word8 <*> word32
     <|> Sub  <$ byte 7 <*> word8 <*> word8 <*> word8
     <|> SubI <$ byte 8 <*> word8 <*> word8 <*> word32
+    <|> Eq   <$ byte 9 <*> word8 <*> word8 <*> word8
+    <|> EqI  <$ byte 10 <*> word8 <*> word8 <*> word32
     -- Branching
-    <|> B   <$ byte 9  <*> word32
-    <|> BGT <$ byte 10 <*> word8 <*> word32
-    <|> Ret <$ byte 11
-    <|> Print <$ byte 12 <*> word8
+    <|> B   <$ byte 11  <*> word32
+    <|> BT  <$ byte 12 <*> word8 <*> word32
+    <|> Ret <$ byte 13
+    -- Debugging
+    <|> Print <$ byte 14 <*> word8
 
 instrs :: Parser [Instr]
 instrs = many instr

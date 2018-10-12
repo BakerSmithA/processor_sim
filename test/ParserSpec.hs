@@ -106,23 +106,37 @@ instrSpec = describe "instr" $ do
                        0, 0, 0, 6] -- y operand
         parse instr bs `shouldBe` Just (SubI 2 4 6)
 
-    it "parses B" $ do
+    it "parses Eq" $ do
         let bs = pack [9,
+                       2, -- reg idx
+                       4, -- x idx
+                       6] -- y operand
+        parse instr bs `shouldBe` Just (Eq 2 4 6)
+
+    it "parses EqI" $ do
+        let bs = pack [10,
+                       2,          -- reg idx
+                       4,          -- x idx
+                       0, 0, 0, 6] -- y operand
+        parse instr bs `shouldBe` Just (EqI 2 4 6)
+
+    it "parses B" $ do
+        let bs = pack [11,
                        0, 0, 0, 5] -- branch address
         parse instr bs `shouldBe` Just (B 5)
 
-    it "parses BGT" $ do
-        let bs = pack [10,
+    it "parses BT" $ do
+        let bs = pack [12,
                        2,          -- reg idx
                        0, 0, 0, 6] -- branch address
-        parse instr bs `shouldBe` Just (BGT 2 6)
+        parse instr bs `shouldBe` Just (BT 2 6)
 
     it "parses Ret" $ do
-        let bs = pack [11]
+        let bs = pack [13]
         parse instr bs `shouldBe` Just Ret
 
     it "parses Print" $ do
-        let bs = pack [12, 3]
+        let bs = pack [14, 3]
         parse instr bs `shouldBe` Just (Print 3)
 
 instrsSpec :: Spec
@@ -132,6 +146,6 @@ instrsSpec = describe "instrs" $ do
                        2,          -- reg idx
                        4,          -- x idx
                        0, 0, 0, 6, -- y operand
-                       9,          -- B
+                       11,         -- B
                        0, 0, 0, 2] -- branch address
         parse instrs bs `shouldBe` Just [AddI 2 4 6, B 2]

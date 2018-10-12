@@ -46,13 +46,20 @@ exec (Add r x y)  vm = op r x (+) (reg y vm) vm
 exec (AddI r x i) vm = op r x (+) i vm
 exec (Sub r x y)  vm = op r x (-) (reg y vm) vm
 exec (SubI r x i) vm = op r x (-) i vm
+exec (Eq r x y)   vm = op r x eq (reg y vm) vm where
+exec (EqI r x i)  vm = op r x eq i vm
 -- Control
-exec (B addr)     vm = vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
-exec (BGT r addr) vm = if reg r vm > 0
-                           then vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
-                           else inc vm
-exec (Ret)        vm = vm { regs = Reg.write (regs vm) (pcIdx vm) (reg (lrIdx vm) vm) }
-exec (Print r)    vm = trace ("Reg " ++ show r ++ " = " ++ show (reg r vm)) $ inc vm
+exec (B addr)    vm = vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
+exec (BT r addr) vm = if reg r vm == 1
+                          then vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
+                          else inc vm
+exec (Ret)       vm = vm { regs = Reg.write (regs vm) (pcIdx vm) (reg (lrIdx vm) vm) }
+exec (Print r)   vm = trace ("Reg " ++ show r ++ " = " ++ show (reg r vm)) $ inc vm
+
+-- Returns 1 if x and y are equal, 0 otherwise.
+eq :: Val -> Val -> Val
+eq x y | x == y    = 1
+       | otherwise = 0
 
 -- Advances instruction pointer by 1.
 inc :: VM -> VM
