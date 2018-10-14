@@ -10,7 +10,7 @@ import System.Environment
 
 makeVm :: [Instr] -> VM
 makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx where
-    mem = Mem.zeroed 1
+    mem = Mem.zeroed 5
     regs = Reg.file 15
     instrs' = Mem.fromList instrs
     pcIdx = 13
@@ -21,13 +21,22 @@ runVm :: [Instr] -> IO ()
 runVm []     = putStrLn "No instructions to run"
 runVm instrs = putStrLn $ show $ run $ makeVm instrs
 
+newlines :: Instr -> String
+newlines (Ret) = "\n"
+newlines _     = ""
+
+showInstrs :: [Instr] -> String
+showInstrs is = unlines strNumbered where
+    strNumbered = map (\(n, i) -> (show n) ++ ":\t" ++ (show i) ++ newlines i) numbered
+    numbered    = zip [0..] is
+
 runBytecode :: FilePath -> IO ()
 runBytecode path = do
     contents <- B.readFile path
     case P.parse P.instrs contents of
         Nothing -> putStrLn "Could not parse file"
         Just is -> do
-            putStrLn (unlines $ map show is)
+            putStrLn (showInstrs is)
             runVm is
 
 main :: IO ()

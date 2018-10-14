@@ -13,8 +13,11 @@ zeroed :: (Ix k, Num k, Enum k, Num v, Integral k) => k -> Mem k v
 zeroed maxAddr = fromList (take n (repeat 0)) where
     n = fromIntegral maxAddr + 1
 
-load :: (Ix k) => Mem k v -> k -> v
-load (Mem mem _) addr = mem ! addr
+load :: (Ix k, Show k) => Mem k v -> k -> v
+load (Mem mem maxAddr) addr =
+    if addr > maxAddr
+        then error $ "Tried to access memory " ++ (show addr) ++ " / " ++ (show maxAddr)
+        else mem ! addr
 
 store :: (Ix k) => Mem k v -> k -> v -> Mem k v
 store mem addr val = mem { arr = (arr mem) // [(addr, val)] }

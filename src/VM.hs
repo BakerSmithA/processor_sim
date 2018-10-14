@@ -17,7 +17,12 @@ data VM = VM {
   , pcIdx  :: RegIdx -- Program Counter
   , spIdx  :: RegIdx -- Stack Pointer
   , lrIdx  :: RegIdx -- Link Register
-} deriving (Show)
+}
+
+instance Show VM where
+    show vm = "INSTR:\n\t" ++ show (pc vm) ++ "\n"
+           ++ "MEM:\n\t"   ++ show (mem vm) ++ "\n"
+           ++ "REG:\n\t"   ++ show (regs vm) ++ "\n"
 
 -- Runs instructions until the pc points past the instructions.
 run :: VM -> VM
