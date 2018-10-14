@@ -87,7 +87,7 @@ instr =
     <|> And  <$ byte 9  <*> word8 <*> word8 <*> word8
     <|> Not  <$ byte 15 <*> word8 <*> word8
     -- Branching
-    <|> B   <$ byte 10  <*> word32
+    <|> B   <$ byte 10 <*> word32
     <|> BT  <$ byte 11 <*> word8 <*> word32
     <|> Ret <$ byte 12
     -- Debugging
