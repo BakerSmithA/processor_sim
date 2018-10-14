@@ -141,10 +141,5 @@ instrSpec = describe "instr" $ do
 instrsSpec :: Spec
 instrsSpec = describe "instrs" $ do
     it "parses many instructions" $ do
-        let bs = pack [5,          -- Add
-                       2,          -- reg idx
-                       4,          -- x idx
-                       6,          -- y
-                       10,         -- B
-                       0, 0, 0, 2] -- branch address
-        parse instrs bs `shouldBe` Just [Add 2 4 6, B 2]
+        let bs = pack [0,0,0,0,0,5,14,1,0,13,1]
+        parse instrs bs `shouldBe` Just [MoveI 0 5, Move 1 0, Print 1]
