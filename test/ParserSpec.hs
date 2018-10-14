@@ -85,67 +85,60 @@ instrSpec = describe "instr" $ do
                        6] -- y idx
         parse instr bs `shouldBe` Just (Add 2 4 6)
 
-    it "parses AddI" $ do
-        let bs = pack [6,
-                       2,          -- reg idx
-                       4,          -- x idx
-                       0, 0, 0, 6] -- y operand
-        parse instr bs `shouldBe` Just (AddI 2 4 6)
-
     it "parses Sub" $ do
-        let bs = pack [7,
+        let bs = pack [6,
                        2, -- reg idx
                        4, -- x idx
                        6] -- y idx
         parse instr bs `shouldBe` Just (Sub 2 4 6)
 
-    it "parses SubI" $ do
-        let bs = pack [8,
-                       2,          -- reg idx
-                       4,          -- x idx
-                       0, 0, 0, 6] -- y operand
-        parse instr bs `shouldBe` Just (SubI 2 4 6)
-
     it "parses Eq" $ do
+        let bs = pack [7,
+                       2, -- reg idx
+                       4, -- x idx
+                       6] -- y idx
+        parse instr bs `shouldBe` Just (Eq 2 4 6)
+
+    it "parses Or" $ do
+        let bs = pack [8,
+                       2, -- reg idx
+                       4, -- x idx
+                       6] -- y idx
+        parse instr bs `shouldBe` Just (Or 2 4 6)
+
+    it "parses And" $ do
         let bs = pack [9,
                        2, -- reg idx
                        4, -- x idx
-                       6] -- y operand
-        parse instr bs `shouldBe` Just (Eq 2 4 6)
-
-    it "parses EqI" $ do
-        let bs = pack [10,
-                       2,          -- reg idx
-                       4,          -- x idx
-                       0, 0, 0, 6] -- y operand
-        parse instr bs `shouldBe` Just (EqI 2 4 6)
+                       6] -- y idx
+        parse instr bs `shouldBe` Just (And 2 4 6)
 
     it "parses B" $ do
-        let bs = pack [11,
+        let bs = pack [10,
                        0, 0, 0, 5] -- branch address
         parse instr bs `shouldBe` Just (B 5)
 
     it "parses BT" $ do
-        let bs = pack [12,
+        let bs = pack [11,
                        2,          -- reg idx
                        0, 0, 0, 6] -- branch address
         parse instr bs `shouldBe` Just (BT 2 6)
 
     it "parses Ret" $ do
-        let bs = pack [13]
+        let bs = pack [12]
         parse instr bs `shouldBe` Just Ret
 
     it "parses Print" $ do
-        let bs = pack [14, 3]
+        let bs = pack [13, 3]
         parse instr bs `shouldBe` Just (Print 3)
 
 instrsSpec :: Spec
 instrsSpec = describe "instrs" $ do
     it "parses many instructions" $ do
-        let bs = pack [6,          -- Add
+        let bs = pack [5,          -- Add
                        2,          -- reg idx
                        4,          -- x idx
-                       0, 0, 0, 6, -- y operand
-                       11,         -- B
+                       6,          -- y
+                       10,         -- B
                        0, 0, 0, 2] -- branch address
-        parse instrs bs `shouldBe` Just [AddI 2 4 6, B 2]
+        parse instrs bs `shouldBe` Just [Add 2 4 6, B 2]

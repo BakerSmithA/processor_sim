@@ -42,12 +42,11 @@ exec (LoadBaseIdx r base rOffset)  vm = load  r (reg base vm + reg rOffset vm) v
 exec (StoreIdx r base offset)      vm = store r (reg base vm + offset) vm
 exec (StoreBaseIdx r base rOffset) vm = store r (reg base vm + reg rOffset vm) vm
 -- Arithmetic/Logic
-exec (Add r x y)  vm = op r x (+) (reg y vm) vm
-exec (AddI r x i) vm = op r x (+) i vm
-exec (Sub r x y)  vm = op r x (-) (reg y vm) vm
-exec (SubI r x i) vm = op r x (-) i vm
-exec (Eq r x y)   vm = op r x eq (reg y vm) vm where
-exec (EqI r x i)  vm = op r x eq i vm
+exec (Add r x y) vm = op r x (+) y vm
+exec (Sub r x y) vm = op r x (-) y vm
+exec (Eq r x y)  vm = op r x eqVal y vm
+exec (Or r x y)  vm = op r x orVal y vm
+exec (And r x y) vm = op r x andVal y vm
 -- Control
 exec (B addr)    vm = vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
 exec (BT r addr) vm = if reg r vm == 1
@@ -56,10 +55,17 @@ exec (BT r addr) vm = if reg r vm == 1
 exec (Ret)       vm = vm { regs = Reg.write (regs vm) (pcIdx vm) (reg (lrIdx vm) vm) }
 exec (Print r)   vm = trace ("Reg " ++ show r ++ " = " ++ show (reg r vm)) $ inc vm
 
--- Returns 1 if x and y are equal, 0 otherwise.
-eq :: Val -> Val -> Val
-eq x y | x == y    = 1
-       | otherwise = 0
+eqVal :: Val -> Val -> Val
+eqVal x y | x == y    = 1
+          | otherwise = 0
+
+orVal :: Val -> Val -> Val
+orVal x y | x == 1 || y == 1 = 1
+          | otherwise        = 0
+
+andVal :: Val -> Val -> Val
+andVal x y | x == 1 && y == 1 = 1
+           | otherwise        = 0
 
 -- Advances instruction pointer by 1.
 inc :: VM -> VM
@@ -79,6 +85,6 @@ load r addr vm = inc $ vm { regs = Reg.write (regs vm) r memVal } where
 store :: RegIdx -> Addr -> VM -> VM
 store r addr vm = inc $ vm { mem = Mem.store (mem vm) addr (reg r vm) }
 
-op :: RegIdx -> RegIdx -> (Val -> Val -> Val) -> Val -> VM -> VM
+op :: RegIdx -> RegIdx -> (Val -> Val -> Val) -> RegIdx -> VM -> VM
 op r x operation y vm = inc $ vm { regs = Reg.write (regs vm) r result } where
-    result = operation (reg x vm) y
+    result = operation (reg x vm) (reg y vm)

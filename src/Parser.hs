@@ -80,17 +80,16 @@ instr =
     <|> StoreBaseIdx <$ byte 4 <*> word8 <*> word8 <*> word8
     -- Arithmetic/Logic
     <|> Add  <$ byte 5 <*> word8 <*> word8 <*> word8
-    <|> AddI <$ byte 6 <*> word8 <*> word8 <*> word32
-    <|> Sub  <$ byte 7 <*> word8 <*> word8 <*> word8
-    <|> SubI <$ byte 8 <*> word8 <*> word8 <*> word32
-    <|> Eq   <$ byte 9 <*> word8 <*> word8 <*> word8
-    <|> EqI  <$ byte 10 <*> word8 <*> word8 <*> word32
+    <|> Sub  <$ byte 6 <*> word8 <*> word8 <*> word8
+    <|> Eq   <$ byte 7 <*> word8 <*> word8 <*> word8
+    <|> Or   <$ byte 8 <*> word8 <*> word8 <*> word8
+    <|> And  <$ byte 9 <*> word8 <*> word8 <*> word8
     -- Branching
-    <|> B   <$ byte 11  <*> word32
-    <|> BT  <$ byte 12 <*> word8 <*> word32
-    <|> Ret <$ byte 13
+    <|> B   <$ byte 10  <*> word32
+    <|> BT  <$ byte 11 <*> word8 <*> word32
+    <|> Ret <$ byte 12
     -- Debugging
-    <|> Print <$ byte 14 <*> word8
+    <|> Print <$ byte 13 <*> word8
 
 instrs :: Parser [Instr]
 instrs = many instr

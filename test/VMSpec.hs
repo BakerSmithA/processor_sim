@@ -51,20 +51,10 @@ vmSpec = describe "vm" $ do
                     vm' = run vm
                 (VM.reg 2 vm') `shouldBe` 3
 
-            it "interprets AddI" $ do
-                let vm  = makeVm [MoveI 0 1, AddI 1 0 3] []
-                    vm' = run vm
-                (VM.reg 1 vm') `shouldBe` 4
-
             it "interprets Sub" $ do
                 let vm  = makeVm [MoveI 0 5, MoveI 1 3, Sub 2 0 1] []
                     vm' = run vm
                 (VM.reg 2 vm') `shouldBe` 2
-
-            it "interprets SubI" $ do
-                let vm  = makeVm [MoveI 0 5, SubI 1 0 2] []
-                    vm' = run vm
-                (VM.reg 1 vm') `shouldBe` 3
 
         context "branch instructions" $ do
             it "interprets B" $ do
