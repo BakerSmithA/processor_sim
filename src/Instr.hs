@@ -16,7 +16,9 @@ data Instr
     | StoreBaseIdx { r :: RegIdx, base :: RegIdx, rOffset :: RegIdx } -- r -> [[base] + [R_offset]]
     -- Arithmetic/Logic
     | Add  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] + [y]
+    | AddI { r :: RegIdx, x :: RegIdx, i :: Val }    -- r <- [x] + i
     | Sub  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] - [y]
+    | SubI { r :: RegIdx, x :: RegIdx, i :: Val }    -- r <- [x] - i
     | Eq   { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] == [y]
     | Or   { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] || [y]
     | And  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] && [y]

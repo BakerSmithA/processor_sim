@@ -81,7 +81,9 @@ instr =
     <|> StoreBaseIdx <$ byte 4  <*> word8 <*> word8 <*> word8
     -- Arithmetic/Logic
     <|> Add  <$ byte 5  <*> word8 <*> word8 <*> word8
+    <|> AddI <$ byte 16 <*> word8 <*> word8 <*> word32
     <|> Sub  <$ byte 6  <*> word8 <*> word8 <*> word8
+    <|> SubI <$ byte 17 <*> word8 <*> word8 <*> word32
     <|> Eq   <$ byte 7  <*> word8 <*> word8 <*> word8
     <|> Or   <$ byte 8  <*> word8 <*> word8 <*> word8
     <|> And  <$ byte 9  <*> word8 <*> word8 <*> word8

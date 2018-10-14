@@ -27,7 +27,7 @@ runBytecode path = do
     case P.parse P.instrs contents of
         Nothing -> putStrLn "Could not parse file"
         Just is -> do
-            putStrLn (show is)
+            putStrLn (unlines $ map show is)
             runVm is
 
 main :: IO ()

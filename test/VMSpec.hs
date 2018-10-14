@@ -56,10 +56,20 @@ vmSpec = describe "vm" $ do
                     vm' = run vm
                 (VM.reg 2 vm') `shouldBe` 3
 
+            it "interprets AddI" $ do
+                let vm  = makeVm [MoveI 0 2, AddI 1 0 10] []
+                    vm' = run vm
+                (VM.reg 1 vm') `shouldBe` 12
+
             it "interprets Sub" $ do
                 let vm  = makeVm [MoveI 0 5, MoveI 1 3, Sub 2 0 1] []
                     vm' = run vm
                 (VM.reg 2 vm') `shouldBe` 2
+
+            it "interprets SubI" $ do
+                let vm  = makeVm [MoveI 0 10, SubI 1 0 3] []
+                    vm' = run vm
+                (VM.reg 1 vm') `shouldBe` 7
 
             it "interprets Eq to be True" $ do
                 let vm  = makeVm [MoveI 0 1, MoveI 1 1, Eq 2 0 1] []

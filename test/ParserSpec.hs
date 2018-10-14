@@ -91,12 +91,26 @@ instrSpec = describe "instr" $ do
                        6] -- y idx
         parse instr bs `shouldBe` Just (Add 2 4 6)
 
+    it "parses AddI" $ do
+        let bs = pack [16,
+                       2, -- reg idx
+                       4, -- x idx
+                       0, 0, 0, 6] -- y idx
+        parse instr bs `shouldBe` Just (AddI 2 4 6)
+
     it "parses Sub" $ do
         let bs = pack [6,
                        2, -- reg idx
                        4, -- x idx
                        6] -- y idx
         parse instr bs `shouldBe` Just (Sub 2 4 6)
+
+    it "parses SubI" $ do
+        let bs = pack [17,
+                       2, -- reg idx
+                       4, -- x idx
+                       0, 0, 0, 6] -- y idx
+        parse instr bs `shouldBe` Just (SubI 2 4 6)
 
     it "parses Eq" $ do
         let bs = pack [7,

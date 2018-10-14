@@ -43,12 +43,14 @@ exec (LoadBaseIdx r base rOffset)  vm = load  r (reg base vm + reg rOffset vm) v
 exec (StoreIdx r base offset)      vm = store r (reg base vm + offset) vm
 exec (StoreBaseIdx r base rOffset) vm = store r (reg base vm + reg rOffset vm) vm
 -- Arithmetic/Logic
-exec (Add r x y) vm = op r x (+) y vm
-exec (Sub r x y) vm = op r x (-) y vm
-exec (Eq r x y)  vm = op r x eqVal y vm
-exec (Or r x y)  vm = op r x orVal y vm
-exec (And r x y) vm = op r x andVal y vm
-exec (Not r x)   vm = inc $ vm { regs = Reg.write (regs vm) r (notVal (reg x vm)) }
+exec (Add r x y)  vm = op r x (+) (reg y vm) vm
+exec (AddI r x i) vm = op r x (+) i vm
+exec (Sub r x y)  vm = op r x (-) (reg y vm) vm
+exec (SubI r x i) vm = op r x (-) i vm
+exec (Eq r x y)   vm = op r x eqVal (reg y vm) vm
+exec (Or r x y)   vm = op r x orVal (reg y vm) vm
+exec (And r x y)  vm = op r x andVal (reg y vm) vm
+exec (Not r x)    vm = inc $ vm { regs = Reg.write (regs vm) r (notVal (reg x vm)) }
 -- Control
 exec (B addr)    vm = vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
 exec (BT r addr) vm = if reg r vm == 1
@@ -91,6 +93,6 @@ load r addr vm = inc $ vm { regs = Reg.write (regs vm) r memVal } where
 store :: RegIdx -> Addr -> VM -> VM
 store r addr vm = inc $ vm { mem = Mem.store (mem vm) addr (reg r vm) }
 
-op :: RegIdx -> RegIdx -> (Val -> Val -> Val) -> RegIdx -> VM -> VM
+op :: RegIdx -> RegIdx -> (Val -> Val -> Val) -> Val -> VM -> VM
 op r x operation y vm = inc $ vm { regs = Reg.write (regs vm) r result } where
-    result = operation (reg x vm) (reg y vm)
+    result = operation (reg x vm) y
