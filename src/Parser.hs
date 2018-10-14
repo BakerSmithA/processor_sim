@@ -74,6 +74,7 @@ instr :: Parser Instr
 instr =
     -- Memory
         MoveI        <$ byte 0 <*> word8 <*> word32
+    <|> Move         <$ byte 14 <*> word8 <*> word8
     <|> LoadIdx      <$ byte 1 <*> word8 <*> word8 <*> word32
     <|> LoadBaseIdx  <$ byte 2 <*> word8 <*> word8 <*> word8
     <|> StoreIdx     <$ byte 3 <*> word8 <*> word8 <*> word32

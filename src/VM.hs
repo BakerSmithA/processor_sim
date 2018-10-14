@@ -37,6 +37,7 @@ next vm = exec instr vm where
 exec :: Instr -> VM -> VM
 -- Memory
 exec (MoveI r val)                 vm = inc $ vm { regs = Reg.write (regs vm) r val }
+exec (Move r from)                 vm = inc $ vm { regs = Reg.write (regs vm) r (reg from vm) }
 exec (LoadIdx r base offset)       vm = load  r (reg base vm + offset) vm
 exec (LoadBaseIdx r base rOffset)  vm = load  r (reg base vm + reg rOffset vm) vm
 exec (StoreIdx r base offset)      vm = store r (reg base vm + offset) vm

@@ -25,6 +25,11 @@ vmSpec = describe "vm" $ do
                     vm' = run vm
                 (VM.reg 1 vm') `shouldBe` 5
 
+            it "interprets Move" $ do
+                let vm  = makeVm [MoveI 0 6, Move 1 0] []
+                    vm' = run vm
+                (VM.reg 1 vm') `shouldBe` 6
+
             it "interprets LoadIdx" $ do
                 let vm  = makeVm [MoveI 0 1, LoadIdx 1 0 2] [1, 2, 3, 4, 5]
                     vm' = run vm

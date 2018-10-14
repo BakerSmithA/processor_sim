@@ -50,6 +50,12 @@ instrSpec = describe "instr" $ do
                        0, 0, 0, 3] -- val
         parse instr bs `shouldBe` Just (MoveI 2 3)
 
+    it "parses Move" $ do
+        let bs = pack [14,
+                       2, -- reg idx
+                       3] -- from idx
+        parse instr bs `shouldBe` Just (Move 2 3)
+
     it "parses LoadIdx" $ do
         let bs = pack [1,
                        2,          -- reg idx
