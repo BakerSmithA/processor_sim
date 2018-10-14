@@ -20,11 +20,15 @@ data VM = VM {
 }
 
 instance Show VM where
-    show vm = "INSTR:\n\t" ++ show (pc vm) ++ "\n"
+    show vm = "INSTR:\n\t" ++ (show $ pc vm) ++ ": " ++ show (Mem.loadSafe (instrs vm) (pc vm)) ++ "\n"
            ++ "MEM:\n\t"   ++ show (mem vm) ++ "\n"
            ++ "REG:\n\t"   ++ show (regs vm) ++ "\n"
 
 -- Runs instructions until the pc points past the instructions.
+runAll :: VM -> [VM]
+runAll vm | (pc vm) > Mem.maxAddr (instrs vm) = [vm]
+          | otherwise = vm : runAll (next vm)
+
 run :: VM -> VM
 run vm | (pc vm) > Mem.maxAddr (instrs vm) = vm -- End of instructions.
        | otherwise = run (next vm)

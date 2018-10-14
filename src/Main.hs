@@ -19,7 +19,7 @@ makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx where
 
 runVm :: [Instr] -> IO ()
 runVm []     = putStrLn "No instructions to run"
-runVm instrs = putStrLn $ show $ run $ makeVm instrs
+runVm instrs = putStrLn $ show $ run (makeVm instrs)--putStrLn $ unlines $ fmap show (runAll (makeVm instrs))
 
 newlines :: Instr -> String
 newlines (Ret) = "\n"

@@ -1,4 +1,4 @@
-module Mem (Mem, fromList, zeroed, load, store, maxAddr) where
+module Mem (Mem, fromList, zeroed, load, loadSafe, store, maxAddr) where
 
 import Data.Array
 
@@ -14,10 +14,16 @@ zeroed maxAddr = fromList (take n (repeat 0)) where
     n = fromIntegral maxAddr + 1
 
 load :: (Ix k, Show k) => Mem k v -> k -> v
-load (Mem mem maxAddr) addr =
+load m@(Mem mem maxAddr) addr =
+    case loadSafe m addr of
+        Nothing -> error ("Tried to access memory " ++ (show addr) ++ " / " ++ (show maxAddr))
+        Just x  -> x
+
+loadSafe :: (Ix k, Show k) => Mem k v -> k -> Maybe v
+loadSafe (Mem mem maxAddr) addr =
     if addr > maxAddr
-        then error $ "Tried to access memory " ++ (show addr) ++ " / " ++ (show maxAddr)
-        else mem ! addr
+        then Nothing
+        else Just (mem ! addr)
 
 store :: (Ix k) => Mem k v -> k -> v -> Mem k v
 store mem addr val = mem { arr = (arr mem) // [(addr, val)] }
