@@ -21,7 +21,7 @@ data VM = VM {
 
 -- Runs instructions until the pc points past the instructions.
 run :: VM -> VM
-run vm | (pc vm) == Mem.maxAddr (instrs vm) + 1 = vm -- End of instructions.
+run vm | (pc vm) > Mem.maxAddr (instrs vm) = vm -- End of instructions.
        | otherwise = run (next vm)
 
 -- Returns address of current instruction.

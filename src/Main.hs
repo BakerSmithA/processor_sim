@@ -11,11 +11,11 @@ import System.Environment
 makeVm :: [Instr] -> VM
 makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx where
     mem = Mem.zeroed 1
-    regs = Reg.file 8
+    regs = Reg.file 15
     instrs' = Mem.fromList instrs
-    pcIdx = 6
-    spIdx = 7
-    lrIdx = 8
+    pcIdx = 13
+    spIdx = 14
+    lrIdx = 15
 
 runVm :: [Instr] -> IO ()
 runVm []     = putStrLn "No instructions to run"
