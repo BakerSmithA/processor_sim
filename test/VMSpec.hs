@@ -56,6 +56,36 @@ vmSpec = describe "vm" $ do
                     vm' = run vm
                 (VM.reg 2 vm') `shouldBe` 2
 
+            it "interprets Eq to be True" $ do
+                let vm  = makeVm [MoveI 0 1, MoveI 1 1, Eq 2 0 1] []
+                    vm' = run vm
+                (VM.reg 2 vm') `shouldBe` 1
+
+            it "interprets Eq to be False" $ do
+                let vm  = makeVm [MoveI 0 1, MoveI 1 2, Eq 2 0 1] []
+                    vm' = run vm
+                (VM.reg 2 vm') `shouldBe` 0
+
+            it "interprets Or to be True" $ do
+                let vm  = makeVm [MoveI 0 0, MoveI 1 1, Or 2 0 1] []
+                    vm' = run vm
+                (VM.reg 2 vm') `shouldBe` 1
+
+            it "interprets Or to be False" $ do
+                let vm  = makeVm [MoveI 0 0, MoveI 1 0, Or 2 0 1] []
+                    vm' = run vm
+                (VM.reg 2 vm') `shouldBe` 0
+
+            it "interprets And to be True" $ do
+                let vm  = makeVm [MoveI 0 1, MoveI 1 1, And 2 0 1] []
+                    vm' = run vm
+                (VM.reg 2 vm') `shouldBe` 1
+
+            it "interprets And to be False" $ do
+                let vm  = makeVm [MoveI 0 0, MoveI 1 1, And 2 0 1] []
+                    vm' = run vm
+                (VM.reg 2 vm') `shouldBe` 0
+
         context "branch instructions" $ do
             it "interprets B" $ do
                 -- Branch should cause MoveI instruction to be skipped.
