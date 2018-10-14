@@ -119,6 +119,12 @@ instrSpec = describe "instr" $ do
                        6] -- y idx
         parse instr bs `shouldBe` Just (And 2 4 6)
 
+    it "parses Not" $ do
+        let bs = pack [15,
+                       2, -- reg idx
+                       4] -- x idx
+        parse instr bs `shouldBe` Just (Not 2 4)
+
     it "parses B" $ do
         let bs = pack [10,
                        0, 0, 0, 5] -- branch address

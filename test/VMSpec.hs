@@ -91,6 +91,16 @@ vmSpec = describe "vm" $ do
                     vm' = run vm
                 (VM.reg 2 vm') `shouldBe` 0
 
+            it "interprets Not to be True" $ do
+                let vm  = makeVm [MoveI 0 1, Not 1 0] []
+                    vm' = run vm
+                (VM.reg 1 vm') `shouldBe` 0
+
+            it "interprets Not to be False" $ do
+                let vm  = makeVm [MoveI 0 0, Not 1 0] []
+                    vm' = run vm
+                (VM.reg 1 vm') `shouldBe` 1
+
         context "branch instructions" $ do
             it "interprets B" $ do
                 -- Branch should cause MoveI instruction to be skipped.

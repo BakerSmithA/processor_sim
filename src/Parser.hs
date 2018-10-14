@@ -80,11 +80,12 @@ instr =
     <|> StoreIdx     <$ byte 3  <*> word8 <*> word8 <*> word32
     <|> StoreBaseIdx <$ byte 4  <*> word8 <*> word8 <*> word8
     -- Arithmetic/Logic
-    <|> Add  <$ byte 5 <*> word8 <*> word8 <*> word8
-    <|> Sub  <$ byte 6 <*> word8 <*> word8 <*> word8
-    <|> Eq   <$ byte 7 <*> word8 <*> word8 <*> word8
-    <|> Or   <$ byte 8 <*> word8 <*> word8 <*> word8
-    <|> And  <$ byte 9 <*> word8 <*> word8 <*> word8
+    <|> Add  <$ byte 5  <*> word8 <*> word8 <*> word8
+    <|> Sub  <$ byte 6  <*> word8 <*> word8 <*> word8
+    <|> Eq   <$ byte 7  <*> word8 <*> word8 <*> word8
+    <|> Or   <$ byte 8  <*> word8 <*> word8 <*> word8
+    <|> And  <$ byte 9  <*> word8 <*> word8 <*> word8
+    <|> Not  <$ byte 15 <*> word8 <*> word8
     -- Branching
     <|> B   <$ byte 10  <*> word32
     <|> BT  <$ byte 11 <*> word8 <*> word32

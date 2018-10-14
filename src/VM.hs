@@ -48,6 +48,7 @@ exec (Sub r x y) vm = op r x (-) y vm
 exec (Eq r x y)  vm = op r x eqVal y vm
 exec (Or r x y)  vm = op r x orVal y vm
 exec (And r x y) vm = op r x andVal y vm
+exec (Not r x)   vm = inc $ vm { regs = Reg.write (regs vm) r (notVal (reg x vm)) }
 -- Control
 exec (B addr)    vm = vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
 exec (BT r addr) vm = if reg r vm == 1
@@ -67,6 +68,10 @@ orVal x y | x == 1 || y == 1 = 1
 andVal :: Val -> Val -> Val
 andVal x y | x == 1 && y == 1 = 1
            | otherwise        = 0
+
+notVal :: Val -> Val
+notVal x | x == 1    = 0
+         | otherwise = 1
 
 -- Advances instruction pointer by 1.
 inc :: VM -> VM

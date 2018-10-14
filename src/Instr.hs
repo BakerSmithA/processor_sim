@@ -20,6 +20,7 @@ data Instr
     | Eq   { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] == [y]
     | Or   { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] || [y]
     | And  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] && [y]
+    | Not  { r :: RegIdx, x :: RegIdx }              -- r <- ![x]
     -- Branching
     | B  { addr :: Addr }              -- Unconditional branch to addr
     | BT { r :: RegIdx, addr :: Addr } -- Branch to addr if r == 1
