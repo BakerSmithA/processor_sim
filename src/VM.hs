@@ -18,6 +18,7 @@ data VM = VM {
   , spIdx  :: RegIdx -- Stack Pointer
   , lrIdx  :: RegIdx -- Link Register
   , bpIdx  :: RegIdx -- Base Pointer
+  , retIdx :: RegIdx -- Return value register (EAX in x86)
 }
 
 instance Show VM where

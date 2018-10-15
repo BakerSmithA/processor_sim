@@ -9,14 +9,15 @@ import qualified Data.ByteString as B
 import System.Environment
 
 makeVm :: [Instr] -> VM
-makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx bpIdx where
+makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx where
     mem = Mem.zeroed 16
-    regs = Reg.file 16
+    regs = Reg.file 17
     instrs' = Mem.fromList instrs
-    pcIdx = 13
-    spIdx = 14
-    lrIdx = 15
-    bpIdx = 16
+    pcIdx  = 13
+    spIdx  = 14
+    lrIdx  = 15
+    bpIdx  = 16
+    retIdx = 17
 
 runVm :: [Instr] -> IO ()
 runVm []     = putStrLn "No instructions to run"

@@ -8,14 +8,15 @@ import VM as VM
 import Data.Word (Word32)
 
 makeVm :: [Instr] -> [Word32] -> VM
-makeVm instrs memCnts = VM mem regs instrs' pcIdx spIdx lrIdx bpIdx where
+makeVm instrs memCnts = VM mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx where
     mem = Mem.fromList memCnts
-    regs = Reg.file 9
+    regs = Reg.file 10
     instrs' = Mem.fromList instrs
-    pcIdx = 6
-    spIdx = 7
-    lrIdx = 8
-    bpIdx = 9
+    pcIdx  = 6
+    spIdx  = 7
+    lrIdx  = 8
+    bpIdx  = 9
+    retIdx = 10
 
 vmSpec :: Spec
 vmSpec = describe "vm" $ do
