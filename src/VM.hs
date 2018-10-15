@@ -17,6 +17,7 @@ data VM = VM {
   , pcIdx  :: RegIdx -- Program Counter
   , spIdx  :: RegIdx -- Stack Pointer
   , lrIdx  :: RegIdx -- Link Register
+  , bpIdx  :: RegIdx -- Base Pointer
 }
 
 instance Show VM where
