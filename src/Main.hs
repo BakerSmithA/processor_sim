@@ -10,7 +10,7 @@ import System.Environment
 
 makeVm :: [Instr] -> VM
 makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx bpIdx where
-    mem = Mem.zeroed 5
+    mem = Mem.zeroed 16
     regs = Reg.file 16
     instrs' = Mem.fromList instrs
     pcIdx = 13
