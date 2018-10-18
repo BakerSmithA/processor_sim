@@ -2,7 +2,8 @@ module VM where
 
 import State
 import Error
-import Instr (RegIdx, Addr, Val)
+import Instr
+import Pipeline
 import qualified Mem as Mem
 import qualified Mem as Reg
 
@@ -60,22 +61,58 @@ setMemVal i val st =
         Nothing  -> Crash (MemOutOfRange i)
         Just mem -> return st { mem = mem }
 
--- Increments the PC by 1, or returns End if at the last instruction.
-inc :: State -> VM State
-inc st = do
+-- Return instruction at address, or Crash if invalid address.
+instrVal :: Addr -> State -> VM Instr
+instrVal i st =
+    case Mem.load i (instrs st) of
+        Nothing    -> Crash (InstrOutOfRange i)
+        Just instr -> return instr
+
+-- Return value of PC, or End if pc is past last instruction.
+pcVal :: State -> VM Addr
+pcVal st = do
     pc <- regVal (pcIdx st) st
     if pc > Mem.maxAddr (instrs st)
         then End
-        else setRegVal (pcIdx st) (pc + 1) st
+        else return pc
 
--- Loads contents of memory at address into register.
-load :: Addr -> RegIdx -> State -> VM State
-load addr r st = do
-    val <- regVal r st
-    setMemVal addr val st >>= inc
+-- Increments the PC by 1, or returns End if at the last instruction.
+inc :: State -> VM State
+inc st = do
+    pc <- pcVal st
+    setRegVal (pcIdx st) (pc + 1) st
 
--- Stores contents of register into memory address.
-store :: RegIdx -> Addr -> State -> VM State
-store r addr st = do
-    val <- memVal addr st
-    setRegVal r val st >>= inc
+-- -- Loads contents of memory at address into register.
+-- load :: Addr -> RegIdx -> State -> VM State
+-- load addr r st = do
+--     val <- regVal r st
+--     setMemVal addr val st >>= inc
+--
+-- -- Stores contents of register into memory address.
+-- store :: RegIdx -> Addr -> State -> VM State
+-- store r addr st = do
+--     val <- memVal addr st
+--     setRegVal r val st >>= inc
+
+-- Perform fetch state of pipeline by retreiving instruction.
+fetch :: State -> VM Instr
+fetch st = do
+    pc <- pcVal st
+    instrVal pc st
+
+-- Perform decode stage of pipeline.
+decode :: Instr -> VM Instr
+decode = return
+
+-- Perform execution stage of pipeline, and generate instruction of what
+-- to modify in machine.
+exec :: Instr -> State -> VM WriteBackInstr
+exec (MoveI r val) st = return (WriteReg r val)
+exec (Move r from) st = do
+    val <- regVal from st
+    return (WriteReg r val)
+
+-- Perform write-back stage of pipeline, writing result back to register/memory.
+writeBack :: WriteBackInstr -> State -> VM State
+writeBack (WriteReg r val) = setRegVal r val
+writeBack (WriteMem i val) = setMemVal i val
