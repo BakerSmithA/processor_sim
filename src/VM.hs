@@ -43,26 +43,12 @@ regVal i st =
         Nothing  -> Crash (RegOutOfRange i)
         Just val -> return val
 
--- Set the value stored in a register, or Crash if invalid index.
-setRegVal :: RegIdx -> Val -> State -> VM State
-setRegVal i val st =
-    case Reg.store i val (regs st) of
-        Nothing   -> Crash (RegOutOfRange i)
-        Just regs -> return st { regs = regs }
-
 -- Returns value of an address in memory, or Crash if invalid address.
 memVal :: Addr -> State -> VM Val
 memVal i st =
     case Mem.load i (mem st) of
         Nothing  -> Crash (MemOutOfRange i)
         Just val -> return val
-
--- Set the value at a memory address, or Crash if invalid address.
-setMemVal :: Addr -> Val -> State -> VM State
-setMemVal i val st =
-    case Mem.store i val (mem st) of
-        Nothing  -> Crash (MemOutOfRange i)
-        Just mem -> return st { mem = mem }
 
 -- Return instruction at address, or Crash if invalid address.
 instrVal :: Addr -> State -> VM Instr
@@ -85,17 +71,17 @@ inc st = do
     pc <- pcVal st
     setRegVal (pcIdx st) (pc + 1) st
 
--- -- Loads contents of memory at address into register.
--- load :: Addr -> RegIdx -> State -> VM State
--- load addr r st = do
---     val <- regVal r st
---     setMemVal addr val st >>= inc
---
--- -- Stores contents of register into memory address.
--- store :: RegIdx -> Addr -> State -> VM State
--- store r addr st = do
---     val <- memVal addr st
---     setRegVal r val st >>= inc
+-- Loads contents of memory at address into register.
+load :: Addr -> RegIdx -> State -> VM WriteBackInstr
+load addr r st = do
+    val <- regVal r st
+    return (WriteReg r val)
+
+-- Stores contents of register into memory address.
+store :: RegIdx -> Addr -> State -> VM WriteBackInstr
+store r addr st = do
+    val <- memVal addr st
+    return (WriteMem addr val)
 
 -- Perform operation on value stored in register, and immediate value.
 opI :: RegIdx -> RegIdx -> ValOp -> Val -> State -> VM WriteBackInstr
@@ -108,6 +94,26 @@ opReg :: RegIdx -> RegIdx -> ValOp -> RegIdx -> State -> VM WriteBackInstr
 opReg r x f y st = do
     val <- regVal y st
     opI r x f val st
+
+eqVal :: Val -> Val -> Val
+eqVal x y | x == y    = 1
+          | otherwise = 0
+
+ltVal :: Val -> Val -> Val
+ltVal x y | x < y     = 1
+          | otherwise = 0
+
+orVal :: Val -> Val -> Val
+orVal x y | x == 1 || y == 1 = 1
+          | otherwise        = 0
+
+andVal :: Val -> Val -> Val
+andVal x y | x == 1 && y == 1 = 1
+           | otherwise        = 0
+
+notVal :: Val -> Val
+notVal x | x == 1    = 0
+         | otherwise = 1
 
 -- Perform fetch state of pipeline by retreiving instruction.
 fetch :: State -> VM Instr
@@ -122,6 +128,7 @@ decode = return
 -- Perform execution stage of pipeline, and generate instruction of what
 -- to modify in machine.
 exec :: Instr -> State -> VM WriteBackInstr
+-- Memory
 -- Move immediate value into register.
 exec (MoveI r val) st =
     return (WriteReg r val)
@@ -133,32 +140,79 @@ exec (Move r from) st = do
 -- base and offset.
 exec (LoadIdx r base offset) st = do
     baseAddr <- regVal base st
-    val <- memVal (baseAddr + offset) st
-    return (WriteReg r val)
+    load (baseAddr + offset) r st
 -- Load value from memory into register, where two regs provide base and offset.
 exec (LoadBaseIdx r base rOffset) st = do
     baseAddr <- regVal base st
     offsetAddr <- regVal rOffset st
-    val <- memVal (baseAddr + offsetAddr) st
-    return (WriteReg r val)
+    load (baseAddr + offsetAddr) r st
 -- Store value from register into memory, where reg and immediate provide
 -- base and offset.
 exec (StoreIdx r base offset) st = do
-    val <- regVal r st
     baseAddr <- regVal base st
-    return (WriteMem (baseAddr + offset) val)
+    store r (baseAddr + offset) st
 -- Store value from register into memory, where two regs provide base and offset.
 exec (StoreBaseIdx r base rOffset) st = do
-    val <- regVal r st
     baseAddr <- regVal base st
     offsetAddr <- regVal rOffset st
-    return (WriteMem (baseAddr + offsetAddr) val)
--- Add values in two registers.
-exec (Add r x y) st = opReg r x (+) y st
--- Add value in register to immediate.
+    store r (baseAddr + offsetAddr) st
+-- Arithmetic/Logic
+exec (Add r x y)  st = opReg r x (+) y st
 exec (AddI r x i) st = opI r x (+) i st
+exec (Sub r x y)  st = opReg r x (-) y st
+exec (SubI r x i) st = opI r x (-) i st
+exec (Mult r x y) st = opReg r x (*) y st
+exec (Eq r x y)   st = opReg r x eqVal y st
+exec (Lt r x y)   st = opReg r x ltVal y st
+exec (Or r x y)   st = opReg r x orVal y st
+exec (And r x y)  st = opReg r x andVal y st
+exec (Not r x)    st = do
+    val <- regVal r st
+    return (WriteReg r (notVal val))
+-- Branching
+-- Unconditional branch to address.
+exec (B addr) st =
+    return (WriteReg (pcIdx st) addr)
+-- Branch if value in register is true.
+exec (BT r addr) st = do
+    val <- regVal r st
+    if val == 1
+        then return (WriteReg (pcIdx st) addr)
+        else return NoOp
+-- Branch to value stored in link register.
+exec (Ret) st = do
+    addr <- regVal (lrIdx st) st
+    return (WriteReg (pcIdx st) addr)
+-- Debugging.
+-- Print value in register.
+exec (Print r) st = do
+    val <- regVal r st
+    return (WritePrint (show val))
+-- Print newline.
+exec (PrintLn) st =
+    return (WritePrint "\n")
+
+-- Set the value stored in a register, or Crash if invalid index.
+setRegVal :: RegIdx -> Val -> State -> VM State
+setRegVal i val st =
+    case Reg.store i val (regs st) of
+        Nothing   -> Crash (RegOutOfRange i)
+        Just regs -> return st { regs = regs }
+
+-- Set the value at a memory address, or Crash if invalid address.
+setMemVal :: Addr -> Val -> State -> VM State
+setMemVal i val st =
+    case Mem.store i val (mem st) of
+        Nothing  -> Crash (MemOutOfRange i)
+        Just mem -> return st { mem = mem }
+
+-- Add string to output of VM.
+addOutput :: String -> State -> VM State
+addOutput s st = return st { output = (output st) ++ s }
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
 writeBack :: WriteBackInstr -> State -> VM State
 writeBack (WriteReg r val) = setRegVal r val
 writeBack (WriteMem i val) = setMemVal i val
+writeBack (WritePrint s)   = addOutput s
+writeBack (NoOp)           = return

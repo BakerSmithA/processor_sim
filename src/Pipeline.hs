@@ -20,3 +20,5 @@ empty = Pipeline Nothing Nothing Nothing Nothing
 data WriteBackInstr
     = WriteReg RegIdx Val
     | WriteMem Addr Val
+    | WritePrint String
+    | NoOp
