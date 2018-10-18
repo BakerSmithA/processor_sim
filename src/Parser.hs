@@ -84,7 +84,9 @@ instr =
     <|> AddI <$ byte 16 <*> word8 <*> word8 <*> word32
     <|> Sub  <$ byte 6  <*> word8 <*> word8 <*> word8
     <|> SubI <$ byte 17 <*> word8 <*> word8 <*> word32
+    <|> Mult <$ byte 18 <*> word8 <*> word8 <*> word8
     <|> Eq   <$ byte 7  <*> word8 <*> word8 <*> word8
+    <|> Lt   <$ byte 19 <*> word8 <*> word8 <*> word8
     <|> Or   <$ byte 8  <*> word8 <*> word8 <*> word8
     <|> And  <$ byte 9  <*> word8 <*> word8 <*> word8
     <|> Not  <$ byte 15 <*> word8 <*> word8
@@ -93,7 +95,8 @@ instr =
     <|> BT  <$ byte 11 <*> word8 <*> word32
     <|> Ret <$ byte 12
     -- Debugging
-    <|> Print <$ byte 13 <*> word8
+    <|> Print   <$ byte 13 <*> word8
+    <|> PrintLn <$ byte 20
 
 instrs :: Parser [Instr]
 instrs = many instr

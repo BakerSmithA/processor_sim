@@ -112,12 +112,26 @@ instrSpec = describe "instr" $ do
                        0, 0, 0, 6] -- y idx
         parse instr bs `shouldBe` Just (SubI 2 4 6)
 
+    it "parses Mult" $ do
+        let bs = pack [18,
+                       2, -- reg idx
+                       4, -- x idx
+                       6] -- y idx
+        parse instr bs `shouldBe` Just (Mult 2 4 6)
+
     it "parses Eq" $ do
         let bs = pack [7,
                        2, -- reg idx
                        4, -- x idx
                        6] -- y idx
         parse instr bs `shouldBe` Just (Eq 2 4 6)
+
+    it "parses Lt" $ do
+        let bs = pack [19,
+                       2, -- reg idx
+                       4, -- x idx
+                       6] -- y idx
+        parse instr bs `shouldBe` Just (Lt 2 4 6)
 
     it "parses Or" $ do
         let bs = pack [8,
@@ -157,6 +171,10 @@ instrSpec = describe "instr" $ do
     it "parses Print" $ do
         let bs = pack [13, 3]
         parse instr bs `shouldBe` Just (Print 3)
+
+    it "parses PrintLn" $ do
+        let bs = pack [20]
+        parse instr bs `shouldBe` Just PrintLn
 
 instrsSpec :: Spec
 instrsSpec = describe "instrs" $ do
