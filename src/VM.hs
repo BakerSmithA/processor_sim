@@ -55,3 +55,15 @@ setMemVal i val st =
     case Mem.store i val (mem st) of
         Nothing  -> Crash (MemOutOfRange i)
         Just mem -> return st { mem = mem }
+
+-- Loads contents of memory at address into register.
+load :: Addr -> RegIdx ->State -> VM State
+load addr r st = do
+    val <- regVal r st
+    setMemVal addr val st
+
+-- Stores contents of register into memory address.
+store :: RegIdx -> Addr -> State -> VM State
+store r addr st = do
+    val <- memVal addr st
+    setRegVal r val st
