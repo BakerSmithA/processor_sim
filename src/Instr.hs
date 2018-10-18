@@ -1,8 +1,8 @@
 module Instr where
 
-import Data.Word (Word32)
-import Reg (RegIdx)
+import Data.Word (Word8, Word32)
 
+type RegIdx = Word8
 type Addr = Word32
 type Val = Word32
 

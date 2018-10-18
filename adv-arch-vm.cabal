@@ -19,7 +19,6 @@ executable vm
   main-is:             Main.hs
   other-modules:       Instr
                      , Mem
-                     , Reg
                      , State
                      , Parser
   build-depends:       base >=4.10 && <4.11
@@ -37,9 +36,7 @@ test-suite spec
                      , bytestring
   other-modules:       Instr
                      , Mem
-                     , Reg
                      , State
-                     , StateSpec
                      , Parser
                      , ParserSpec
   hs-source-dirs:      src, test
