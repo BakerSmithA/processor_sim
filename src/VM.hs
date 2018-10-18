@@ -107,10 +107,37 @@ decode = return
 -- Perform execution stage of pipeline, and generate instruction of what
 -- to modify in machine.
 exec :: Instr -> State -> VM WriteBackInstr
-exec (MoveI r val) st = return (WriteReg r val)
+-- Move immediate value into register.
+exec (MoveI r val) st =
+    return (WriteReg r val)
+-- Move value from one register into another.
 exec (Move r from) st = do
     val <- regVal from st
     return (WriteReg r val)
+-- Load value from memory into register, where reg and immediate provide
+-- base and offset.
+exec (LoadIdx r base offset) st = do
+    baseAddr <- regVal base st
+    val <- memVal (baseAddr + offset) st
+    return (WriteReg r val)
+-- Load value from memory into register, where two regs provide base and offset.
+exec (LoadBaseIdx r base rOffset) st = do
+    baseAddr <- regVal base st
+    offsetAddr <- regVal rOffset st
+    val <- memVal (baseAddr + offsetAddr) st
+    return (WriteReg r val)
+-- Store value from register into memory, where reg and immediate provide
+-- base and offset.
+exec (StoreIdx r base offset) st = do
+    val <- regVal r st
+    baseAddr <- regVal base st
+    return (WriteMem (baseAddr + offset) val)
+-- Store value from register into memory, where two regs provide base and offset.
+exec (StoreBaseIdx r base rOffset) st = do
+    val <- regVal r st
+    baseAddr <- regVal base st
+    offsetAddr <- regVal rOffset st
+    return (WriteMem (baseAddr + offsetAddr) val)
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
 writeBack :: WriteBackInstr -> State -> VM State
