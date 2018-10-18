@@ -7,6 +7,9 @@ import Pipeline
 import qualified Mem as Mem
 import qualified Mem as Reg
 
+-- E.g. Mult, Add, And, Or, etc
+type ValOp = (Val -> Val -> Val)
+
 -- Current state of the virtual machine, or whether it crashed, e.g. by
 -- accessing memory index that is out of bounds.
 data VM a = VM a
@@ -94,6 +97,18 @@ inc st = do
 --     val <- memVal addr st
 --     setRegVal r val st >>= inc
 
+-- Perform operation on value stored in register, and immediate value.
+opI :: RegIdx -> RegIdx -> ValOp -> Val -> State -> VM WriteBackInstr
+opI r x f imm st = do
+    val <- regVal x st
+    return (WriteReg r (f val imm))
+
+-- Perform operation on two values stored in registers.
+opReg :: RegIdx -> RegIdx -> ValOp -> RegIdx -> State -> VM WriteBackInstr
+opReg r x f y st = do
+    val <- regVal y st
+    opI r x f val st
+
 -- Perform fetch state of pipeline by retreiving instruction.
 fetch :: State -> VM Instr
 fetch st = do
@@ -138,6 +153,10 @@ exec (StoreBaseIdx r base rOffset) st = do
     baseAddr <- regVal base st
     offsetAddr <- regVal rOffset st
     return (WriteMem (baseAddr + offsetAddr) val)
+-- Add values in two registers.
+exec (Add r x y) st = opReg r x (+) y st
+-- Add value in register to immediate.
+exec (AddI r x i) st = opI r x (+) i st
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
 writeBack :: WriteBackInstr -> State -> VM State
