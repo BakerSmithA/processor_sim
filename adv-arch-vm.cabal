@@ -20,7 +20,7 @@ executable vm
   other-modules:       Instr
                      , Mem
                      , Reg
-                     , VM
+                     , State
                      , Parser
   build-depends:       base >=4.10 && <4.11
                      , array
@@ -38,8 +38,8 @@ test-suite spec
   other-modules:       Instr
                      , Mem
                      , Reg
-                     , VM
-                     , VMSpec
+                     , State
+                     , StateSpec
                      , Parser
                      , ParserSpec
   hs-source-dirs:      src, test

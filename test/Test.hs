@@ -1,11 +1,12 @@
 module Main where
 
 import Test.Hspec
-import VMSpec
+import StateSpec
 import ParserSpec
+import VM
 
 main :: IO ()
 main = hspec specs where
     specs = do
-        vmSpec
+        stateSpec
         parserSpec
