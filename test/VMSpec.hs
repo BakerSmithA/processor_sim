@@ -8,7 +8,7 @@ import VM as VM
 import Data.Word (Word32)
 
 makeVm :: [Instr] -> [Word32] -> VM
-makeVm instrs memCnts = VM mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx where
+makeVm instrs memCnts = VM mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] where
     mem = Mem.fromList memCnts
     regs = Reg.file 10
     instrs' = Mem.fromList instrs
@@ -152,3 +152,14 @@ vmSpec = describe "vm" $ do
                     vm    = makeVm [MoveI lrIdx 3, Ret, MoveI 0 5] []
                     vm'   = run vm
                 (VM.reg 0 vm') `shouldBe` 0
+
+        context "output instructions" $ do
+            it "interprets Print" $ do
+                let vm  = makeVm [MoveI 0 10, Print 0] []
+                    vm' = run vm
+                (VM.output vm') `shouldBe` "10"
+
+            it "interprets PrintLn" $ do
+                let vm  = makeVm [PrintLn] []
+                    vm' = run vm
+                (VM.output vm') `shouldBe` "\n" 

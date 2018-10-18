@@ -9,7 +9,7 @@ import qualified Data.ByteString as B
 import System.Environment
 
 makeVm :: [Instr] -> VM
-makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx where
+makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] where
     mem = Mem.zeroed 16
     regs = Reg.file 17
     instrs' = Mem.fromList instrs
@@ -21,7 +21,8 @@ makeVm instrs = VM mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx where
 
 runVm :: [Instr] -> IO ()
 runVm []     = putStrLn "No instructions to run"
-runVm instrs = putStrLn $ show $ run (makeVm instrs)--putStrLn $ unlines $ fmap show (runAll (makeVm instrs))
+runVm instrs = putStrLn $ VM.output $ run (makeVm instrs)
+--putStrLn $ unlines $ fmap show (runAll (makeVm instrs))
 
 newlines :: Instr -> String
 newlines (Ret) = "\n"

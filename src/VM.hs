@@ -5,7 +5,6 @@ import qualified Mem as Mem
 import Reg (RegFile, RegIdx)
 import qualified Reg as Reg
 import Instr
-import Debug.Trace
 
 -- Stores current state of virtual machine.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -19,6 +18,8 @@ data VM = VM {
   , lrIdx  :: RegIdx -- Link Register
   , bpIdx  :: RegIdx -- Base Pointer
   , retIdx :: RegIdx -- Return value register (EAX in x86)
+    -- Output
+  , output :: String
 }
 
 instance Show VM where
@@ -70,8 +71,8 @@ exec (BT r addr) vm = if reg r vm == 1
                           then vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
                           else inc vm
 exec (Ret)       vm = vm { regs = Reg.write (regs vm) (pcIdx vm) (reg (lrIdx vm) vm) }
-exec (Print r)   vm = trace (show (reg r vm)) $ inc vm
-exec (PrintLn)   vm = trace "\n" $ inc vm
+exec (Print r)   vm = inc $ vm { output = (output vm) ++ show (reg r vm) }
+exec (PrintLn)   vm = inc $ vm { output = (output vm) ++ "\n" }
 
 eqVal :: Val -> Val -> Val
 eqVal x y | x == y    = 1
