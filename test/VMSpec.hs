@@ -73,6 +73,11 @@ vmSpec = describe "vm" $ do
                     vm' = run vm
                 (VM.reg 1 vm') `shouldBe` 7
 
+            it "interprets MultI" $ do
+                let vm  = makeVm [MoveI 0 10, MoveI 1 3, Mult 2 0 1] []
+                    vm' = run vm
+                (VM.reg 2 vm') `shouldBe` 30
+
             it "interprets Eq to be True" $ do
                 let vm  = makeVm [MoveI 0 1, MoveI 1 1, Eq 2 0 1] []
                     vm' = run vm
@@ -80,6 +85,16 @@ vmSpec = describe "vm" $ do
 
             it "interprets Eq to be False" $ do
                 let vm  = makeVm [MoveI 0 1, MoveI 1 2, Eq 2 0 1] []
+                    vm' = run vm
+                (VM.reg 2 vm') `shouldBe` 0
+
+            it "interprets Lt to be True" $ do
+                let vm  = makeVm [MoveI 0 1, MoveI 1 2, Lt 2 0 1] []
+                    vm' = run vm
+                (VM.reg 2 vm') `shouldBe` 1
+
+            it "interprets Lt to be False" $ do
+                let vm  = makeVm [MoveI 0 3, MoveI 1 2, Lt 2 0 1] []
                     vm' = run vm
                 (VM.reg 2 vm') `shouldBe` 0
 

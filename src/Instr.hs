@@ -19,7 +19,9 @@ data Instr
     | AddI { r :: RegIdx, x :: RegIdx, i :: Val }    -- r <- [x] + i
     | Sub  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] - [y]
     | SubI { r :: RegIdx, x :: RegIdx, i :: Val }    -- r <- [x] - i
+    | Mult { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] * [y]
     | Eq   { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] == [y]
+    | Lt   { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] < [y]
     | Or   { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] || [y]
     | And  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] && [y]
     | Not  { r :: RegIdx, x :: RegIdx }              -- r <- ![x]
@@ -29,4 +31,5 @@ data Instr
     | Ret                              -- Branch to address in link register.
     -- Debugging
     | Print { r :: RegIdx } -- Print value in a register.
+    | PrintLn               -- Print a newline.
     deriving (Eq, Show)

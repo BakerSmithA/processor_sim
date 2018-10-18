@@ -58,7 +58,9 @@ exec (Add r x y)  vm = op r x (+) (reg y vm) vm
 exec (AddI r x i) vm = op r x (+) i vm
 exec (Sub r x y)  vm = op r x (-) (reg y vm) vm
 exec (SubI r x i) vm = op r x (-) i vm
+exec (Mult r x y) vm = op r x (*) (reg y vm) vm
 exec (Eq r x y)   vm = op r x eqVal (reg y vm) vm
+exec (Lt r x y)   vm = op r x ltVal (reg y vm) vm
 exec (Or r x y)   vm = op r x orVal (reg y vm) vm
 exec (And r x y)  vm = op r x andVal (reg y vm) vm
 exec (Not r x)    vm = inc $ vm { regs = Reg.write (regs vm) r (notVal (reg x vm)) }
@@ -68,10 +70,15 @@ exec (BT r addr) vm = if reg r vm == 1
                           then vm { regs = Reg.write (regs vm) (pcIdx vm) addr }
                           else inc vm
 exec (Ret)       vm = vm { regs = Reg.write (regs vm) (pcIdx vm) (reg (lrIdx vm) vm) }
-exec (Print r)   vm = trace ("Reg " ++ show r ++ " = " ++ show (reg r vm)) $ inc vm
+exec (Print r)   vm = trace (show (reg r vm)) $ inc vm
+exec (PrintLn)   vm = trace "\n" $ inc vm
 
 eqVal :: Val -> Val -> Val
 eqVal x y | x == y    = 1
+          | otherwise = 0
+
+ltVal :: Val -> Val -> Val
+ltVal x y | x < y     = 1
           | otherwise = 0
 
 orVal :: Val -> Val -> Val
