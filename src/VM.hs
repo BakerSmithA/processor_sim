@@ -57,16 +57,10 @@ instrVal i st =
         Nothing    -> Crash (InstrOutOfRange i)
         Just instr -> return instr
 
--- Return value of PC.
-pcVal :: State -> VM Addr
-pcVal st = do
-    pc <- regVal (pcIdx st) st
-    return pc
-
 -- Increments the PC by 1, or returns End if at the last instruction.
 inc :: State -> VM State
 inc st = do
-    pc <- pcVal st
+    pc <- regVal (pcIdx st) st
     setRegVal (pcIdx st) (pc + 1) st
 
 -- Loads contents of memory at address into register.
@@ -113,11 +107,14 @@ notVal :: Val -> Val
 notVal x | x == 1    = 0
          | otherwise = 1
 
--- Perform fetch state of pipeline by retreiving instruction.
-fetch :: State -> VM Instr
+-- Perform fetch state of pipeline by retreiving instruction. Or, return Nothing
+-- if the value of the pc is after the last instruction.
+fetch :: State -> VM (Maybe Instr)
 fetch st = do
-    pc <- pcVal st
-    instrVal pc st
+    pc <- regVal (pcIdx st) st
+    if pc >= 0 || pc < Mem.maxAddr (instrs st)
+        then fmap Just (instrVal pc st)
+        else return Nothing
 
 -- Perform decode stage of pipeline.
 decode :: Instr -> VM Instr
@@ -215,10 +212,14 @@ writeBack (WriteMem i val) = setMemVal i val
 writeBack (WritePrint s)   = addOutput s
 writeBack (NoOp)           = return
 
+-- Maybe Instr -> Decoder m -> Executer m -> Writer m a -> Pipeline -> m (Maybe a, Pipeline)
+
 -- Performs a cycle moving instructions one step through the pipeline.
--- cycle :: State -> Pipeline -> VM (State, Pipeline)
--- cycle = undefined
--- cycle st p = do
---     instr <- fetch st
---     d <- (fetched p) >>= decode
---     undefined
+cycle :: State -> Pipeline -> VM (State, Pipeline)
+cycle st p = do
+    let executer = (flip exec) st
+        writer   = (flip writeBack) st
+    fetched   <- fetch st
+    (st', p') <- advance fetched decode executer writer p
+    let st'' = maybe st id st'
+    return (st'', p')
