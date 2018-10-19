@@ -27,11 +27,15 @@ type Decoder  m = Instr -> m Instr
 type Executer m = Instr -> m WriteBackInstr
 type Writer m a = WriteBackInstr -> m a
 
+-- Helper for advance.
+op :: (Monad m) => (a -> m b) -> Maybe a ->  m (Maybe b)
+op f = maybe (return Nothing) (fmap Just . f)
+
 -- Supplies new instruction into pipleine, and shifts in-flight instructions
 -- through pipeline. Returns write-back result, and new state of pipeline.
 advance :: (Monad m) => Maybe Instr -> Decoder m -> Executer m -> Writer m a -> Pipeline -> m (Maybe a, Pipeline)
 advance fetch decode exec write p = do
-    d <- maybe (return Nothing) (fmap Just . decode) (fetched p)
-    e <- maybe (return Nothing) (fmap Just . exec)   (decoded p)
-    w <- maybe (return Nothing) (fmap Just . write)  (executed p)
+    d <- op decode (fetched p)
+    e <- op exec   (decoded p)
+    w <- op write  (executed p)
     return (w, Pipeline fetch d e)
