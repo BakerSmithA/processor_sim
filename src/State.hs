@@ -18,8 +18,6 @@ data State = State {
   , lrIdx  :: RegIdx -- Link Register
   , bpIdx  :: RegIdx -- Base Pointer
   , retIdx :: RegIdx -- Return value register (EAX in x86)
-    -- Execution.
-  , pipeline :: Pipeline
     -- Output
   , output :: String
 }

@@ -57,13 +57,11 @@ instrVal i st =
         Nothing    -> Crash (InstrOutOfRange i)
         Just instr -> return instr
 
--- Return value of PC, or End if pc is past last instruction.
+-- Return value of PC.
 pcVal :: State -> VM Addr
 pcVal st = do
     pc <- regVal (pcIdx st) st
-    if pc > Mem.maxAddr (instrs st)
-        then End (output st)
-        else return pc
+    return pc
 
 -- Increments the PC by 1, or returns End if at the last instruction.
 inc :: State -> VM State
@@ -218,5 +216,9 @@ writeBack (WritePrint s)   = addOutput s
 writeBack (NoOp)           = return
 
 -- Performs a cycle moving instructions one step through the pipeline.
-cycle :: State -> VM State
-cycle = undefined
+-- cycle :: State -> Pipeline -> VM (State, Pipeline)
+-- cycle = undefined
+-- cycle st p = do
+--     instr <- fetch st
+--     d <- (fetched p) >>= decode
+--     undefined
