@@ -13,13 +13,11 @@ type ValOp = (Val -> Val -> Val)
 -- Current state of the virtual machine, or whether it crashed, e.g. by
 -- accessing memory index that is out of bounds.
 data VM a = VM a
-          | End String -- Printed output of VM.
           | Crash Error
 
 instance Functor VM where
     -- fmap :: (a -> b) -> f a -> f b
     fmap f (VM x)    = VM (f x)
-    fmap f (End out) = End out
     fmap _ (Crash e) = Crash e
 
 instance Applicative VM where
@@ -27,13 +25,11 @@ instance Applicative VM where
     pure = VM
     -- (<*>) :: f (a -> b) -> f a -> f b
     (VM f)    <*> vm = fmap f vm
-    (End out) <*> _ = End out
     (Crash e) <*> _ = Crash e
 
 instance Monad VM where
     -- (>>=) :: m a -> (a -> m b) -> m b
     (VM x)    >>= f = f x
-    (End out) >>= _ = End out
     (Crash e) >>= _ = Crash e
 
 -- Return value of a register, or Crash if invalid index.
@@ -57,7 +53,7 @@ instrVal i st =
         Nothing    -> Crash (InstrOutOfRange i)
         Just instr -> return instr
 
--- Increments the PC by 1, or returns End if at the last instruction.
+-- Increments the PC by 1.
 inc :: State -> VM State
 inc st = do
     pc <- regVal (pcIdx st) st
