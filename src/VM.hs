@@ -212,8 +212,6 @@ writeBack (WriteMem i val) = setMemVal i val
 writeBack (WritePrint s)   = addOutput s
 writeBack (NoOp)           = return
 
--- Maybe Instr -> Decoder m -> Executer m -> Writer m a -> Pipeline -> m (Maybe a, Pipeline)
-
 -- Performs a cycle moving instructions one step through the pipeline.
 cycle :: State -> Pipeline -> VM (State, Pipeline)
 cycle st p = do
