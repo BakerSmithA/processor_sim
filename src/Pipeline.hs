@@ -1,6 +1,5 @@
 module Pipeline where
 
-import Data.Maybe (isJust)
 import Instr
 
 -- 4 stage pipeline, allowing for 4 instructions (at different stages) to be
