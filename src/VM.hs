@@ -151,7 +151,7 @@ exec (Lt r x y)   st = opReg r x ltVal y st
 exec (Or r x y)   st = opReg r x orVal y st
 exec (And r x y)  st = opReg r x andVal y st
 exec (Not r x)    st = do
-    val <- regVal r st
+    val <- regVal x st
     return (WriteReg r (notVal val))
 -- Branching
 -- Unconditional branch to address.
@@ -218,7 +218,7 @@ cycle st = do
     decoded  <- decode fetched
     executed <- exec decoded st
     st' <- writeBack executed st
-    trace (show st') $ incPc st'
+    incPc st'
 
 -- cycle :: State -> Pipeline -> VM (State, Pipeline)
 -- cycle st p = do
