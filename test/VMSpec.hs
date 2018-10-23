@@ -11,7 +11,7 @@ import Debug.Trace
 makeVm :: [Instr] -> [Word32] -> State
 makeVm instrs memCnts = State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] where
     mem = Mem.fromList memCnts
-    regs = Mem.fromList [0, 0, 0]
+    regs = Mem.zeroed 10
     instrs' = Mem.fromList (instrs ++ [SysCall])
     pcIdx  = 6
     spIdx  = 7
@@ -26,7 +26,7 @@ vmSpec = describe "vm" $ do
             let vm = makeVm [] []
             vm `shouldBe` vm
 
-        -- it "interprets MoveI" $ do
-        --     let vm = makeVm [MoveI 1 5] []
-        --         vm' = run vm
-        --     VM.regVal 1 vm' `shouldBe` VM 5
+        it "interprets MoveI" $ do
+            let vm = makeVm [MoveI 1 5] []
+                vm' = run vm
+            VM.regVal 1 vm' `shouldBe` VM 5

@@ -3,15 +3,13 @@ module Mem where
 import Data.Array
 
 data Mem k v = Mem { arr :: Array k v, maxAddr :: k }
+             | Empty
            deriving (Eq, Show)
 
 -- Return memory containing values in list.
 fromList :: (Ix k, Num k, Enum k, Integral k) => [v] -> Mem k v
-fromList xs = Mem { arr = array (0, len) (zip [0, 1, 2, 3] xs), maxAddr = len } where
-    len = fromIntegral $ (length xs) - 1
-
-f :: (Ix k, Num k, Enum k, Integral k) => [v] -> Mem k v
-f xs = Mem { arr = listArray (0, len) xs, maxAddr = 0 } where
+fromList [] = Empty
+fromList xs = Mem { arr = array (0, len) (zip [0..] xs), maxAddr = len } where
     len = fromIntegral $ (length xs) - 1
 
 -- Return memory containing all zeros.
@@ -26,6 +24,7 @@ checkedAddr op i m@(Mem mem maxAddr) =
     if i > maxAddr || i < 0
         then Nothing
         else Just (op i m)
+checkedAddr _ _ (Empty) = Nothing
 
 -- Returns value from memory, or Nothing if index is invalid.
 load :: (Num k, Ix k) => k -> Mem k v -> Maybe v

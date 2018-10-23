@@ -213,24 +213,25 @@ inc st = do
 
 -- Performs a cycle moving instructions one step through the pipeline.
 cycle :: State -> Pipeline -> VM (State, Pipeline)
-cycle s p = trace "HERE" $ return (s, p)
--- cycle st p = do
---     let executer = (flip exec) st
---         writer   = (flip writeBack) st
---     fetched   <- fetch st
---     (st', p') <- advance (Just fetched) decode executer writer p
---     let st'' = maybe st id st'
---     incSt <- inc st''
---     return (incSt, p')
+cycle st p = do
+    let executer = (flip exec) st
+        writer   = (flip writeBack) st
+    fetched   <- fetch st
+    (st', p') <- advance (Just fetched) decode executer writer p
+    let st'' = maybe st id st'
+    incSt <- inc st''
+    return (incSt, p')
 
 -- Run VM to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> VM (State, Pipeline)
-runPipeline st p = VM.cycle st p
--- runPipeline st p =
---     case VM.cycle st p of
---         VM (st', p') -> return (st', p')
---         Exit st      -> Exit st
---         Crash e st   -> Crash e st
+runPipeline st p = do
+    (st', p') <- VM.cycle st p
+    runPipeline st' p'
+
+    -- case VM.cycle st p of
+    --     VM (st', p') -> return (st', p')
+    --     Exit st      -> Exit st
+    --     Crash e st   -> Crash e st
 
 -- Run VM to completion starting with an empty pipeline.
 run :: State -> State

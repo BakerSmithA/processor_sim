@@ -54,8 +54,8 @@ import System.Environment
 main :: IO ()
 main = do
     let mem = Mem.fromList [1]
-    let regs = Mem.fromList [2]
-    let is  = Mem.f [] :: Mem.Mem Word32 Instr
+    let regs = Mem.fromList [1]
+    let is  = Mem.fromList [] :: Mem.Mem Word32 Instr
     let st = State mem regs is 0 0 0 0 0 []
     putStrLn (show mem)
     putStrLn (show regs)
