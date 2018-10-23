@@ -6,6 +6,7 @@ import Instr
 import Pipeline as P
 import qualified Mem as Mem
 import qualified Mem as Reg
+import Debug.Trace
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)
@@ -54,13 +55,13 @@ memVal i st =
 -- Loads contents of memory at address into register.
 load :: Addr -> RegIdx -> State -> VM WriteBackInstr
 load addr r st = do
-    val <- regVal r st
+    val <- memVal addr st
     return (WriteReg r val)
 
 -- Stores contents of register into memory address.
 store :: RegIdx -> Addr -> State -> VM WriteBackInstr
 store r addr st = do
-    val <- memVal addr st
+    val <- regVal r st
     return (WriteMem addr val)
 
 -- Perform operation on value stored in register, and immediate value.
@@ -217,7 +218,7 @@ cycle st = do
     decoded  <- decode fetched
     executed <- exec decoded st
     st' <- writeBack executed st
-    incPc st'
+    trace (show st') $ incPc st'
 
 -- cycle :: State -> Pipeline -> VM (State, Pipeline)
 -- cycle st p = do
@@ -229,16 +230,10 @@ cycle st = do
 --     incSt <- inc st''
 --     return (incSt, p')
 
--- Run VM to completion, i.e. until exit system call occurs.
-runUntilExit :: State -> VM State
-runUntilExit st = do
-    st' <- VM.cycle st
-    runUntilExit st'
-
--- Run VM to completion starting with an empty pipeline.
+-- Run VM to completion until a SysCall is encountered.
 run :: State -> State
 run st =
-    case runUntilExit st of
-        Exit st    -> st
+    case VM.cycle st of
+        Exit st'   -> st
+        VM st'     -> run st'
         Crash e st -> error (show e ++ "\n" ++ show st)
-        VM x       -> error ("Did not terminate: " ++ show x)

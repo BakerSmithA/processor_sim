@@ -23,10 +23,6 @@ vmSpec :: Spec
 vmSpec = describe "vm" $ do
     context "normal execution" $ do
         context "memory" $ do
-            it "interprets Exit" $ do
-                let vm = runVm [] []
-                vm `shouldBe` vm
-
             it "interprets MoveI" $ do
                 let vm = runVm [MoveI 1 5] []
                 VM.regVal 1 vm `shouldBe` VM 5
@@ -37,7 +33,7 @@ vmSpec = describe "vm" $ do
 
             it "interprets LoadIdx" $ do
                 let vm  = runVm [MoveI 0 1, LoadIdx 1 0 2] [1, 2, 3, 4, 5]
-                VM.regVal 1 vm `shouldBe` VM 4
+                trace (show vm) $ VM.regVal 1 vm `shouldBe` VM 4
 
             it "interprets LoadBaseIdx" $ do
                 let vm  = runVm [MoveI 0 1, MoveI 1 3, LoadBaseIdx 2 0 1] [1, 2, 3, 4, 5]
