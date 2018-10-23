@@ -1,10 +1,16 @@
 module Mem where
 
 import Data.Array
+import Data.List (intercalate)
 
 data Mem k v = Mem { arr :: Array k v, maxAddr :: k }
              | Empty
-           deriving (Eq, Show)
+           deriving (Eq)
+
+instance (Show k, Show v, Ix k) => Show (Mem k v) where
+    show (Mem arr _) = intercalate ", " numbered where
+        numbered = fmap (\(i, x) -> show i ++ ":" ++ show x) (zip [0..] (elems arr))
+    show (Empty) = "Empty"
 
 -- Return memory containing values in list.
 fromList :: (Ix k, Num k, Enum k, Integral k) => [v] -> Mem k v
