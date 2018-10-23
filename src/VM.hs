@@ -98,12 +98,12 @@ notVal x | x == 1    = 0
 
 -- Perform fetch state of pipeline by retreiving instruction. Or, return Nothing
 -- if the value of the pc is after the last instruction.
-fetch :: State -> VM Instr
+fetch :: State -> VM (Maybe Instr)
 fetch st = do
     pc <- regVal (pcIdx st) st
     case Mem.load pc (instrs st) of
-        Nothing    -> Crash (InstrOutOfRange pc) st
-        Just instr -> return instr
+        Nothing    -> return Nothing
+        Just instr -> return (Just instr)
 
 -- Perform decode stage of pipeline.
 decode :: Instr -> VM Instr
@@ -217,7 +217,7 @@ cycle st p = do
     let executer = (flip exec) st
         writer   = (flip writeBack) st
     fetched   <- fetch st
-    (st', p') <- advance (Just fetched) decode executer writer p
+    (st', p') <- advance fetched decode executer writer p
     let st'' = maybe st id st'
     incSt <- inc st''
     return (incSt, p')
@@ -227,11 +227,6 @@ runPipeline :: State -> Pipeline -> VM (State, Pipeline)
 runPipeline st p = do
     (st', p') <- VM.cycle st p
     runPipeline st' p'
-
-    -- case VM.cycle st p of
-    --     VM (st', p') -> return (st', p')
-    --     Exit st      -> Exit st
-    --     Crash e st   -> Crash e st
 
 -- Run VM to completion starting with an empty pipeline.
 run :: State -> State
