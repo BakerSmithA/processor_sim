@@ -6,7 +6,6 @@ import Instr
 import Pipeline as P
 import qualified Mem as Mem
 import qualified Mem as Reg
-import Debug.Trace
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)
@@ -98,12 +97,12 @@ notVal x | x == 1    = 0
 
 -- Perform fetch state of pipeline by retreiving instruction. Or, return Nothing
 -- if the value of the pc is after the last instruction.
-fetch :: State -> VM (Maybe Instr)
+fetch :: State -> VM Instr
 fetch st = do
     pc <- regVal (pcIdx st) st
     case Mem.load pc (instrs st) of
-        Nothing    -> return Nothing
-        Just instr -> return (Just instr)
+        Nothing    -> Crash (InstrOutOfRange pc) st
+        Just instr -> return instr
 
 -- Perform decode stage of pipeline.
 decode :: Instr -> VM Instr
@@ -206,32 +205,40 @@ writeBack (NoOp)           = return
 writeBack (Terminate)      = Exit
 
 -- Increment PC by 1.
-inc :: State -> VM State
-inc st = do
+incPc :: State -> VM State
+incPc st = do
     pc <- regVal (pcIdx st) st
     setRegVal (pcIdx st) (pc+1) st
 
 -- Performs a cycle moving instructions one step through the pipeline.
-cycle :: State -> Pipeline -> VM (State, Pipeline)
-cycle st p = do
-    let executer = (flip exec) st
-        writer   = (flip writeBack) st
-    fetched   <- fetch st
-    (st', p') <- advance fetched decode executer writer p
-    let st'' = maybe st id st'
-    incSt <- inc st''
-    return (incSt, p')
+cycle :: State -> VM State
+cycle st = do
+    fetched  <- fetch st
+    decoded  <- decode fetched
+    executed <- exec decoded st
+    st' <- writeBack executed st
+    incPc st'
+
+-- cycle :: State -> Pipeline -> VM (State, Pipeline)
+-- cycle st p = do
+--     let executer = (flip exec) st
+--         writer   = (flip writeBack) st
+--     fetched   <- fetch st
+--     (st', p') <- advance fetched decode executer writer p
+--     let st'' = maybe st id st'
+--     incSt <- inc st''
+--     return (incSt, p')
 
 -- Run VM to completion, i.e. until exit system call occurs.
-runPipeline :: State -> Pipeline -> VM (State, Pipeline)
-runPipeline st p = do
-    (st', p') <- VM.cycle st p
-    runPipeline st' p'
+runUntilExit :: State -> VM State
+runUntilExit st = do
+    st' <- VM.cycle st
+    runUntilExit st'
 
 -- Run VM to completion starting with an empty pipeline.
 run :: State -> State
 run st =
-    case runPipeline st P.empty of
+    case runUntilExit st of
         Exit st    -> st
         Crash e st -> error (show e ++ "\n" ++ show st)
-        VM x       -> error ("Did not terminate:" ++ show x)
+        VM x       -> error ("Did not terminate: " ++ show x)

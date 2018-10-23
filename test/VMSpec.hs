@@ -8,8 +8,8 @@ import qualified Mem as Mem
 import Data.Word (Word32)
 import Debug.Trace
 
-makeVm :: [Instr] -> [Word32] -> State
-makeVm instrs memCnts = State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] where
+runVm :: [Instr] -> [Word32] -> State
+runVm instrs memCnts = run $ State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] where
     mem = Mem.fromList memCnts
     regs = Mem.zeroed 10
     instrs' = Mem.fromList (instrs ++ [SysCall])
@@ -21,12 +21,16 @@ makeVm instrs memCnts = State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx []
 
 vmSpec :: Spec
 vmSpec = describe "vm" $ do
-    context "memory" $ do
-        it "interprets Exit" $ do
-            let vm = makeVm [] []
-            vm `shouldBe` vm
+    context "normal execution" $ do
+        context "memory" $ do
+            it "interprets Exit" $ do
+                let vm = runVm [] []
+                vm `shouldBe` vm
 
-        it "interprets MoveI" $ do
-            let vm = makeVm [MoveI 1 5] []
-                vm' = run vm
-            VM.regVal 1 vm' `shouldBe` VM 5
+            it "interprets MoveI" $ do
+                let vm = runVm [MoveI 1 5] []
+                VM.regVal 1 vm `shouldBe` VM 5
+
+            it "interprets Move" $ do
+                let vm = runVm [MoveI 0 6, Move 1 0] []
+                VM.regVal 1 vm `shouldBe` VM 6
