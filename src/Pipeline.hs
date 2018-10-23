@@ -8,7 +8,7 @@ data Pipeline = Pipeline {
     fetched  :: Maybe Instr
   , decoded  :: Maybe Instr
   , executed :: Maybe WriteBackInstr
-}
+} deriving (Show)
 
 -- Return pipeline with nothing in each stage.
 empty :: Pipeline
@@ -22,6 +22,7 @@ data WriteBackInstr
     | WritePrint String
     | NoOp
     | Terminate
+    deriving (Show)
 
 type Decoder  m = Instr -> m Instr
 type Executer m = Instr -> m WriteBackInstr

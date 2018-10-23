@@ -6,6 +6,7 @@ import Instr
 import Pipeline as P
 import qualified Mem as Mem
 import qualified Mem as Reg
+import Debug.Trace
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)
@@ -13,50 +14,43 @@ type ValOp = (Val -> Val -> Val)
 -- Current state of the virtual machine, or whether it crashed, e.g. by
 -- accessing memory index that is out of bounds.
 data VM a = VM a
-          | Crash Error
+          | Crash Error State
           | Exit State
           deriving (Eq, Show)
 
 instance Functor VM where
     -- fmap :: (a -> b) -> f a -> f b
-    fmap f (VM x)    = VM (f x)
-    fmap _ (Crash e) = Crash e
-    fmap _ (Exit st) = Exit st
+    fmap f (VM x)       = VM (f x)
+    fmap _ (Crash e st) = Crash e st
+    fmap _ (Exit st)    = Exit st
 
 instance Applicative VM where
     -- pure :: a -> VM a
     pure = VM
     -- (<*>) :: f (a -> b) -> f a -> f b
-    (VM f)    <*> vm = fmap f vm
-    (Crash e) <*> _ = Crash e
-    (Exit st) <*> _ = Exit st
+    (VM f)       <*> vm = fmap f vm
+    (Crash e st) <*> _ = Crash e st
+    (Exit st)    <*> _ = Exit st
 
 instance Monad VM where
     -- (>>=) :: m a -> (a -> m b) -> m b
-    (VM x)    >>= f = f x
-    (Crash e) >>= _ = Crash e
-    (Exit st) >>= _ = Exit st
+    (VM x)       >>= f = f x
+    (Crash e st) >>= _ = Crash e st
+    (Exit st)    >>= _ = Exit st
 
 -- Return value of a register, or Crash if invalid index.
 regVal :: RegIdx -> State -> VM Val
 regVal i st =
     case Reg.load i (regs st) of
-        Nothing  -> Crash (RegOutOfRange i)
+        Nothing  -> Crash (RegOutOfRange i) st
         Just val -> return val
 
 -- Returns value of an address in memory, or Crash if invalid address.
 memVal :: Addr -> State -> VM Val
 memVal i st =
     case Mem.load i (mem st) of
-        Nothing  -> Crash (MemOutOfRange i)
+        Nothing  -> Crash (MemOutOfRange i) st
         Just val -> return val
-
--- Return instruction at address, or Crash if invalid address.
-instrVal :: Addr -> State -> VM Instr
-instrVal i st =
-    case Mem.load i (instrs st) of
-        Nothing    -> Crash (InstrOutOfRange i)
-        Just instr -> return instr
 
 -- Loads contents of memory at address into register.
 load :: Addr -> RegIdx -> State -> VM WriteBackInstr
@@ -104,12 +98,12 @@ notVal x | x == 1    = 0
 
 -- Perform fetch state of pipeline by retreiving instruction. Or, return Nothing
 -- if the value of the pc is after the last instruction.
-fetch :: State -> VM (Maybe Instr)
+fetch :: State -> VM Instr
 fetch st = do
     pc <- regVal (pcIdx st) st
-    if pc >= 0 || pc < Mem.maxAddr (instrs st)
-        then fmap Just (instrVal pc st)
-        else return Nothing
+    case Mem.load pc (instrs st) of
+        Nothing    -> Crash (InstrOutOfRange pc) st
+        Just instr -> return instr
 
 -- Perform decode stage of pipeline.
 decode :: Instr -> VM Instr
@@ -189,14 +183,14 @@ exec (PrintLn) st =
 setRegVal :: RegIdx -> Val -> State -> VM State
 setRegVal i val st =
     case Reg.store i val (regs st) of
-        Nothing   -> Crash (RegOutOfRange i)
+        Nothing   -> Crash (RegOutOfRange i) st
         Just regs -> return st { regs = regs }
 
 -- Set the value at a memory address, or Crash if invalid address.
 setMemVal :: Addr -> Val -> State -> VM State
 setMemVal i val st =
     case Mem.store i val (mem st) of
-        Nothing  -> Crash (MemOutOfRange i)
+        Nothing  -> Crash (MemOutOfRange i) st
         Just mem -> return st { mem = mem }
 
 -- Add string to output of VM.
@@ -219,21 +213,29 @@ inc st = do
 
 -- Performs a cycle moving instructions one step through the pipeline.
 cycle :: State -> Pipeline -> VM (State, Pipeline)
-cycle st p = do
-    let executer = (flip exec) st
-        writer   = (flip writeBack) st
-    fetched   <- fetch st
-    (st', p') <- advance fetched decode executer writer p
-    let st'' = maybe st id st'
-    incSt <- inc st''
-    return (incSt, p')
+cycle s p = trace "HERE" $ return (s, p)
+-- cycle st p = do
+--     let executer = (flip exec) st
+--         writer   = (flip writeBack) st
+--     fetched   <- fetch st
+--     (st', p') <- advance (Just fetched) decode executer writer p
+--     let st'' = maybe st id st'
+--     incSt <- inc st''
+--     return (incSt, p')
 
 -- Run VM to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> VM (State, Pipeline)
-runPipeline st p = do
-    (st', p') <- VM.cycle st p
-    runPipeline st' p'
+runPipeline st p = VM.cycle st p
+-- runPipeline st p =
+--     case VM.cycle st p of
+--         VM (st', p') -> return (st', p')
+--         Exit st      -> Exit st
+--         Crash e st   -> Crash e st
 
 -- Run VM to completion starting with an empty pipeline.
-run :: State -> VM State
-run st = fmap fst (runPipeline st P.empty)
+run :: State -> State
+run st =
+    case runPipeline st P.empty of
+        Exit st    -> st
+        Crash e st -> error (show e ++ "\n" ++ show st)
+        VM x       -> error ("Did not terminate:" ++ show x)
