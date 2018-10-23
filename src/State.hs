@@ -20,4 +20,9 @@ data State = State {
   , retIdx :: RegIdx -- Return value register (EAX in x86)
     -- Output
   , output :: String
-} deriving (Eq, Show)
+} deriving (Eq)
+
+instance Show State where
+    show st =
+        "Mem: "   ++ show (mem st)
+     ++ "\nReg: " ++ show (regs st)

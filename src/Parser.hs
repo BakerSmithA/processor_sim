@@ -1,6 +1,7 @@
 module Parser where
 
 import Data.Word
+import Data.Int
 import Data.ByteString
 import Data.Bits
 import Control.Applicative
@@ -62,6 +63,10 @@ word32 = Parser $ \bs -> do
                 rest   = Data.ByteString.drop 4 bs
             return (fromOctets octets, rest)
 
+-- Parses 4 bytes from string into Int32.
+int32 :: Parser Int32
+int32 = fmap fromIntegral word32
+
 -- Parses if the byte at the start of the string is the supplied byte, otherwise fails.
 byte :: Word8 -> Parser Word8
 byte w = do
@@ -73,17 +78,17 @@ byte w = do
 instr :: Parser Instr
 instr =
     -- Memory
-        MoveI        <$ byte 0  <*> word8 <*> word32
+        MoveI        <$ byte 0  <*> word8 <*> int32
     <|> Move         <$ byte 14 <*> word8 <*> word8
-    <|> LoadIdx      <$ byte 1  <*> word8 <*> word8 <*> word32
+    <|> LoadIdx      <$ byte 1  <*> word8 <*> word8 <*> int32
     <|> LoadBaseIdx  <$ byte 2  <*> word8 <*> word8 <*> word8
-    <|> StoreIdx     <$ byte 3  <*> word8 <*> word8 <*> word32
+    <|> StoreIdx     <$ byte 3  <*> word8 <*> word8 <*> int32
     <|> StoreBaseIdx <$ byte 4  <*> word8 <*> word8 <*> word8
     -- Arithmetic/Logic
     <|> Add  <$ byte 5  <*> word8 <*> word8 <*> word8
-    <|> AddI <$ byte 16 <*> word8 <*> word8 <*> word32
+    <|> AddI <$ byte 16 <*> word8 <*> word8 <*> int32
     <|> Sub  <$ byte 6  <*> word8 <*> word8 <*> word8
-    <|> SubI <$ byte 17 <*> word8 <*> word8 <*> word32
+    <|> SubI <$ byte 17 <*> word8 <*> word8 <*> int32
     <|> Mult <$ byte 18 <*> word8 <*> word8 <*> word8
     <|> Eq   <$ byte 7  <*> word8 <*> word8 <*> word8
     <|> Lt   <$ byte 19 <*> word8 <*> word8 <*> word8

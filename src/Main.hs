@@ -23,7 +23,10 @@ makeVm instrs = State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] where
 
 runVm :: [Instr] -> IO ()
 runVm []     = putStrLn "No instructions to run"
-runVm instrs = putStrLn $ State.output $ run (makeVm instrs)
+runVm instrs = do
+    let vm = run (makeVm instrs)
+    putStrLn $ State.output vm
+    putStrLn (show vm)
 
 newlines :: Instr -> String
 newlines (Ret) = "\n"

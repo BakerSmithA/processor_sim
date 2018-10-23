@@ -5,10 +5,10 @@ import Instr
 import State as State
 import VM as VM
 import qualified Mem as Mem
-import Data.Word (Word32)
+import Data.Int (Int32)
 import Debug.Trace
 
-runVm :: [Instr] -> [Word32] -> State
+runVm :: [Instr] -> [Int32] -> State
 runVm instrs memCnts = run $ State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] where
     mem = Mem.fromList memCnts
     regs = Mem.zeroed 10

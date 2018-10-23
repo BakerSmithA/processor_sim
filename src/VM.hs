@@ -100,7 +100,7 @@ notVal x | x == 1    = 0
 -- if the value of the pc is after the last instruction.
 fetch :: State -> VM Instr
 fetch st = do
-    pc <- regVal (pcIdx st) st
+    pc <- fmap fromIntegral (regVal (pcIdx st) st)
     case Mem.load pc (instrs st) of
         Nothing    -> Crash (InstrOutOfRange pc) st
         Just instr -> return instr
@@ -124,22 +124,22 @@ exec (Move r from) st = do
 -- base and offset.
 exec (LoadIdx r base offset) st = do
     baseAddr <- regVal base st
-    load (baseAddr + offset) r st
+    load (fromIntegral (baseAddr + offset)) r st
 -- Load value from memory into register, where two regs provide base and offset.
 exec (LoadBaseIdx r base rOffset) st = do
     baseAddr <- regVal base st
     offsetAddr <- regVal rOffset st
-    load (baseAddr + offsetAddr) r st
+    load (fromIntegral (baseAddr + offsetAddr)) r st
 -- Store value from register into memory, where reg and immediate provide
 -- base and offset.
 exec (StoreIdx r base offset) st = do
     baseAddr <- regVal base st
-    store r (baseAddr + offset) st
+    store r (fromIntegral (baseAddr + offset)) st
 -- Store value from register into memory, where two regs provide base and offset.
 exec (StoreBaseIdx r base rOffset) st = do
     baseAddr <- regVal base st
     offsetAddr <- regVal rOffset st
-    store r (baseAddr + offsetAddr) st
+    store r (fromIntegral (baseAddr + offsetAddr)) st
 -- Arithmetic/Logic
 exec (Add r x y)  st = opReg r x (+) y st
 exec (AddI r x i) st = opI r x (+) i st
@@ -156,12 +156,12 @@ exec (Not r x)    st = do
 -- Branching
 -- Unconditional branch to address.
 exec (B addr) st =
-    return (WriteReg (pcIdx st) addr)
+    return (WriteReg (pcIdx st) (fromIntegral addr))
 -- Branch if value in register is true.
 exec (BT r addr) st = do
     val <- regVal r st
     if val == 1
-        then return (WriteReg (pcIdx st) addr)
+        then return (WriteReg (pcIdx st) (fromIntegral addr))
         else return NoOp
 -- Branch to value stored in link register.
 exec (Ret) st = do
