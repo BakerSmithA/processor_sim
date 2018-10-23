@@ -3,7 +3,7 @@ module VM where
 import State
 import Error
 import Instr
-import Pipeline
+import Pipeline as P
 import qualified Mem as Mem
 import qualified Mem as Reg
 
@@ -14,11 +14,14 @@ type ValOp = (Val -> Val -> Val)
 -- accessing memory index that is out of bounds.
 data VM a = VM a
           | Crash Error
+          | Exit State
+          deriving (Eq, Show)
 
 instance Functor VM where
     -- fmap :: (a -> b) -> f a -> f b
     fmap f (VM x)    = VM (f x)
     fmap _ (Crash e) = Crash e
+    fmap _ (Exit st) = Exit st
 
 instance Applicative VM where
     -- pure :: a -> VM a
@@ -26,11 +29,13 @@ instance Applicative VM where
     -- (<*>) :: f (a -> b) -> f a -> f b
     (VM f)    <*> vm = fmap f vm
     (Crash e) <*> _ = Crash e
+    (Exit st) <*> _ = Exit st
 
 instance Monad VM where
     -- (>>=) :: m a -> (a -> m b) -> m b
     (VM x)    >>= f = f x
     (Crash e) >>= _ = Crash e
+    (Exit st) >>= _ = Exit st
 
 -- Return value of a register, or Crash if invalid index.
 regVal :: RegIdx -> State -> VM Val
@@ -52,12 +57,6 @@ instrVal i st =
     case Mem.load i (instrs st) of
         Nothing    -> Crash (InstrOutOfRange i)
         Just instr -> return instr
-
--- Increments the PC by 1.
-inc :: State -> VM State
-inc st = do
-    pc <- regVal (pcIdx st) st
-    setRegVal (pcIdx st) (pc + 1) st
 
 -- Loads contents of memory at address into register.
 load :: Addr -> RegIdx -> State -> VM WriteBackInstr
@@ -174,6 +173,9 @@ exec (BT r addr) st = do
 exec (Ret) st = do
     addr <- regVal (lrIdx st) st
     return (WriteReg (pcIdx st) addr)
+-- Terminate execution of the program.
+exec (SysCall) st =
+    return Terminate
 -- Debugging.
 -- Print value in register.
 exec (Print r) st = do
@@ -207,6 +209,13 @@ writeBack (WriteReg r val) = setRegVal r val
 writeBack (WriteMem i val) = setMemVal i val
 writeBack (WritePrint s)   = addOutput s
 writeBack (NoOp)           = return
+writeBack (Terminate)      = Exit
+
+-- Increment PC by 1.
+inc :: State -> VM State
+inc st = do
+    pc <- regVal (pcIdx st) st
+    setRegVal (pcIdx st) (pc+1) st
 
 -- Performs a cycle moving instructions one step through the pipeline.
 cycle :: State -> Pipeline -> VM (State, Pipeline)
@@ -216,4 +225,15 @@ cycle st p = do
     fetched   <- fetch st
     (st', p') <- advance fetched decode executer writer p
     let st'' = maybe st id st'
-    return (st'', p')
+    incSt <- inc st''
+    return (incSt, p')
+
+-- Run VM to completion, i.e. until exit system call occurs.
+runPipeline :: State -> Pipeline -> VM (State, Pipeline)
+runPipeline st p = do
+    (st', p') <- VM.cycle st p
+    runPipeline st' p'
+
+-- Run VM to completion starting with an empty pipeline.
+run :: State -> VM State
+run st = fmap fst (runPipeline st P.empty)

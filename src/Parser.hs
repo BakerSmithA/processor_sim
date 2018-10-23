@@ -91,9 +91,10 @@ instr =
     <|> And  <$ byte 9  <*> word8 <*> word8 <*> word8
     <|> Not  <$ byte 15 <*> word8 <*> word8
     -- Branching
-    <|> B   <$ byte 10 <*> word32
-    <|> BT  <$ byte 11 <*> word8 <*> word32
-    <|> Ret <$ byte 12
+    <|> B       <$ byte 10 <*> word32
+    <|> BT      <$ byte 11 <*> word8 <*> word32
+    <|> Ret     <$ byte 12
+    <|> SysCall <$ byte 21
     -- Debugging
     <|> Print   <$ byte 13 <*> word8
     <|> PrintLn <$ byte 20

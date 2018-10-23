@@ -168,6 +168,10 @@ instrSpec = describe "instr" $ do
         let bs = pack [12]
         parse instr bs `shouldBe` Just Ret
 
+    it "parses SysCall" $ do
+        let bs = pack [21]
+        parse instr bs `shouldBe` Just SysCall
+
     it "parses Print" $ do
         let bs = pack [13, 3]
         parse instr bs `shouldBe` Just (Print 3)

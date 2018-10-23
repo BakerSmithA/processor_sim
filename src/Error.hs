@@ -9,3 +9,4 @@ data Error
     | MemOutOfRange Addr
     -- Tried to access instruction with an invalid address.
     | InstrOutOfRange Addr
+    deriving (Eq, Show)

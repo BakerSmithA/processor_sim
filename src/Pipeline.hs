@@ -21,6 +21,7 @@ data WriteBackInstr
     | WriteMem Addr Val
     | WritePrint String
     | NoOp
+    | Terminate
 
 type Decoder  m = Instr -> m Instr
 type Executer m = Instr -> m WriteBackInstr
