@@ -163,6 +163,12 @@ exec (BT r addr) st = do
     if val == 1
         then return (WriteReg (pcIdx st) (fromIntegral addr))
         else return NoOp
+-- Branch if value in register is false.
+exec (BF r addr) st = do
+    val <- regVal r st
+    if val == 0
+        then return (WriteReg (pcIdx st) (fromIntegral addr))
+        else return NoOp
 -- Branch to value stored in link register.
 exec (Ret) st = do
     addr <- regVal (lrIdx st) st

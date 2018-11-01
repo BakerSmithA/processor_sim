@@ -98,6 +98,7 @@ instr =
     -- Branching
     <|> B       <$ byte 10 <*> word32
     <|> BT      <$ byte 11 <*> word8 <*> word32
+    <|> BF      <$ byte 22 <*> word8 <*> word32
     <|> Ret     <$ byte 12
     <|> SysCall <$ byte 21
     -- Debugging
