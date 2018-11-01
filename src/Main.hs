@@ -12,7 +12,7 @@ import System.Environment
 
 makeVm :: [Instr] -> State
 makeVm instrs = State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] where
-    mem = Mem.zeroed 16
+    mem = Mem.zeroed 32
     regs = Mem.zeroed 17
     instrs' = Mem.fromList instrs
     pcIdx  = 13

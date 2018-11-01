@@ -174,7 +174,7 @@ exec (SysCall) st =
 -- Print value in register.
 exec (Print r) st = do
     val <- regVal r st
-    return (WritePrint (show val))
+    return (WritePrint (show val ++ "\n"))
 -- Print newline.
 exec (PrintLn) st =
     return (WritePrint "\n")
