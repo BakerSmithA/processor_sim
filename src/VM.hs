@@ -38,18 +38,24 @@ instance Monad VM where
     (Crash e st) >>= _ = Crash e st
     (Exit st)    >>= _ = Exit st
 
+-- Adds PC address at time of crash.
+crash :: (InstrAddr -> Error) -> State -> VM a
+crash f st = do
+    pc <- fmap fromIntegral (regVal (pcIdx st) st)
+    Crash (f pc) st
+
 -- Return value of a register, or Crash if invalid index.
 regVal :: RegIdx -> State -> VM Val
 regVal i st =
     case Reg.load i (regs st) of
-        Nothing  -> Crash (RegOutOfRange i) st
+        Nothing  -> crash (RegOutOfRange i) st
         Just val -> return val
 
 -- Returns value of an address in memory, or Crash if invalid address.
 memVal :: Addr -> State -> VM Val
 memVal i st =
     case Mem.load i (mem st) of
-        Nothing  -> Crash (MemOutOfRange i) st
+        Nothing  -> crash (MemOutOfRange i) st
         Just val -> return val
 
 -- Loads contents of memory at address into register.
@@ -102,7 +108,7 @@ fetch :: State -> VM Instr
 fetch st = do
     pc <- fmap fromIntegral (regVal (pcIdx st) st)
     case Mem.load pc (instrs st) of
-        Nothing    -> Crash (InstrOutOfRange pc) st
+        Nothing    -> crash (InstrOutOfRange pc) st
         Just instr -> return instr
 
 -- Perform decode stage of pipeline.
@@ -189,14 +195,14 @@ exec (PrintLn) st =
 setRegVal :: RegIdx -> Val -> State -> VM State
 setRegVal i val st =
     case Reg.store i val (regs st) of
-        Nothing   -> Crash (RegOutOfRange i) st
+        Nothing   -> crash (RegOutOfRange i) st
         Just regs -> return st { regs = regs }
 
 -- Set the value at a memory address, or Crash if invalid address.
 setMemVal :: Addr -> Val -> State -> VM State
 setMemVal i val st =
     case Mem.store i val (mem st) of
-        Nothing  -> Crash (MemOutOfRange i) st
+        Nothing  -> crash (MemOutOfRange i) st
         Just mem -> return st { mem = mem }
 
 -- Add string to output of VM.

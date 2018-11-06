@@ -1,12 +1,14 @@
 module Error where
 
-import Instr (RegIdx, Addr)
+import Instr (RegIdx, Addr, Val)
+
+type InstrAddr = Val
 
 data Error
     -- Tried to access a register with an invalid index.
-    = RegOutOfRange RegIdx
+    = RegOutOfRange { regIdx :: RegIdx, pc :: InstrAddr }
     -- Tried to access memory with an invalid address.
-    | MemOutOfRange Addr
+    | MemOutOfRange { memAddr :: Addr, pc :: InstrAddr }
     -- Tried to access instruction with an invalid address.
-    | InstrOutOfRange Addr
+    | InstrOutOfRange { instrAddr :: Addr, pc :: InstrAddr }
     deriving (Eq, Show)
