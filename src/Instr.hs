@@ -11,9 +11,9 @@ data Instr
     -- Memory
     = MoveI        { r :: RegIdx, val :: Val }                        -- r <- val
     | Move         { r :: RegIdx, from :: RegIdx }                    -- r <- [from]
-    | LoadIdx      { r :: RegIdx, base :: RegIdx, offset :: Val }    -- r <- [[base] + offset]
+    | LoadIdx      { r :: RegIdx, base :: RegIdx, offset :: Val }     -- r <- [[base] + offset]
     | LoadBaseIdx  { r :: RegIdx, base :: RegIdx, rOffset :: RegIdx } -- r <- [[base] + [R_offset]]
-    | StoreIdx     { r :: RegIdx, base :: RegIdx, offset :: Val }    -- r -> [[base] + offset]
+    | StoreIdx     { r :: RegIdx, base :: RegIdx, offset :: Val }     -- r -> [[base] + offset]
     | StoreBaseIdx { r :: RegIdx, base :: RegIdx, rOffset :: RegIdx } -- r -> [[base] + [R_offset]]
     -- Arithmetic/Logic
     | Add  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] + [y]
