@@ -29,8 +29,9 @@ runVm instrs = do
     putStrLn (show vm)
 
 newlines :: Instr -> String
-newlines (Ret) = "\n"
-newlines _     = ""
+newlines (Ret)     = "\n"
+newlines (SysCall) = "\n"
+newlines _         = ""
 
 showInstrs :: [Instr] -> String
 showInstrs is = unlines strNumbered where
