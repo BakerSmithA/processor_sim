@@ -229,6 +229,7 @@ incPc st = do
     pc <- regVal (pcIdx st) st
     setRegVal (pcIdx st) (pc+1) st
 
+-- Shift instructions through pipeline.
 cycle :: State -> Pipeline -> VM (State, Pipeline)
 cycle st p = do
     let executer = (flip exec) st
