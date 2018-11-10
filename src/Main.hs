@@ -6,12 +6,13 @@ import Instr
 import State as State
 import VM as VM
 import State
+import Bypass as BP
 import qualified Parser as P
 import qualified Data.ByteString as B
 import System.Environment
 
 makeVm :: [Instr] -> State
-makeVm instrs = State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] where
+makeVm instrs = State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] BP.empty where
     mem = Mem.zeroed 32
     regs = Mem.zeroed 17
     instrs' = Mem.fromList instrs
