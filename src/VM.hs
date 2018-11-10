@@ -6,6 +6,7 @@ import Instr
 import Pipeline as P
 import qualified Mem as Mem
 import qualified Mem as Reg
+import qualified Bypass as Bypass
 import Debug.Trace
 
 -- E.g. Mult, Add, And, Or, etc
