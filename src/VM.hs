@@ -104,12 +104,12 @@ notVal x | x == 1    = 0
 
 -- Perform fetch state of pipeline by retreiving instruction. Or, return Nothing
 -- if the value of the pc is after the last instruction.
-fetch :: State -> VM Instr
+fetch :: State -> VM (Maybe Instr)
 fetch st = do
     pc <- fmap fromIntegral (regVal (pcIdx st) st)
     case Mem.load pc (instrs st) of
-        Nothing    -> crash (InstrOutOfRange pc) st
-        Just instr -> return instr
+        Nothing    -> return Nothing
+        Just instr -> return (Just instr)
 
 -- Perform decode stage of pipeline.
 decode :: Instr -> VM Instr
@@ -223,29 +223,26 @@ incPc st = do
     pc <- regVal (pcIdx st) st
     setRegVal (pcIdx st) (pc+1) st
 
--- Performs a cycle moving instructions one step through the pipeline.
-cycle :: State -> VM State
-cycle st = do
-    fetched  <- fetch st
-    decoded  <- decode fetched
-    executed <- exec decoded st
-    st' <- writeBack executed st
-    incPc st'
+cycle :: State -> Pipeline -> VM (State, Pipeline)
+cycle st p = do
+    let executer = (flip exec) st
+        writer   = (flip writeBack) st
+    fetched   <- fetch st
+    (st', p') <- advance fetched decode executer writer p
+    let st'' = maybe st id st'
+    incSt <- incPc st''
+    return (incSt, p')
 
--- cycle :: State -> Pipeline -> VM (State, Pipeline)
--- cycle st p = do
---     let executer = (flip exec) st
---         writer   = (flip writeBack) st
---     fetched   <- fetch st
---     (st', p') <- advance fetched decode executer writer p
---     let st'' = maybe st id st'
---     incSt <- inc st''
---     return (incSt, p')
+-- Run VM to completion, i.e. until exit system call occurs.
+runPipeline :: State -> Pipeline -> VM (State, Pipeline)
+runPipeline st p = do
+    (st', p') <- VM.cycle st p
+    runPipeline st' p'
 
--- Run VM to completion until a SysCall is encountered.
+-- Run VM to completion starting with an empty pipeline.
 run :: State -> State
 run st =
-    case VM.cycle st of
-        Exit st'   -> st
-        VM st'     -> run st'
+    case runPipeline st P.empty of
+        Exit st    -> st
         Crash e st -> error (show e ++ "\n" ++ show st)
+        VM x       -> error ("Did not terminate:" ++ show x)
