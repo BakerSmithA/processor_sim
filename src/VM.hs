@@ -1,13 +1,12 @@
 module VM where
 
-import State
+import State as St
 import Error
 import Instr
 import Pipeline as P
 import qualified Mem as Mem
 import qualified Mem as Reg
-import qualified Bypass as Bypass
-import Debug.Trace
+import qualified Bypass as BP
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)
@@ -45,19 +44,25 @@ crash f st = do
     pc <- fmap fromIntegral (regVal (pcIdx st) st)
     Crash (f pc) st
 
--- Return value of a register, or Crash if invalid index.
+-- Return value of a register, from bypass or register. Crash if invalid index.
 regVal :: RegIdx -> State -> VM Val
 regVal i st =
-    case Reg.load i (regs st) of
-        Nothing  -> crash (RegOutOfRange i) st
+    case BP.regVal i (bypass st) of
         Just val -> return val
+        Nothing ->
+            case Reg.load i (regs st) of
+                Nothing  -> crash (RegOutOfRange i) st
+                Just val -> return val
 
--- Returns value of an address in memory, or Crash if invalid address.
+-- Returns value of an address from bypass or memory. Crash if invalid address.
 memVal :: Addr -> State -> VM Val
 memVal i st =
-    case Mem.load i (mem st) of
-        Nothing  -> crash (MemOutOfRange i) st
+    case BP.memVal i (bypass st) of
         Just val -> return val
+        Nothing ->
+            case Mem.load i (mem st) of
+                Nothing  -> crash (MemOutOfRange i) st
+                Just val -> return val
 
 -- Loads contents of memory at address into register.
 load :: Addr -> RegIdx -> State -> VM WriteBackInstr
@@ -229,10 +234,11 @@ cycle st p = do
     let executer = (flip exec) st
         writer   = (flip writeBack) st
     fetched   <- fetch st
-    (st', p') <- advance fetched decode executer writer p
+    (st', p') <- P.advance fetched decode executer writer p
     let st'' = maybe st id st'
     incSt <- incPc st''
-    return (incSt, p')
+    let bypass = BP.fromPipeline p'
+    return (St.withBypass bypass incSt, p')
 
 -- Run VM to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> VM (State, Pipeline)

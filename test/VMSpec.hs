@@ -5,11 +5,12 @@ import Instr
 import State as State
 import VM as VM
 import qualified Mem as Mem
+import Bypass as BP
 import Data.Int (Int32)
 import Debug.Trace
 
 runVm :: [Instr] -> [Int32] -> State
-runVm instrs memCnts = run $ State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] where
+runVm instrs memCnts = run $ State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] BP.empty where
     mem = Mem.fromList memCnts
     regs = Mem.zeroed 10
     instrs' = Mem.fromList (instrs ++ [SysCall])

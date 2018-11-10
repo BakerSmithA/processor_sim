@@ -14,30 +14,35 @@ import qualified Data.Map as Map
 -- There exists a data dependency because the value of R0 is computed by the ADD
 -- and used in the SUB. Using a bypass, data is transferred backwards in the
 -- piepline.
-data Bypass = Bypass {
-    -- Values to be written into registers.
-    regVals :: Map RegIdx Val
-    -- Values to be written into memory.
-  , memVals :: Map Addr Val
-}
+data Bypass = Empty
+            | BypassReg RegIdx Val
+            | BypassMem Addr Val
+            deriving (Eq)
 
 empty :: Bypass
-empty = Bypass Map.empty Map.empty
+empty = Empty
 
 -- Return values of registers and memory that will be written back, to be made
 -- available to execution stage of pipeline.
-fromWriteback :: [WriteBackInstr] -> Bypass
-fromWriteback = foldr addInstr Bypass.empty
+fromWriteback :: WriteBackInstr -> Bypass
+fromWriteback (WriteReg reg val)  = BypassReg reg val
+fromWriteback (WriteMem addr val) = BypassMem addr val
+fromWriteback _ = Empty
 
--- Adds the result of a write-back instruction to the bypass values available to
--- the execution stage of the pipeline.
-addInstr :: WriteBackInstr -> Bypass -> Bypass
-addInstr (WriteReg reg val)  b = b { regVals = Map.insert reg val (regVals b) }
-addInstr (WriteMem addr val) b = b { memVals = Map.insert addr val (memVals b) }
-addInstr _ b = b
+-- Convenience method for generating bypass values from write-back stage of pipeline.
+fromPipeline :: Pipeline -> Bypass
+fromPipeline p = maybe Empty fromWriteback (executed p)
 
+-- Return value of register written if matches given register index, and bypass
+-- contains register write.
 regVal :: RegIdx -> Bypass -> Maybe Val
-regVal reg b = Map.lookup reg (regVals b)
+regVal exp (BypassReg reg val) | exp == reg = Just val
+                               | otherwise  = Nothing
+regVal _ _ = Nothing
 
+-- Return value of address written if matches given address, and bypass contains
+-- memory write.
 memVal :: Addr -> Bypass -> Maybe Val
-memVal addr b = Map.lookup addr (memVals b)
+memVal exp (BypassMem addr val) | exp == addr = Just val
+                                | otherwise   = Nothing
+memVal _ _ = Nothing

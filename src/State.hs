@@ -4,6 +4,8 @@ import Mem (Mem)
 import qualified Mem as Mem
 import Instr
 import Pipeline
+import Bypass (Bypass)
+import qualified Bypass as BP
 
 -- Stores current state of virtual machine.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -20,7 +22,13 @@ data State = State {
   , retIdx :: RegIdx -- Return value register (EAX in x86)
     -- Output
   , output :: String
+
+   -- Pipeline
+  , bypass :: Bypass
 } deriving (Eq)
+
+withBypass :: Bypass -> State -> State
+withBypass b st = st { bypass = b }
 
 instance Show State where
     show st =
