@@ -191,7 +191,7 @@ exec (BF r addr) st = branchCond r (==0) addr st
 -- Branch to value stored in link register.
 exec (Ret) st = do
     addr <- regVal (lrIdx st) st
-    return (WriteReg (pcIdx st) addr)
+    branch (fromIntegral addr) st
 -- Terminate execution of the program.
 exec (SysCall) st =
     return Terminate
