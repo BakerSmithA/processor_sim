@@ -7,6 +7,7 @@ import Pipeline as P
 import qualified Mem as Mem
 import qualified Mem as Reg
 import qualified Bypass as BP
+import Debug.Trace
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)
@@ -121,6 +122,21 @@ fetch st = do
 decode :: Instr -> VM Instr
 decode = return
 
+-- Executes a branch by writing PC.
+branch :: Addr -> State -> VM WriteBackInstr
+branch addr st = return (WriteReg pc addr') where
+    pc = pcIdx st
+    -- +1 because pipeline stalls until branch executed, and PC not updated.
+    addr' = fromIntegral (addr+1)
+
+-- Executes a branch if the value in a register passes a condition, otherwise NoOp.
+branchCond :: RegIdx -> (Val -> Bool) -> Addr -> State -> VM WriteBackInstr
+branchCond reg cond addr st = do
+    val <- regVal reg st
+    if cond val
+        then branch addr st
+        else return NoOp
+
 -- Perform execution stage of pipeline, and generate instruction of what
 -- to modify in machine.
 exec :: Instr -> State -> VM WriteBackInstr
@@ -167,20 +183,11 @@ exec (Not r x)    st = do
     return (WriteReg r (notVal val))
 -- Branching
 -- Unconditional branch to address.
-exec (B addr) st =
-    return (WriteReg (pcIdx st) (fromIntegral addr))
+exec (B addr) st = branch addr st
 -- Branch if value in register is true.
-exec (BT r addr) st = do
-    val <- regVal r st
-    if val == 1
-        then return (WriteReg (pcIdx st) (fromIntegral addr))
-        else return NoOp
+exec (BT r addr) st = branchCond r (==1) addr st
 -- Branch if value in register is false.
-exec (BF r addr) st = do
-    val <- regVal r st
-    if val == 0
-        then return (WriteReg (pcIdx st) (fromIntegral addr))
-        else return NoOp
+exec (BF r addr) st = branchCond r (==0) addr st
 -- Branch to value stored in link register.
 exec (Ret) st = do
     addr <- regVal (lrIdx st) st
@@ -233,7 +240,7 @@ incPc st = do
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
 -- stages.
 shouldStall :: State -> Pipeline -> Bool
-shouldStall st p = f || d || e where
+shouldStall st p = f || d where
     f  = maybe False isBranch (fetched p)
     d  = maybe False isBranch (decoded p)
     e  = maybe False (isWriteReg pc) (executed p)
@@ -266,6 +273,7 @@ cycle st p = do
     return (bypassed incSt p', p')
 
 -- Shift instructions through pipeline without fetching a new instruction.
+-- PC is also NOT updated.
 cycleStall :: State -> Pipeline -> VM (State, Pipeline)
 cycleStall st p = do
     (st', p') <- advancePipeline Nothing st p
@@ -278,7 +286,7 @@ runPipeline st p = do
                 then VM.cycle st p
                 else VM.cycleStall st p
     (st', p') <- x
-    runPipeline st' p'
+    trace (show p' ++ "\n" ++ show st' ++ "\n") $ runPipeline st' p'
 
 -- Run VM to completion starting with an empty pipeline.
 run :: State -> State
