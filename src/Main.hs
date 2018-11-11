@@ -11,21 +11,10 @@ import qualified Parser as P
 import qualified Data.ByteString as B
 import System.Environment
 
-makeVm :: [Instr] -> State
-makeVm instrs = State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] BP.empty where
-    mem = Mem.zeroed 32
-    regs = Mem.zeroed 17
-    instrs' = Mem.fromList instrs
-    pcIdx  = 13
-    spIdx  = 14
-    lrIdx  = 15
-    bpIdx  = 16
-    retIdx = 17
-
 runVm :: [Instr] -> IO ()
 runVm []     = putStrLn "No instructions to run"
 runVm instrs = do
-    let vm = run (makeVm instrs)
+    let vm = run (State.emptyDefault instrs)
     putStrLn $ State.output vm
     putStrLn (show vm)
 
@@ -35,9 +24,11 @@ newlines (SysCall) = "\n"
 newlines _         = ""
 
 showInstrs :: [Instr] -> String
-showInstrs is = unlines strNumbered where
-    strNumbered = map (\(n, i) -> (show n) ++ ":\t" ++ (show i) ++ newlines i) numbered
-    numbered    = zip [0..] is
+showInstrs = show
+
+-- showInstrs is = unlines strNumbered where
+--     strNumbered = map (\(n, i) -> (show n) ++ ":\t" ++ (show i) ++ newlines i) numbered
+--     numbered    = zip [0..] is
 
 runBytecode :: FilePath -> IO ()
 runBytecode path = do

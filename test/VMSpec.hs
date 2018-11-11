@@ -10,15 +10,9 @@ import Data.Int (Int32)
 import Debug.Trace
 
 runVm :: [Instr] -> [Int32] -> State
-runVm instrs memCnts = run $ State mem regs instrs' pcIdx spIdx lrIdx bpIdx retIdx [] BP.empty where
-    mem = Mem.fromList memCnts
-    regs = Mem.zeroed 10
-    instrs' = Mem.fromList (instrs ++ [SysCall])
-    pcIdx  = 6
-    spIdx  = 7
-    lrIdx  = 8
-    bpIdx  = 9
-    retIdx = 10
+runVm instrs memCnts = run state' where
+    state' = state { mem = Mem.fromList memCnts }
+    state = State.emptyDefault (instrs ++ [SysCall])
 
 vmSpec :: Spec
 vmSpec = describe "vm" $ do
@@ -135,7 +129,7 @@ vmSpec = describe "vm" $ do
 
             it "interprets Ret" $ do
                 -- Ret instruction should cause MoveI to be skipped.
-                let lrIdx = 8
+                let lrIdx = 14
                     vm    = runVm [MoveI lrIdx 2, Ret, MoveI 0 5] []
                 VM.regVal 0 vm `shouldBe` VM 0
 
@@ -147,3 +141,10 @@ vmSpec = describe "vm" $ do
             it "interprets PrintLn" $ do
                 let vm  = runVm [PrintLn] []
                 State.output vm `shouldBe` "\n"
+
+        context "running example programs" $ do
+            it "runs bubble-sort" $ do
+                pending
+
+bubbleSort :: [Instr]
+bubbleSort = []
