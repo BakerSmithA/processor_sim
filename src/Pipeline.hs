@@ -24,11 +24,6 @@ data WriteBackInstr
     | Terminate
     deriving (Show)
 
--- Return whether the write-back instruction is writing a specific register.
-isWriteReg :: RegIdx -> WriteBackInstr -> Bool
-isWriteReg exp (WriteReg reg _) = exp == reg
-isWriteReg _ _                  = False
-
 type Decoder  m = Instr -> m Instr
 type Executer m = Instr -> m WriteBackInstr
 type Writer m a = WriteBackInstr -> m a

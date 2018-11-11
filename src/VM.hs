@@ -237,13 +237,12 @@ incPc st = do
 
 -- Return whether the pipeline should stall to wait for branch instructions
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
--- stages.
+-- stages. Do not need to check for execute stage because write-back results
+-- are available via bypass.
 shouldStall :: State -> Pipeline -> Bool
 shouldStall st p = f || d where
     f  = maybe False isBranch (fetched p)
     d  = maybe False isBranch (decoded p)
-    e  = maybe False (isWriteReg pc) (executed p)
-    pc = pcIdx st
 
 -- Shifts instructions through pipeline.
 advancePipeline :: Maybe Instr -> State -> Pipeline -> VM (State, Pipeline)
