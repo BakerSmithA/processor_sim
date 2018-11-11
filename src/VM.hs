@@ -7,7 +7,6 @@ import Pipeline as P
 import qualified Mem as Mem
 import qualified Mem as Reg
 import qualified Bypass as BP
-import Debug.Trace
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)
@@ -286,7 +285,7 @@ runPipeline st p = do
                 then VM.cycle st p
                 else VM.cycleStall st p
     (st', p') <- x
-    trace (show p' ++ "\n" ++ show st' ++ "\n") $ runPipeline st' p'
+    runPipeline st' p'
 
 -- Run VM to completion starting with an empty pipeline.
 run :: State -> State
