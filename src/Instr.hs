@@ -36,3 +36,10 @@ data Instr
     | Print { r :: RegIdx } -- Print value in a register.
     | PrintLn               -- Print a newline.
     deriving (Eq, Show)
+
+isBranch :: Instr -> Bool
+isBranch (B _)    = True
+isBranch (BT _ _) = True
+isBranch (BF _ _) = True
+isBranch (Ret)    = True
+isBranch _        = False

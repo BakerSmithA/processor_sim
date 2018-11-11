@@ -229,22 +229,55 @@ incPc st = do
     pc <- regVal (pcIdx st) st
     setRegVal (pcIdx st) (pc+1) st
 
--- Shift instructions through pipeline.
-cycle :: State -> Pipeline -> VM (State, Pipeline)
-cycle st p = do
+-- Return whether the pipeline should stall to wait for branch instructions
+-- to be executed, i.e. if there are branch instructions in the fetch or decode
+-- stages.
+shouldStall :: State -> Pipeline -> Bool
+shouldStall st p = f || d || e where
+    f  = maybe False isBranch (fetched p)
+    d  = maybe False isBranch (decoded p)
+    e  = maybe False (isWriteReg pc) (executed p)
+    pc = pcIdx st
+
+-- Shifts instructions through pipeline.
+advancePipeline :: Maybe Instr -> State -> Pipeline -> VM (State, Pipeline)
+advancePipeline fetched st p = do
     let executer = (flip exec) st
         writer   = (flip writeBack) st
-    fetched   <- fetch st
     (st', p') <- P.advance fetched decode executer writer p
+    -- No write-back instructions may have been executed, in which case the state
+    -- is not updated. Therefore, return old state.
     let st'' = maybe st id st'
-    incSt <- incPc st''
-    let bypass = BP.fromPipeline p'
-    return (St.withBypass bypass incSt, p')
+    return (st'', p')
+
+-- Returns state which contains bypass value that was just written as part of
+-- the write-back stage of the pipeline. This makes this value available to
+-- previous stages of the pipeline.
+bypassed :: State -> Pipeline -> State
+bypassed st p = St.withBypass b st where
+    b = BP.fromPipeline p
+
+-- Shift instructions through pipeline, fetching a new instruction on each cycle.
+cycle :: State -> Pipeline -> VM (State, Pipeline)
+cycle st p = do
+    fetched <- fetch st
+    (st', p') <- advancePipeline fetched st p
+    incSt <- incPc st'
+    return (bypassed incSt p', p')
+
+-- Shift instructions through pipeline without fetching a new instruction.
+cycleStall :: State -> Pipeline -> VM (State, Pipeline)
+cycleStall st p = do
+    (st', p') <- advancePipeline Nothing st p
+    return (bypassed st' p', p')
 
 -- Run VM to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> VM (State, Pipeline)
 runPipeline st p = do
-    (st', p') <- VM.cycle st p
+    let x = if not (shouldStall st p)
+                then VM.cycle st p
+                else VM.cycleStall st p
+    (st', p') <- x
     runPipeline st' p'
 
 -- Run VM to completion starting with an empty pipeline.
