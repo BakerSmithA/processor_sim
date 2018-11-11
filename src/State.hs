@@ -25,16 +25,20 @@ data State = State {
 
    -- Pipeline
   , bypass :: Bypass
+
+   -- Stats
+  , cycles :: Int
 } deriving (Eq)
 
 instance Show State where
     show st =
-        "Mem: "   ++ show (mem st)
-     ++ "\nReg: " ++ show (regs st)
+          "Cycles : " ++ show (cycles st)
+     ++ "\nReg    : " ++ show (regs st)
+     ++ "\nMem    : " ++ show (mem st)
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [Instr] -> State
-empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] BP.empty where
+empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] BP.empty 0 where
     mem     = Mem.zeroed 32
     regs    = Mem.zeroed maxReg
     maxReg  = maximum [pc, sp, lr, bp, ret]
@@ -46,3 +50,7 @@ emptyDefault = State.empty 12 13 14 15 16
 
 withBypass :: Bypass -> State -> State
 withBypass b st = st { bypass = b }
+
+-- Increments the number of cycles performed.
+incCycles :: State -> State
+incCycles st = st { cycles = (cycles st) + 1 }

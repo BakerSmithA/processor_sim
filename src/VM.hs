@@ -284,7 +284,7 @@ runPipeline st p = do
                 then VM.cycle st p
                 else VM.cycleStall st p
     (st', p') <- x
-    runPipeline st' p'
+    runPipeline (St.incCycles st') p'
 
 -- Run VM to completion starting with an empty pipeline.
 run :: State -> State

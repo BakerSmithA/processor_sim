@@ -24,11 +24,9 @@ newlines (SysCall) = "\n"
 newlines _         = ""
 
 showInstrs :: [Instr] -> String
-showInstrs = show
-
--- showInstrs is = unlines strNumbered where
---     strNumbered = map (\(n, i) -> (show n) ++ ":\t" ++ (show i) ++ newlines i) numbered
---     numbered    = zip [0..] is
+showInstrs is = unlines strNumbered where
+    strNumbered = map (\(n, i) -> (show n) ++ ":\t" ++ (show i) ++ newlines i) numbered
+    numbered    = zip [0..] is
 
 runBytecode :: FilePath -> IO ()
 runBytecode path = do
