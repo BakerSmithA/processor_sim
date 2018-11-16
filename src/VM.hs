@@ -223,11 +223,15 @@ addOutput s st = return st { output = (output st) ++ s }
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
 writeBack :: WriteBackInstr -> State -> VM State
-writeBack (WriteReg r val) = setRegVal r val
-writeBack (WriteMem i val) = setMemVal i val
-writeBack (WritePrint s)   = addOutput s
-writeBack (NoOp)           = return
-writeBack (Terminate)      = Exit
+writeBack instr st = do
+    st' <- writeBack' instr
+    return (St.incExec st')
+        where
+            writeBack' (WriteReg r val) = setRegVal r val st
+            writeBack' (WriteMem i val) = setMemVal i val st
+            writeBack' (WritePrint s)   = addOutput s st
+            writeBack' (NoOp)           = return st
+            writeBack' (Terminate)      = Exit st
 
 -- Increment PC by 1.
 incPc :: State -> VM State

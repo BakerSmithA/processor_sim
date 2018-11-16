@@ -28,17 +28,20 @@ data State = State {
 
    -- Stats
   , cycles :: Int
+  , instrsExec :: Int
 } deriving (Eq)
 
 instance Show State where
     show st =
           "Cycles : " ++ show (cycles st)
+     ++ "\nInstrs : " ++ show (instrsExec st)
+     ++ "\nIpC    : " ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st))
      ++ "\nReg    : " ++ show (regs st)
      ++ "\nMem    : " ++ show (mem st)
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [Instr] -> State
-empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] BP.empty 0 where
+empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] BP.empty 0 0 where
     mem     = Mem.zeroed 256
     regs    = Mem.zeroed maxReg
     maxReg  = maximum [pc, sp, lr, bp, ret]
@@ -54,3 +57,7 @@ withBypass b st = st { bypass = b }
 -- Increments the number of cycles performed.
 incCycles :: State -> State
 incCycles st = st { cycles = (cycles st) + 1 }
+
+-- Increments the number of instrucions exectuted.
+incExec :: State -> State
+incExec st = st { instrsExec = (instrsExec st) + 1 }
