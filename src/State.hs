@@ -39,7 +39,7 @@ instance Show State where
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [Instr] -> State
 empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] BP.empty 0 where
-    mem     = Mem.zeroed 32
+    mem     = Mem.zeroed 64
     regs    = Mem.zeroed maxReg
     maxReg  = maximum [pc, sp, lr, bp, ret]
     instrs' = Mem.fromList instrs
