@@ -90,6 +90,7 @@ instr =
     <|> Sub  <$ byte 6  <*> word8 <*> word8 <*> word8
     <|> SubI <$ byte 17 <*> word8 <*> word8 <*> int32
     <|> Mult <$ byte 18 <*> word8 <*> word8 <*> word8
+    <|> Div  <$ byte 23 <*> word8 <*> word8 <*> word8
     <|> Eq   <$ byte 7  <*> word8 <*> word8 <*> word8
     <|> Lt   <$ byte 19 <*> word8 <*> word8 <*> word8
     <|> Or   <$ byte 8  <*> word8 <*> word8 <*> word8

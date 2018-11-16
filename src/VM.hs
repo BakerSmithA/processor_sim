@@ -173,6 +173,7 @@ exec (AddI r x i) st = opI r x (+) i st
 exec (Sub r x y)  st = opReg r x (-) y st
 exec (SubI r x i) st = opI r x (-) i st
 exec (Mult r x y) st = opReg r x (*) y st
+exec (Div r x y)  st = opReg r x (div) y st
 exec (Eq r x y)   st = opReg r x eqVal y st
 exec (Lt r x y)   st = opReg r x ltVal y st
 exec (Or r x y)   st = opReg r x orVal y st

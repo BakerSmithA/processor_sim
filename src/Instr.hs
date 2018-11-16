@@ -21,6 +21,7 @@ data Instr
     | Sub  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] - [y]
     | SubI { r :: RegIdx, x :: RegIdx, i :: Val }    -- r <- [x] - i
     | Mult { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] * [y]
+    | Div  { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] / [y]
     | Eq   { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] == [y]
     | Lt   { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] < [y]
     | Or   { r :: RegIdx, x :: RegIdx, y :: RegIdx } -- r <- [x] || [y]

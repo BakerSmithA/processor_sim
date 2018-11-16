@@ -59,9 +59,17 @@ vmSpec = describe "vm" $ do
                 let vm  = runVm [MoveI 0 10, SubI 1 0 3] []
                 VM.regVal 1 vm `shouldBe` VM 7
 
-            it "interprets MultI" $ do
+            it "interprets Mult" $ do
                 let vm  = runVm [MoveI 0 10, MoveI 1 3, Mult 2 0 1] []
                 VM.regVal 2 vm `shouldBe` VM 30
+
+            it "interprets Div" $ do
+                let vm = runVm [MoveI 0 10, MoveI 1 2, Div 2 0 1] []
+                VM.regVal 2 vm `shouldBe` VM 5
+
+            it "interprets Div to produce integer" $ do
+                let vm = runVm [MoveI 0 7, MoveI 1 2, Div 2 0 1] []
+                VM.regVal 2 vm `shouldBe` VM 3
 
             it "interprets Eq to be True" $ do
                 let vm  = runVm [MoveI 0 1, MoveI 1 1, Eq 2 0 1] []
@@ -136,7 +144,7 @@ vmSpec = describe "vm" $ do
         context "output instructions" $ do
             it "interprets Print" $ do
                 let vm  = runVm [MoveI 0 10, Print 0] []
-                State.output vm `shouldBe` "10\n"
+                State.output vm `shouldBe` "10"
 
             it "interprets PrintLn" $ do
                 let vm  = runVm [PrintLn] []
@@ -145,7 +153,7 @@ vmSpec = describe "vm" $ do
         context "running example programs" $ do
             it "runs bubble-sort" $ do
                 let vm = runVm bubbleSort (replicate 32 0)
-                State.output vm `shouldBe` "4\n9\n1\n20\n3\n\n1\n3\n4\n9\n20\n"
+                State.output vm `shouldBe` "491203\n134920"
 
 bubbleSort :: [Instr]
 bubbleSort = [Move {r = 0, from = 13},MoveI {r = 1, val = 4},StoreIdx {r = 1, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},MoveI {r = 1, val = 9},StoreIdx {r = 1, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},MoveI {r = 1, val = 1},StoreIdx {r = 1, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},MoveI {r = 1, val = 20},StoreIdx {r = 1, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},MoveI {r = 1, val = 3},StoreIdx {r = 1, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},StoreIdx {r = 0, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},LoadIdx {r = 0, base = 15, offset = 5},StoreIdx {r = 15, base = 13, offset = 0},StoreIdx {r = 14, base = 13, offset = 1},AddI {r = 13, x = 13, i = 2},Move {r = 15, from = 13},MoveI {r = 14, val = 26},StoreIdx {r = 0, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},B {addr = 122},SubI {r = 13, x = 13, i = 1},LoadIdx {r = 14, base = 13, offset = -1},LoadIdx {r = 15, base = 13, offset = -2},SubI {r = 13, x = 13, i = 2},PrintLn,LoadIdx {r = 0, base = 15, offset = 5},StoreIdx {r = 15, base = 13, offset = 0},StoreIdx {r = 14, base = 13, offset = 1},AddI {r = 13, x = 13, i = 2},Move {r = 15, from = 13},MoveI {r = 14, val = 40},StoreIdx {r = 0, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},B {addr = 59},SubI {r = 13, x = 13, i = 1},LoadIdx {r = 14, base = 13, offset = -1},LoadIdx {r = 15, base = 13, offset = -2},SubI {r = 13, x = 13, i = 2},LoadIdx {r = 0, base = 15, offset = 5},StoreIdx {r = 15, base = 13, offset = 0},StoreIdx {r = 14, base = 13, offset = 1},AddI {r = 13, x = 13, i = 2},Move {r = 15, from = 13},MoveI {r = 14, val = 53},StoreIdx {r = 0, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},B {addr = 122},SubI {r = 13, x = 13, i = 1},LoadIdx {r = 14, base = 13, offset = -1},LoadIdx {r = 15, base = 13, offset = -2},SubI {r = 13, x = 13, i = 2},SubI {r = 13, x = 13, i = 6},SysCall,MoveI {r = 0, val = 0},StoreIdx {r = 0, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},LoadIdx {r = 0, base = 15, offset = 1},MoveI {r = 1, val = 4},Lt {r = 0, x = 0, y = 1},BF {r = 0, addr = 120},MoveI {r = 1, val = 0},StoreIdx {r = 1, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},LoadIdx {r = 1, base = 15, offset = 2},MoveI {r = 2, val = 4},Lt {r = 1, x = 1, y = 2},BF {r = 1, addr = 111},LoadIdx {r = 2, base = 15, offset = 0},LoadIdx {r = 4, base = 15, offset = 2},MoveI {r = 5, val = 1},Add {r = 4, x = 4, y = 5},LoadBaseIdx {r = 2, base = 2, rOffset = 4},LoadIdx {r = 3, base = 15, offset = 0},LoadIdx {r = 4, base = 15, offset = 2},LoadBaseIdx {r = 3, base = 3, rOffset = 4},Lt {r = 2, x = 2, y = 3},BF {r = 2, addr = 103},LoadIdx {r = 3, base = 15, offset = 0},LoadIdx {r = 4, base = 15, offset = 2},LoadBaseIdx {r = 3, base = 3, rOffset = 4},StoreIdx {r = 3, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},LoadIdx {r = 3, base = 15, offset = 0},LoadIdx {r = 4, base = 15, offset = 2},LoadIdx {r = 5, base = 15, offset = 0},LoadIdx {r = 6, base = 15, offset = 2},MoveI {r = 7, val = 1},Add {r = 6, x = 6, y = 7},LoadBaseIdx {r = 5, base = 5, rOffset = 6},StoreBaseIdx {r = 5, base = 3, rOffset = 4},LoadIdx {r = 3, base = 15, offset = 0},LoadIdx {r = 4, base = 15, offset = 2},MoveI {r = 6, val = 1},Add {r = 4, x = 4, y = 6},LoadIdx {r = 5, base = 15, offset = 3},StoreBaseIdx {r = 5, base = 3, rOffset = 4},SubI {r = 13, x = 13, i = 1},LoadIdx {r = 2, base = 15, offset = 2},MoveI {r = 3, val = 1},Add {r = 2, x = 2, y = 3},StoreIdx {r = 2, base = 15, offset = 2},LoadIdx {r = 1, base = 15, offset = 2},MoveI {r = 2, val = 4},Lt {r = 1, x = 1, y = 2},BT {r = 1, addr = 73},LoadIdx {r = 1, base = 15, offset = 1},MoveI {r = 2, val = 1},Add {r = 1, x = 1, y = 2},StoreIdx {r = 1, base = 15, offset = 1},SubI {r = 13, x = 13, i = 1},LoadIdx {r = 0, base = 15, offset = 1},MoveI {r = 1, val = 4},Lt {r = 0, x = 0, y = 1},BT {r = 0, addr = 66},SubI {r = 13, x = 13, i = 1},Ret,MoveI {r = 0, val = 0},StoreIdx {r = 0, base = 13, offset = 0},AddI {r = 13, x = 13, i = 1},LoadIdx {r = 0, base = 15, offset = 1},MoveI {r = 1, val = 5},Lt {r = 0, x = 0, y = 1},BF {r = 0, addr = 141},LoadIdx {r = 1, base = 15, offset = 0},LoadIdx {r = 2, base = 15, offset = 1},LoadBaseIdx {r = 1, base = 1, rOffset = 2},Print {r = 1},LoadIdx {r = 1, base = 15, offset = 1},MoveI {r = 2, val = 1},Add {r = 1, x = 1, y = 2},StoreIdx {r = 1, base = 15, offset = 1},LoadIdx {r = 0, base = 15, offset = 1},MoveI {r = 1, val = 5},Lt {r = 0, x = 0, y = 1},BT {r = 0, addr = 129},SubI {r = 13, x = 13, i = 1},Ret]
