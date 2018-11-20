@@ -20,6 +20,9 @@ data FilledOp = UniOp Val
 -- Reservation station, i.e. table of operations that are waiting for operands.
 newtype RS = RS [Waiting]
 
+fromList :: [Waiting] -> RS
+fromList = RS
+
 -- Reservation station containing no entries.
 empty :: RS
 empty = RS []
