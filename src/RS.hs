@@ -1,4 +1,4 @@
-module ReservationStation where
+module RS where
 
 import Instr (Addr, RegIdx, Val)
 import Bypass (Bypass(..))
@@ -18,39 +18,41 @@ data FilledOp = UniOp Val
               | BinOp Val Val
 
 -- Reservation station, i.e. table of operations that are waiting for operands.
-newtype RS = RS [Waiting]
+newtype RS a = RS [(a, Waiting)]
 
-fromList :: [Waiting] -> RS
+fromList :: [(a, Waiting)] -> RS a
 fromList = RS
 
 -- Reservation station containing no entries.
-empty :: RS
+empty :: RS a
 empty = RS []
 
 -- Adds an operation that is waiting for operands to reservation station.
-addOp :: Waiting -> RS -> RS
+addOp :: (a, Waiting) -> RS a -> RS a
 addOp w (RS ws) = RS (w:ws)
 
 -- Attempts to fill in operands of operations waiting in reservation station.
 -- Returns any operations that have all their operands fill, and new state of
 -- reservation station.
-fillAny :: RS -> Bypass -> ([FilledOp], RS)
-fillAny (RS ws) b = foldr f ([], empty) ws where
-    f w (ops, rs) = either (\w' -> (ops, addOp w' rs)) (\op -> (op:ops, rs)) (fill w b)
+fill :: RS a -> Bypass -> ([FilledOp], RS a)
+fill (RS ws) b = foldr f ([], empty) ws where
+    f (x, w) (ops, rs) = either waiting filled (fillOp w b) where
+        waiting w' = (ops, addOp (x, w') rs)
+        filled op  = (op:ops, rs)
 
 -- Attempt to 'fill in' value in operation that is waiting for operands.
-fill :: Waiting -> Bypass -> Either Waiting FilledOp
-fill w@(WaitingU src)    b = maybe (Left w) (\v -> Right $ UniOp v) (checkSrc src b)
-fill w@(WaitingL src vr) b = maybe (Left w) (\vl -> Right $ BinOp vl vr) (checkSrc src b)
-fill w@(WaitingR vl src) b = maybe (Left w) (\vr -> Right $ BinOp vl vr) (checkSrc src b)
-fill w@(WaitingB sl sr)  b =
+fillOp :: Waiting -> Bypass -> Either Waiting FilledOp
+fillOp w@(WaitingU src)    b = maybe (Left w) (\v -> Right $ UniOp v) (checkSrc src b)
+fillOp w@(WaitingL src vr) b = maybe (Left w) (\vl -> Right $ BinOp vl vr) (checkSrc src b)
+fillOp w@(WaitingR vl src) b = maybe (Left w) (\vr -> Right $ BinOp vl vr) (checkSrc src b)
+fillOp w@(WaitingB sl sr)  b =
     -- Check whether left value can be filled in.
     case (checkSrc sl b) of
-        Just vl -> fill (WaitingR vl sr) b
+        Just vl -> fillOp (WaitingR vl sr) b
         Nothing ->
             -- Check whether right value can be filled in.
             case (checkSrc sr b) of
-                Just vr -> fill (WaitingL sl vr) b
+                Just vr -> fillOp (WaitingL sl vr) b
                 Nothing -> Left w
 
 -- Check whether the source for an operand, that is being waiting, for can be
