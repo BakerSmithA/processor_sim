@@ -23,17 +23,21 @@ fromList xs = Queue arr s e where
 elems :: Queue a -> [a]
 elems = Arr.elems . _elems
 
--- Insert element into queue.
-ins :: a -> Queue a -> Queue a
-ins x (Queue xs s e) = Queue xs' s' e where
+-- Insert element at tail of queue, and return index inserted at)
+ins :: a -> Queue a -> (Int, Queue a)
+ins x (Queue xs s e) = (s, Queue xs' s' e) where
     xs' = xs // [(s, x)]
     s'  = wrapIdx (s - 1) xs
 
--- Remove element from queue.
+-- Remove element from head of queue.
 rem :: Queue a -> (a, Queue a)
 rem (Queue xs s e) = (x, Queue xs s e') where
     x  = xs ! e
     e' = wrapIdx (e - 1) xs
+
+-- Return element at index in queue.
+get :: Int -> Queue a -> a
+get i (Queue xs _ _) = xs ! i
 
 -- Stops index going out of bounds of array.
 wrapIdx :: Int -> Array Int a -> Int
