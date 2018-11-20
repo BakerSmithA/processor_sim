@@ -8,10 +8,10 @@ data Src = Mem Addr
          | Reg RegIdx
 
 -- Entry in reservation station. Details operation that is waiting for operands.
-data Waiting = WaitingL Src Val -- Binary operation waiting for left operand, and right has already been supplied.
+data Waiting = WaitingU Src     -- Unary operation waiting for single operand.
+             | WaitingL Src Val -- Binary operation waiting for left operand, and right has already been supplied.
              | WaitingR Val Src -- Binary operation waiting for right operand, and left has already been supplied.
              | WaitingB Src Src -- Binary operation waiting for both operands.
-             | WaitingU Src     -- Unary operation waiting for single operand.
 
 -- Operation that has had all operands 'filled in' and is ready to be performed.
 data FilledOp = UniOp Val
@@ -22,10 +22,18 @@ newtype RS = RS [Waiting]
 
 -- Attempt to 'fill in' value in operation that is waiting for operands.
 fill :: Waiting -> Bypass -> Either Waiting FilledOp
-fill (WaitingL src _) b = undefined
-fill (WaitingR _ src) b = undefined
-fill (WaitingB s1 s2) b = undefined
-fill (WaitingU src)   b = undefined
+fill w@(WaitingU src)    b = maybe (Left w) (\v -> Right $ UniOp v) (checkSrc src b)
+fill w@(WaitingL src vr) b = maybe (Left w) (\vl -> Right $ BinOp vl vr) (checkSrc src b)
+fill w@(WaitingR vl src) b = maybe (Left w) (\vr -> Right $ BinOp vl vr) (checkSrc src b)
+fill w@(WaitingB sl sr)  b =
+    -- Check whether left value can be filled in.
+    case (checkSrc sl b) of
+        Just vl -> fill (WaitingR vl sr) b
+        Nothing ->
+            -- Check whether right value can be filled in.
+            case (checkSrc sr b) of
+                Just vr -> fill (WaitingL sl vr) b
+                Nothing -> Left w
 
 -- Check whether the source for an operand, that is being waiting, for can be
 -- fullfilled by the value passed via common data bus.
