@@ -15,11 +15,13 @@ unit :: (Instr -> FilledOp -> State -> a) -> ExecUnit a
 unit f = ExecUnit f False
 
 arithLogicUnit :: ExecUnit WriteBackInstr
-arithLogicUnit = unit alu where
-    alu (Add r _ _) (BinOp x y) _ = WriteReg r (x + y)
+arithLogicUnit = unit al where
+    al (Add r _ _) (BinOp x y) _ = WriteReg r (x + y)
 
 loadStoreUnit :: ExecUnit WriteBackInstr
-loadStoreUnit = undefined
+loadStoreUnit = unit ls where
+    ls = undefined
 
 branchUnit :: ExecUnit WriteBackInstr
-branchUnit = undefined
+branchUnit = unit b where
+    b = undefined
