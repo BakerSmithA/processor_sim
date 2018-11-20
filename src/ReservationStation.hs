@@ -1,7 +1,7 @@
 module ReservationStation where
 
 import Instr (Addr, RegIdx, Val)
-import Bypass
+import Bypass (Bypass(..))
 
 -- The location an operation is waiting for data from.
 data Src = Mem Addr
@@ -19,6 +19,21 @@ data FilledOp = UniOp Val
 
 -- Reservation station, i.e. table of operations that are waiting for operands.
 newtype RS = RS [Waiting]
+
+-- Reservation station containing no entries.
+empty :: RS
+empty = RS []
+
+-- Adds an operation that is waiting for operands to reservation station.
+addOp :: Waiting -> RS -> RS
+addOp w (RS ws) = RS (w:ws)
+
+-- Attempts to fill in operands of operations waiting in reservation station.
+-- Returns any operations that have all their operands fill, and new state of
+-- reservation station.
+fillAny :: RS -> Bypass -> ([FilledOp], RS)
+fillAny (RS ws) b = foldr f ([], empty) ws where
+    f w (ops, rs) = either (\w' -> (ops, addOp w' rs)) (\op -> (op:ops, rs)) (fill w b)
 
 -- Attempt to 'fill in' value in operation that is waiting for operands.
 fill :: Waiting -> Bypass -> Either Waiting FilledOp
