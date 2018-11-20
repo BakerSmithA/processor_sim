@@ -1,16 +1,24 @@
 module Mem where
 
+import Helper
 import Data.Array
 import Data.List (intercalate)
 
 data Mem k v = Mem { arr :: Array k v, maxAddr :: k }
              | Empty
-           deriving (Eq)
+           deriving (Eq, Show)
 
-instance (Show k, Show v, Ix k) => Show (Mem k v) where
-    show (Mem arr _) = intercalate ", " numbered where
-        numbered = fmap (\(i, x) -> show i ++ ":" ++ show x) (zip [0..] (elems arr))
-    show (Empty) = "Empty"
+-- Return string where each memory address is numbered.
+showNumbered :: (Show k, Show v, Ix k) => Mem k v -> String
+showNumbered (Empty) = "Empty"
+showNumbered (Mem arr _) = intercalate ", " numbered where
+    numbered = fmap (\(i, x) -> show i ++ ":" ++ show x) (zip [0..] (elems arr))
+
+-- Return string where memory is displayed in blocks.
+showBlocks :: (Show v) => Int -> Mem k v -> String
+showBlocks _         (Empty)     = "Empty"
+showBlocks lineWidth (Mem arr _) = unlines (map showLine (group lineWidth (elems arr))) where
+    showLine line = concatMap ((++"\t") . show) line
 
 -- Return memory containing values in list.
 fromList :: (Ix k, Num k, Enum k, Integral k) => [v] -> Mem k v

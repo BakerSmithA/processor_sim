@@ -33,11 +33,11 @@ data State = State {
 
 instance Show State where
     show st =
-          "Cycles : " ++ show (cycles st)
-     ++ "\nInstrs : " ++ show (instrsExec st)
-     ++ "\nIpC    : " ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st))
-     ++ "\nReg    : " ++ show (regs st)
-     ++ "\nMem    : " ++ show (mem st)
+          "Cycles : "  ++ show (cycles st)
+     ++ "\nInstrs : "  ++ show (instrsExec st)
+     ++ "\nIpC    : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st))
+     ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
+     ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [Instr] -> State
