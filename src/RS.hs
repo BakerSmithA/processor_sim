@@ -6,19 +6,23 @@ import Bypass (Bypass(..))
 -- The location an operation is waiting for data from.
 data Src = Mem Addr
          | Reg RegIdx
+         deriving (Eq, Show)
 
 -- Entry in reservation station. Details operation that is waiting for operands.
 data Waiting = WaitingU Src     -- Unary operation waiting for single operand.
              | WaitingL Src Val -- Binary operation waiting for left operand, and right has already been supplied.
              | WaitingR Val Src -- Binary operation waiting for right operand, and left has already been supplied.
              | WaitingB Src Src -- Binary operation waiting for both operands.
+             deriving (Eq, Show)
 
 -- Operation that has had all operands 'filled in' and is ready to be performed.
 data FilledOp = UniOp Val
               | BinOp Val Val
+              deriving (Eq, Show)
 
 -- Reservation station, i.e. table of operations that are waiting for operands.
 newtype RS a = RS [(a, Waiting)]
+             deriving (Eq, Show)
 
 fromList :: [(a, Waiting)] -> RS a
 fromList = RS
@@ -34,8 +38,8 @@ addOp w (RS ws) = RS (w:ws)
 -- Attempts to fill in operands of operations waiting in reservation station.
 -- Returns any operations that have all their operands fill, and new state of
 -- reservation station.
-fill :: RS a -> Bypass -> ([FilledOp], RS a)
-fill (RS ws) b = foldr f ([], empty) ws where
+fill :: Bypass -> RS a -> ([FilledOp], RS a)
+fill b (RS ws) = foldr f ([], empty) ws where
     f (x, w) (ops, rs) = either waiting filled (fillOp w b) where
         waiting w' = (ops, addOp (x, w') rs)
         filled op  = (op:ops, rs)
