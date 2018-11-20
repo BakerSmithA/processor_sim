@@ -15,7 +15,8 @@ unit :: (Instr -> FilledOp -> State -> a) -> ExecUnit a
 unit f = ExecUnit f False
 
 arithLogicUnit :: ExecUnit WriteBackInstr
-arithLogicUnit = undefined
+arithLogicUnit = unit alu where
+    alu (Add r _ _) (BinOp x y) _ = WriteReg r (x + y)
 
 loadStoreUnit :: ExecUnit WriteBackInstr
 loadStoreUnit = undefined
