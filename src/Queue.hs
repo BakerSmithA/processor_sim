@@ -35,5 +35,6 @@ rem (Queue xs s e) = (x, Queue xs s e') where
     x  = xs ! e
     e' = wrapIdx (e - 1) xs
 
+-- Stops index going out of bounds of array.
 wrapIdx :: Int -> Array Int a -> Int
 wrapIdx i xs = i `mod` length xs
