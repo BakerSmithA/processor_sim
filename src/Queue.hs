@@ -18,7 +18,7 @@ fromList :: [a] -> Queue a
 fromList xs = Queue arr s e where
     arr = listArray (0, length xs - 1) xs
     s = 0
-    e = (length xs) - 1
+    e = 0
 
 elems :: Queue a -> [a]
 elems = Arr.elems . _elems
@@ -36,4 +36,4 @@ rem (Queue xs s e) = (x, Queue xs s e') where
     e' = wrapIdx (e - 1) xs
 
 wrapIdx :: Int -> Array Int a -> Int
-wrapIdx i xs = i `mod` (length xs) - 1
+wrapIdx i xs = i `mod` length xs
