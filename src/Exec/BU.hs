@@ -13,14 +13,14 @@ branchUnit = unit b where
     b _ _ _ = error "unexpected branch"
 
 -- Executes a branch by writing PC.
-branch :: Addr -> State -> VM WriteBackInstr
+branch :: Addr -> State -> Result WriteBackInstr
 branch addr st = writeReg pc addr' where
     pc = pcIdx st
     -- +1 because pipeline stalls until branch executed, and PC not updated.
     addr' = fromIntegral (addr+1)
 
 -- Executes a branch if the value in a register passes a condition, otherwise NoOp.
-branchCond :: Bool -> Addr -> State -> VM WriteBackInstr
+branchCond :: Bool -> Addr -> State -> Result WriteBackInstr
 branchCond cond addr st = do
     if cond
         then branch addr st

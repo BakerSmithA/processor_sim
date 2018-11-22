@@ -48,7 +48,7 @@ test-suite spec
                      , ParserSpec
                      , Error
                      , Pipeline
-                     , VM
+                     , Result
                      , Bypass
                      , Helper
                      , Queue
