@@ -10,14 +10,16 @@ data Tag = Mem Addr
          deriving (Eq, Show)
 
 -- Entry in reservation station. Details operation that is waiting for operands.
-data Waiting = WaitingU Tag     -- Unary operation waiting for single operand.
+data Waiting = WaitingEmpty     -- Operation that requires no operands. Allows passing through of Ret, etc.
+             | WaitingU Tag     -- Unary operation waiting for single operand.
              | WaitingL Tag Val -- Binary operation waiting for left operand, and right has already been supplied.
              | WaitingR Val Tag -- Binary operation waiting for right operand, and left has already been supplied.
              | WaitingB Tag Tag -- Binary operation waiting for both operands.
              deriving (Eq, Show)
 
 -- Operation that has had all operands 'filled in' and is ready to be performed.
-data FilledOp = UniOp Val
+data FilledOp = EmptyOp
+              | UniOp Val
               | BinOp Val Val
               deriving (Eq, Show)
 
@@ -47,6 +49,7 @@ fill b (RS ws) = foldr f ([], empty) ws where
 
 -- Attempt to 'fill in' value in operation that is waiting for operands.
 fillOp :: Waiting -> Bypass -> Either Waiting FilledOp
+fillOp   (WaitingEmpty)    _ = Right $ EmptyOp
 fillOp w@(WaitingU src)    b = maybe (Left w) (\v -> Right $ UniOp v) (checkTag src b)
 fillOp w@(WaitingL src vr) b = maybe (Left w) (\vl -> Right $ BinOp vl vr) (checkTag src b)
 fillOp w@(WaitingR vl src) b = maybe (Left w) (\vr -> Right $ BinOp vl vr) (checkTag src b)

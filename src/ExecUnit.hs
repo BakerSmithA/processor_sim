@@ -16,6 +16,8 @@ unit f = ExecUnit f False
 
 arithLogicUnit :: ExecUnit WriteBackInstr
 arithLogicUnit = unit al where
+    al (MoveI r _) (UniOp x)   _ = WriteReg r x
+    al (Move r _)  (UniOp x)   _ = WriteReg r x
     al (Add r _ _) (BinOp x y) _ = WriteReg r (x + y)
 
 loadStoreUnit :: ExecUnit WriteBackInstr

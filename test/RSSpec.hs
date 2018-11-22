@@ -7,6 +7,13 @@ import Test.Hspec
 rsSpec :: Spec
 rsSpec = describe "reservation station" $ do
     context "Filling in operands" $ do
+        it "passes through operations with no operands" $ do
+            let rs = RS.fromList [((), WaitingEmpty)]
+                bp = BP.Empty
+                (ops, rs') = RS.fill bp rs
+            ops `shouldBe` [((), EmptyOp)]
+            rs' `shouldBe` RS.empty
+
         it "fills operand of op waiting for lhs" $ do
             let rs  = RS.fromList [((), WaitingL (Reg 0) 1)]
                 bp  = BypassReg 0 2
