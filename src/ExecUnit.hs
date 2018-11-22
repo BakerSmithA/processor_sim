@@ -8,16 +8,16 @@ import State
 type Occupied = Bool
 
 -- Used to represent ALU, Load/Store Unit, etc
-data ExecUnit a = ExecUnit {
-    run      :: Instr -> FilledOp -> State -> a
+data ExecUnit = ExecUnit {
+    run      :: Instr -> FilledOp -> State -> WriteBackInstr
   , occupied :: Occupied
 }
 
 -- Create execution unit that is unoccupied.
-unit :: (Instr -> FilledOp -> State -> a) -> ExecUnit a
+unit :: (Instr -> FilledOp -> State -> WriteBackInstr) -> ExecUnit
 unit f = ExecUnit f False
 
-loadStoreUnit :: ExecUnit WriteBackInstr
+loadStoreUnit :: ExecUnit
 loadStoreUnit = unit ls where
     ls (MoveI        r i)     (EmptyOp)     _ = WriteReg r i
     ls (Move         r _)     (UniOp x)     _ = WriteReg r x
@@ -28,7 +28,7 @@ loadStoreUnit = unit ls where
 
     ls _ _ _ = error "unexpected ls"
 
-arithLogicUnit :: ExecUnit WriteBackInstr
+arithLogicUnit :: ExecUnit
 arithLogicUnit = unit al where
     al (Add  r _ _) (BinOp x y) _ = WriteReg r (x + y)
     al (AddI r _ i) (UniOp x)   _ = WriteReg r (x + i)
@@ -45,9 +45,27 @@ arithLogicUnit = unit al where
 
     al _ _ _ = error "unexpected al"
 
-branchUnit :: ExecUnit WriteBackInstr
+branchUnit :: ExecUnit
 branchUnit = unit b where
-    b = undefined
+    b (B addr)    (EmptyOp) st = branch addr st
+    b (BT _ addr) (UniOp x) st = branchCond (x==1) addr st
+    b (BF _ addr) (UniOp x) st = branchCond (x/=1) addr st
+    b (Ret)       (EmptyOp) st = undefined
+    b (SysCall)   (EmptyOp) st = undefined
+
+-- Executes a branch by writing PC.
+branch :: Addr -> State -> WriteBackInstr
+branch addr st = WriteReg pc addr' where
+    pc = pcIdx st
+    -- +1 because pipeline stalls until branch executed, and PC not updated.
+    addr' = fromIntegral (addr+1)
+
+-- Executes a branch if the value in a register passes a condition, otherwise NoOp.
+branchCond :: Bool -> Addr -> State -> WriteBackInstr
+branchCond cond addr st = do
+    if cond
+        then branch addr st
+        else NoOp
 
 eqVal :: Val -> Val -> Val
 eqVal x y | x == y    = 1
