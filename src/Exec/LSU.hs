@@ -2,6 +2,7 @@ module Exec.LSU where
 
 import Exec.Unit
 import qualified Mem as Mem
+import Error
 
 loadStoreUnit :: ExecUnit
 loadStoreUnit = unit ls where
@@ -19,5 +20,5 @@ load :: Val -> Val -> State -> Result Val
 load base offset st =
     let addr = fromIntegral (base + offset)
     in case Mem.load addr (mem st) of
-        Nothing  -> undefined
+        Nothing  -> crash (MemOutOfRange addr) st
         Just val -> return val

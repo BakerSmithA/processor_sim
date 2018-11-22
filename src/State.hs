@@ -4,6 +4,7 @@ import Mem (Mem)
 import qualified Mem as Mem
 import Instr
 import Pipeline
+import Data.Maybe as Maybe (fromJust)
 
 -- Stores current state of virtual machine.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -53,3 +54,13 @@ incCycles st = st { cycles = (cycles st) + 1 }
 -- Increments the number of instrucions exectuted.
 incExec :: State -> State
 incExec st = st { instrsExec = (instrsExec st) + 1 }
+
+-- Retrieves value from register, assuming register exists.
+-- Should only be used for defined registers, e.g. PC, BP, etc
+-- Not registers defined in read in code.
+_regVal :: (State -> RegIdx) -> State  -> Val
+_regVal f st = Maybe.fromJust (Mem.load (f st) (regs st))
+
+-- Return value stored in PC register.
+pc :: State -> Val
+pc = _regVal pcIdx

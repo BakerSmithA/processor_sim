@@ -1,4 +1,7 @@
-module Result where
+module Result
+( Result(..)
+, module Error)
+where
 
 import Error
 import State
