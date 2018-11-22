@@ -4,8 +4,6 @@ import Mem (Mem)
 import qualified Mem as Mem
 import Instr
 import Pipeline
-import Bypass (Bypass)
-import qualified Bypass as BP
 
 -- Stores current state of virtual machine.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -23,9 +21,6 @@ data State = State {
     -- Output
   , output :: String
 
-   -- Pipeline
-  , bypass :: Bypass
-
    -- Stats
   , cycles :: Int
   , instrsExec :: Int
@@ -41,7 +36,7 @@ instance Show State where
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [Instr] -> State
-empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] BP.empty 0 0 where
+empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] 0 0 where
     mem     = Mem.zeroed 127
     regs    = Mem.zeroed maxReg
     maxReg  = maximum [pc, sp, lr, bp, ret]
@@ -50,9 +45,6 @@ empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] BP.empt
 -- Create default VM with 32 ints of memory, and 16 registers.
 emptyDefault :: [Instr] -> State
 emptyDefault = State.empty 12 13 14 15 16
-
-withBypass :: Bypass -> State -> State
-withBypass b st = st { bypass = b }
 
 -- Increments the number of cycles performed.
 incCycles :: State -> State

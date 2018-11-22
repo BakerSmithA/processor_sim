@@ -4,7 +4,7 @@ import Test.Hspec
 import ParserSpec
 import QueueSpec
 import RSSpec
-import VMSpec
+-- import VMSpec
 
 main :: IO ()
 main = hspec specs where
@@ -12,4 +12,4 @@ main = hspec specs where
         parserSpec
         queueSpec
         rsSpec
-        vmSpec
+        -- vmSpec
