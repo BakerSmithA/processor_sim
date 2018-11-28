@@ -39,6 +39,22 @@ set :: Int -> WriteBack -> ROB -> ROB
 set i wb (ROB q) = ROB q' where
     q' = Q.set i (Just wb) q
 
--- Searches in the ROB for the most recent
+-- Searches in the ROB for the most recent value of a register, or returns
+-- Nothing if an update to the register is not stored in the ROB.
 regVal :: RegIdx -> ROB -> Maybe Val
-regVal = undefined
+regVal exp (ROB q) = do
+    Just (WriteReg _ val) <- Q.findNewest c q
+    return val
+        where
+            c (Just (WriteReg reg _)) = reg == exp
+            c _ = False
+
+-- Searches in the ROB for the most recent value of a memory address, or
+-- returns Nothing if an update to the address is not stored in the ROB.
+memVal :: Addr -> ROB -> Maybe Val
+memVal exp (ROB q) = do
+    Just (WriteMem _ val) <- Q.findNewest c q
+    return val
+        where
+            c (Just (WriteMem addr _)) = addr == exp
+            c _ = False
