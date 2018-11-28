@@ -10,13 +10,22 @@ type PhyReg = RegIdx
 -- Register Rename Table, holds a mapping from names of registers in source
 -- code, e.g. reg 2, to physical registers, e.g. reg 45.
 data RRT = RRT { mapping :: Map RegIdx PhyReg, frees :: [PhyReg] }
+         deriving (Show, Eq)
+
+-- Return RRT with a maximum physical register index of that provided.
+empty :: PhyReg -> RRT
+empty maxPhy = RRT (Map.empty) [0..maxPhy]
+
+-- Useful for testing.
+fromMapping :: [(RegIdx, PhyReg)] -> [PhyReg] -> RRT
+fromMapping m fs = RRT (Map.fromList m) fs
 
 -- Create mapping from register name to physical register. The physical register
 -- is chosen from the remaining free registers. Or, returns Nothing if there
 -- are no free registers.
-ins :: RegIdx -> RRT -> Maybe (PhyReg, RRT)
+ins :: RegIdx -> RRT -> Maybe RRT
 ins _    (RRT _ [])         = Nothing
-ins name (RRT m (phy:rest)) = Just (phy, RRT (Map.insert name phy m) rest)
+ins name (RRT m (phy:rest)) = Just (RRT (Map.insert name phy m) rest)
 
 -- Frees the name of a register from being mapped to a physical register, and
 -- make the physical register available to others.
@@ -24,3 +33,8 @@ free :: PhyReg -> RRT -> RRT
 free phy rrt = rrt { mapping = mapping', frees = frees' } where
     mapping' = Map.delete phy (mapping rrt)
     frees'   = phy:(frees rrt)
+
+-- Return physical register mapped to name of register in source code, or
+-- Nothing if no mapping exists.
+get :: RegIdx -> RRT -> Maybe PhyReg
+get reg rrt = Map.lookup reg (mapping rrt)
