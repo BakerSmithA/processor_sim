@@ -5,7 +5,6 @@ import Instr
 import State as St
 import qualified Mem as Mem
 import Data.Int (Int32)
-import Debug.Trace
 import Exec
 
 runVm :: [Instr] -> [Int32] -> State
@@ -27,7 +26,7 @@ execSpec = describe "execution" $ do
 
             it "interprets LoadIdx" $ do
                 let vm  = runVm [MoveI 0 1, LoadIdx 1 0 2] [1, 2, 3, 4, 5]
-                trace (show vm) $ St.regVal 1 vm `shouldBe` Res 4
+                St.regVal 1 vm `shouldBe` Res 4
 
             it "interprets LoadBaseIdx" $ do
                 let vm  = runVm [MoveI 0 1, MoveI 1 3, LoadBaseIdx 2 0 1] [1, 2, 3, 4, 5]
