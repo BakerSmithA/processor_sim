@@ -12,7 +12,7 @@ data Mem k v = Mem { arr :: Array k v, maxAddr :: k }
 showNumbered :: (Show k, Show v, Ix k) => Mem k v -> String
 showNumbered (Empty) = "Empty"
 showNumbered (Mem arr _) = intercalate ", " numbered where
-    numbered = fmap (\(i, x) -> show i ++ ":" ++ show x) (zip [0..] (elems arr))
+    numbered = fmap (\(i, x) -> show (i :: Integer) ++ ":" ++ show x) (zip [0..] (elems arr))
 
 -- Return string where memory is displayed in blocks.
 showBlocks :: (Show v) => Int -> Mem k v -> String
@@ -34,7 +34,7 @@ zeroed maxAddr = fromList (take n (repeat 0)) where
 -- Checks index is within range 0 to maxAddr, inclusive. If so the operation
 -- is performed. Otherwise Nothing is returned.
 checkedAddr :: (Num k, Ix k) => (k -> Mem k v -> a) -> k -> Mem k v -> Maybe a
-checkedAddr op i m@(Mem mem maxAddr) =
+checkedAddr op i m@(Mem _ maxAddr) =
     if i > maxAddr || i < 0
         then Nothing
         else Just (op i m)

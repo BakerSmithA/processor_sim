@@ -4,7 +4,6 @@ import Mem (Mem)
 import qualified Mem as Mem
 import qualified Mem as Reg
 import Instr
-import Pipeline
 import Bypass (Bypass)
 import qualified Bypass as BP
 import Error
@@ -64,7 +63,7 @@ instance Show State where
     show st =
           "Cycles : "  ++ show (cycles st)
      ++ "\nInstrs : "  ++ show (instrsExec st)
-     ++ "\nIpC    : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st))
+     ++ "\nIpC    : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double)
      ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
      ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
 

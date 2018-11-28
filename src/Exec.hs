@@ -88,7 +88,7 @@ branchCond reg cond addr st = do
 exec :: Instr -> State -> Res WriteBack
 -- Memory
 -- Move immediate value into register.
-exec (MoveI r val) st =
+exec (MoveI r val) _ =
     return (WriteReg r val)
 -- Move value from one register into another.
 exec (Move r from) st = do
@@ -140,7 +140,7 @@ exec (Ret) st = do
     addr <- regVal (lrIdx st) st
     branch (fromIntegral addr) st
 -- Terminate execution of the program.
-exec (SysCall) st =
+exec (SysCall) _ =
     return Terminate
 -- Debugging.
 -- Print value in register.
@@ -148,7 +148,7 @@ exec (Print r) st = do
     val <- regVal r st
     return (WritePrint (show val))
 -- Print newline.
-exec (PrintLn) st =
+exec (PrintLn) _ =
     return (WritePrint "\n")
 
 -- Set the value stored in a register, or Crash if invalid index.
@@ -191,8 +191,8 @@ incPc st = do
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
 -- stages. Do not need to check for execute stage because write-back results
 -- are available via bypass.
-shouldStall :: State -> Pipeline -> Bool
-shouldStall st p = f || d where
+shouldStall :: Pipeline -> Bool
+shouldStall p = f || d where
     f  = maybe False isBranch (fetched p)
     d  = maybe False isBranch (decoded p)
 
@@ -232,7 +232,7 @@ cycleStall st p = do
 -- Run Res to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> Res (State, Pipeline)
 runPipeline st p = do
-    let x = if not (shouldStall st p)
+    let x = if not (shouldStall p)
                 then Exec.cycle st p
                 else Exec.cycleStall st p
     (st', p') <- x

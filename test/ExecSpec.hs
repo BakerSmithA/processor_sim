@@ -4,7 +4,6 @@ import Test.Hspec
 import Instr
 import State as St
 import qualified Mem as Mem
-import Bypass as BP
 import Data.Int (Int32)
 import Debug.Trace
 import Exec

@@ -2,8 +2,6 @@ module Bypass where
 
 import Instr
 import Pipeline
-import Data.Map (Map)
-import qualified Data.Map as Map
 
 -- Data in the write-back stage that may be required for execution stage, e.g.
 -- data dependencies:

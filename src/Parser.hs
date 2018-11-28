@@ -41,7 +41,7 @@ instance Alternative Parser where
             Just r -> return r
 
 failure :: Parser a
-failure = Parser $ \bs -> Nothing
+failure = Parser $ \_ -> Nothing
 
 -- Parses byte from start of string.
 word8 :: Parser Word8
