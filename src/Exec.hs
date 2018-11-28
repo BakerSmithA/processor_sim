@@ -7,6 +7,7 @@ import Pipeline as P
 import qualified Mem as Mem
 import qualified Mem as Reg
 import qualified Bypass as BP
+import WriteBack
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)

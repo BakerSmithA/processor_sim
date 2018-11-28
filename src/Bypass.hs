@@ -2,6 +2,7 @@ module Bypass where
 
 import Instr
 import Pipeline
+import WriteBack
 
 -- Data in the write-back stage that may be required for execution stage, e.g.
 -- data dependencies:
