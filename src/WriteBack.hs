@@ -10,4 +10,4 @@ data WriteBack
     | WritePrint String
     | NoOp
     | Terminate
-    deriving (Show)
+    deriving (Show, Eq)
