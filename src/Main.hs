@@ -4,7 +4,7 @@ import Data.Word (Word32)
 import qualified Mem as Mem
 import Instr
 import State as State
-import VM as VM
+import Res as Res
 import State
 import Bypass as BP
 import qualified Parser as P

@@ -2,10 +2,10 @@ module Main where
 
 import Test.Hspec
 import ParserSpec
-import VMSpec
+import ExecSpec
 
 main :: IO ()
 main = hspec specs where
     specs = do
         parserSpec
-        vmSpec
+        execSpec
