@@ -32,9 +32,8 @@ alloc (Queue xs s e) = (s, Queue xs s' e) where
     s' = wrapIdx (s - 1) xs
 
 -- Remove element from head of queue.
-rem :: Queue a -> (a, Queue a)
-rem (Queue xs s e) = (x, Queue xs s e') where
-    x  = xs ! e
+rem :: Queue a -> Queue a
+rem (Queue xs s e) = Queue xs s e' where
     e' = wrapIdx (e - 1) xs
 
 -- Return element at the head of the queue.
