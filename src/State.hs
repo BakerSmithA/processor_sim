@@ -6,7 +6,7 @@ import qualified Mem as Reg
 import Instr
 import Bypass (Bypass)
 import qualified Bypass as BP
-import ROB (ROB)
+import ROB (ROB, ROBIdx)
 import qualified ROB as ROB
 import Error
 
@@ -101,7 +101,7 @@ regVal i st =
         Nothing ->
             case ROB.regVal i (rob st) of
                 Just val -> return val
-                Nothing -> 
+                Nothing ->
                     case Reg.load i (regs st) of
                         Nothing  -> crash (RegOutOfRange i) st
                         Just val -> return val
@@ -118,6 +118,11 @@ memVal i st =
                     case Mem.load i (mem st) of
                         Nothing  -> crash (MemOutOfRange i) st
                         Just val -> return val
+
+-- Allocates a space in the ROB, and returns index of allocated space.
+allocROB :: State -> (ROBIdx, State)
+allocROB st = (idx, st { rob = rob' }) where
+    (idx, rob') = ROB.alloc (rob st)
 
 -- Adds PC address at time of crash.
 crash :: (InstrAddr -> Error) -> State -> Res a

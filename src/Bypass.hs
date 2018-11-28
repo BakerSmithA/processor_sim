@@ -30,7 +30,7 @@ fromWriteback _ = Empty
 
 -- Convenience method for generating bypass values from write-back stage of pipeline.
 fromPipeline :: Pipeline -> Bypass
-fromPipeline p = maybe Empty fromWriteback (executed p)
+fromPipeline p = maybe Empty fromWriteback (fmap snd (executed p))
 
 -- Return value of register written if matches given register index, and bypass
 -- contains register write.

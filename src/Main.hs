@@ -1,12 +1,8 @@
 module Main where
 
-import Data.Word (Word32)
-import qualified Mem as Mem
 import Instr
-import State as State
-import Res as Res
 import State
-import Bypass as BP
+import Exec (run)
 import qualified Parser as P
 import qualified Data.ByteString as B
 import System.Environment

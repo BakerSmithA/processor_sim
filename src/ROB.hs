@@ -5,6 +5,8 @@ import qualified Queue as Q
 import WriteBack
 import Instr
 
+type ROBIdx = Int
+
 -- Entry into the Reorder Buffer. Whether the instruction is present determines
 -- whether the entry is ready to be committed.
 type Entry = Maybe WriteBack
@@ -14,13 +16,13 @@ data ROB = ROB (Queue Entry)
          deriving (Eq)
 
 -- Creates a Reorder Buffer of the given length containing empty entries.
-empty :: Int -> ROB
+empty :: ROBIdx -> ROB
 empty len = ROB (Q.fromList es) where
     es = replicate len Nothing
 
 -- Allocate a space for a not-yet-ready instruction, returning index to update
 -- once the instruction is ready.
-alloc :: ROB -> (Int, ROB)
+alloc :: ROB -> (ROBIdx, ROB)
 alloc (ROB q) = (i, ROB q') where
     (i, q') = Q.enq Nothing q
 
@@ -36,7 +38,7 @@ commitable (ROB q) = (wbs, ROB q') where
                 (wbs, q') = commitable' (Q.rem q)
 
 -- Set the writeback instruction computed by the execution step.
-set :: Int -> WriteBack -> ROB -> ROB
+set :: ROBIdx -> WriteBack -> ROB -> ROB
 set i wb (ROB q) = ROB q' where
     q' = Q.set i (Just wb) q
 

@@ -7,6 +7,7 @@ import Pipeline as P
 import qualified Mem as Mem
 import qualified Mem as Reg
 import qualified Bypass as BP
+import ROB (ROBIdx)
 import WriteBack
 
 -- E.g. Mult, Add, And, Or, etc
@@ -194,20 +195,20 @@ incPc st = do
 -- are available via bypass.
 shouldStall :: Pipeline -> Bool
 shouldStall p = f || d where
-    f  = maybe False isBranch (fetched p)
-    d  = maybe False isBranch (decoded p)
+    f  = maybe False isBranch (fmap snd (fetched p))
+    d  = maybe False isBranch (fmap snd (decoded p))
 
 -- Shifts instructions through pipeline.
-advancePipeline :: Maybe Instr -> State -> Pipeline -> Res (State, Pipeline)
+advancePipeline :: Maybe (ROBIdx, Instr) -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st p = do
     let executer = (flip exec) st
         writer   = (flip writeBack) st
-    (st', p') <- P.advance fetched decode executer writer p
+    (out, p') <- P.advance fetched decode executer writer p
     -- No write-back instructions may have been executed, in which case the state
     -- is not updated. Therefore, return old state.
-    let st'' = maybe st id st'
-    return (st'', p')
-
+    case out of
+        Nothing            -> return (st, p')
+        Just (robIdx, st') -> return (st', p')
 -- Returns state which contains bypass value that was just written as part of
 -- the write-back stage of the pipeline. This makes this value available to
 -- previous stages of the pipeline.
@@ -217,10 +218,12 @@ bypassed st p = St.withBypass b st where
 
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)
-cycle st p = do
-    fetched <- fetch st
-    (st', p') <- advancePipeline fetched st p
-    incSt <- incPc st'
+cycle st1 p = do
+    let (robIdx, st2) = St.allocROB st1
+    fetched <- fetch st2
+    let robFetched = fmap (\f -> (robIdx, f)) fetched
+    (st3, p') <- advancePipeline robFetched st2 p
+    incSt <- incPc st3
     return (bypassed incSt p', p')
 
 -- Shift instructions through pipeline without fetching a new instruction.
