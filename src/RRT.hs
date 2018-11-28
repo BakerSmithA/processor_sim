@@ -28,11 +28,14 @@ ins _    (RRT _ [])         = Nothing
 ins name (RRT m (phy:rest)) = Just (RRT (Map.insert name phy m) rest)
 
 -- Frees the name of a register from being mapped to a physical register, and
--- make the physical register available to others.
-free :: PhyReg -> RRT -> RRT
-free phy rrt = rrt { mapping = mapping', frees = frees' } where
-    mapping' = Map.delete phy (mapping rrt)
-    frees'   = phy:(frees rrt)
+-- make the physical register available to others. Returns Nothing if there
+-- is no mapping from the given register name.
+free :: RegIdx -> RRT -> Maybe RRT
+free reg rrt = do
+    phy <- get reg rrt
+    let mapping' = Map.delete reg (mapping rrt)
+        frees'   = phy:(frees rrt)
+    return rrt { mapping = mapping', frees = frees' }
 
 -- Return physical register mapped to name of register in source code, or
 -- Nothing if no mapping exists.
