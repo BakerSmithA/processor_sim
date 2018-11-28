@@ -5,5 +5,5 @@ module Helper where
 group :: Int -> [a] -> [[a]]
 group _ [] = []
 group n l
-  | n > 0 = (take n l) : (group n (drop n l))
-  | otherwise = error "Negative n"
+    | n > 0 = (take n l) : (group n (drop n l))
+    | otherwise = error "Negative n"

@@ -65,25 +65,25 @@ memVal i st =
                 Just val -> return val
 
 -- Loads contents of memory at address into register.
-load :: Addr -> RegIdx -> State -> VM WriteBackInstr
+load :: Addr -> RegIdx -> State -> VM WriteBack
 load addr r st = do
     val <- memVal addr st
     return (WriteReg r val)
 
 -- Stores contents of register into memory address.
-store :: RegIdx -> Addr -> State -> VM WriteBackInstr
+store :: RegIdx -> Addr -> State -> VM WriteBack
 store r addr st = do
     val <- regVal r st
     return (WriteMem addr val)
 
 -- Perform operation on value stored in register, and immediate value.
-opI :: RegIdx -> RegIdx -> ValOp -> Val -> State -> VM WriteBackInstr
+opI :: RegIdx -> RegIdx -> ValOp -> Val -> State -> VM WriteBack
 opI r x f imm st = do
     val <- regVal x st
     return (WriteReg r (f val imm))
 
 -- Perform operation on two values stored in registers.
-opReg :: RegIdx -> RegIdx -> ValOp -> RegIdx -> State -> VM WriteBackInstr
+opReg :: RegIdx -> RegIdx -> ValOp -> RegIdx -> State -> VM WriteBack
 opReg r x f y st = do
     val <- regVal y st
     opI r x f val st
@@ -122,14 +122,14 @@ decode :: Instr -> VM Instr
 decode = return
 
 -- Executes a branch by writing PC.
-branch :: Addr -> State -> VM WriteBackInstr
+branch :: Addr -> State -> VM WriteBack
 branch addr st = return (WriteReg pc addr') where
     pc = pcIdx st
     -- +1 because pipeline stalls until branch executed, and PC not updated.
     addr' = fromIntegral (addr+1)
 
 -- Executes a branch if the value in a register passes a condition, otherwise NoOp.
-branchCond :: RegIdx -> (Val -> Bool) -> Addr -> State -> VM WriteBackInstr
+branchCond :: RegIdx -> (Val -> Bool) -> Addr -> State -> VM WriteBack
 branchCond reg cond addr st = do
     val <- regVal reg st
     if cond val
@@ -138,7 +138,7 @@ branchCond reg cond addr st = do
 
 -- Perform execution stage of pipeline, and generate instruction of what
 -- to modify in machine.
-exec :: Instr -> State -> VM WriteBackInstr
+exec :: Instr -> State -> VM WriteBack
 -- Memory
 -- Move immediate value into register.
 exec (MoveI r val) st =
@@ -223,7 +223,7 @@ addOutput :: String -> State -> VM State
 addOutput s st = return st { output = (output st) ++ s }
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
-writeBack :: WriteBackInstr -> State -> VM State
+writeBack :: WriteBack -> State -> VM State
 writeBack instr st = do
     st' <- writeBack' instr
     return (St.incExec st')
