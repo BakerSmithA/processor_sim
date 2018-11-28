@@ -30,19 +30,25 @@ queueSpec = describe "queue" $ do
             x `shouldBe` 5
 
     context "peek" $ do
-        it "returns element at head" $ do
+        it "returns element at head of queue" $ do
             let (i, q) = Q.alloc (Q.fromList [0, 0, 0, 0])
-                q'     = Q.set i 5 q
-                x      = Q.peek q'
+                q' = Q.set i 5 q
+                x = Q.peek q'
             x `shouldBe` 5
 
-        it "returns head after removing elements" $ do
+    context "rem" $ do
+        it "removes element" $ do
+            let (i, q) = Q.alloc (Q.fromList [0, 0, 0, 0])
+                q'     = Q.set i 5 q
+                (x, _) = Q.rem q'
+            x `shouldBe` 5
+
+        it "removes multiple elements" $ do
             let (i1, q1) = Q.alloc (Q.fromList [0, 0, 0, 0])
                 q2       = Q.set i1 5 q1
                 (i2, q3) = Q.alloc q2
                 q4       = Q.set i2 10 q3
-                x        = Q.peek q4
-                q5       = Q.rem q4
-                y        = Q.peek q5
+                (x, q5)  = Q.rem q4
+                (y, _)   = Q.rem q5
             x `shouldBe` 5
             y `shouldBe` 10
