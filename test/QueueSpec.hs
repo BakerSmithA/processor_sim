@@ -5,32 +5,43 @@ import qualified Queue as Q
 
 queueSpec :: Spec
 queueSpec = describe "queue" $ do
-    context "ins" $ do
-        it "inserts element" $ do
-            let (i, q) = Q.ins 1 (Q.fromList [0, 0, 0, 0])
+    context "alloc" $ do
+        it "allocates space for element" $ do
+            let (i, q) = Q.alloc (Q.fromList [0, 0, 0, 0])
             i `shouldBe` 0
-            Q.elems q `shouldBe` [1, 0, 0, 0]
+            Q.elems q `shouldBe` [0, 0, 0, 0]
 
         it "inserts multiple elements and wraps start" $ do
-            let (i, q) = Q.ins 2 (snd $ Q.ins 1 (Q.fromList [0, 0, 0, 0]))
+            let (i, q) = Q.alloc (snd $ Q.alloc (Q.fromList [0, 0, 0, 0]))
             i `shouldBe` 3
-            Q.elems q `shouldBe` [1, 0, 0, 2]
+            Q.elems q `shouldBe` [0, 0, 0, 0]
 
-    context "rem" $ do
-        it "removes element" $ do
-            let (_, q) = Q.ins 1 (Q.fromList [0, 0, 0, 0])
-                (x, _) = Q.rem q
-            x `shouldBe` 1
-
-        it "removes multiple elements" $ do
-            let q = snd $ Q.ins 2 (snd $ Q.ins 1 (Q.fromList [0, 0, 0, 0]))
-                (x, q') = Q.rem q
-                (y, _) = Q.rem q'
-            x `shouldBe` 1
-            y `shouldBe` 2
+    context "set" $ do
+        it "sets element" $ do
+            let (i, q) = Q.alloc (Q.fromList [0, 0, 0, 0])
+                q' = Q.set i 10 q
+            Q.elems q' `shouldBe` [10, 0, 0, 0]
 
     context "get" $ do
         it "returns element at index" $ do
-            let (i, q) = Q.ins 5 (Q.fromList [0, 0, 0, 0])
-                x = Q.get i q
+            let (i, q) = Q.alloc (Q.fromList [0, 0, 0, 0])
+                q' = Q.set i 5 q
+                x = Q.get i q'
             x `shouldBe` 5
+
+    context "rem" $ do
+        it "removes element" $ do
+            let (i, q) = Q.alloc (Q.fromList [0, 0, 0, 0])
+                q'     = Q.set i 5 q
+                (x, _) = Q.rem q'
+            x `shouldBe` 5
+
+        it "removes multiple elements" $ do
+            let (i1, q1) = Q.alloc (Q.fromList [0, 0, 0, 0])
+                q2       = Q.set i1 5 q1
+                (i2, q3) = Q.alloc q2
+                q4       = Q.set i2 10 q3
+                (x, q5)  = Q.rem q4
+                (y, _)   = Q.rem q5
+            x `shouldBe` 5
+            y `shouldBe` 10

@@ -25,17 +25,22 @@ fromList xs = Queue arr s e where
 elems :: Queue a -> [a]
 elems = Arr.elems . _elems
 
--- Insert element at tail of queue, and return index inserted at)
-ins :: a -> Queue a -> (Int, Queue a)
-ins x (Queue xs s e) = (s, Queue xs' s' e) where
-    xs' = xs // [(s, x)]
-    s'  = wrapIdx (s - 1) xs
+-- Allocate space for an element at tail of queue, and return index allocated at.
+-- The `set` function can then be used to modify the contents of the address.
+alloc :: Queue a -> (Int, Queue a)
+alloc (Queue xs s e) = (s, Queue xs s' e) where
+    s' = wrapIdx (s - 1) xs
 
 -- Remove element from head of queue.
 rem :: Queue a -> (a, Queue a)
 rem (Queue xs s e) = (x, Queue xs s e') where
     x  = xs ! e
     e' = wrapIdx (e - 1) xs
+
+-- Set the element stored at a given index.
+set :: Int -> a -> Queue a -> Queue a
+set i x q = q { _elems = es } where
+    es = _elems q // [(i, x)]
 
 -- Return element at index in queue.
 get :: Int -> Queue a -> a
