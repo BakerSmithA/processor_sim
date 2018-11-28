@@ -5,5 +5,5 @@ import ROB
 
 robSpec :: Spec
 robSpec = describe "Reorder Buffer" $ do
-    it "allocates empty entry" $ do
+    it "returns all instructions that can be committed" $ do
         pending

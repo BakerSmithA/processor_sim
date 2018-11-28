@@ -11,6 +11,10 @@ type Entry = Maybe WriteBack
 -- Reorder Buffer, used to store write-back instructions before they are committed.
 data ROB = ROB (Queue Entry)
 
+empty :: Int -> ROB
+empty len = ROB (Q.fromList es) where
+    es = replicate len Nothing
+
 -- Allocate a space for a not-yet-ready instruction, returning index to update
 -- once the instruction is ready.
 allocEmpty :: ROB -> (Int, ROB)
