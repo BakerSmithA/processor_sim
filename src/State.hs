@@ -6,6 +6,8 @@ import qualified Mem as Reg
 import Instr
 import Bypass (Bypass)
 import qualified Bypass as BP
+import ROB (ROB)
+import qualified ROB as ROB
 import Error
 
 -- Stores current state of CPU at a point in time.
@@ -26,6 +28,7 @@ data State = State {
 
    -- Pipeline
   , bypass :: Bypass
+  , rob    :: ROB
 
    -- Stats
   , cycles :: Int
@@ -69,7 +72,7 @@ instance Show State where
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [Instr] -> State
-empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] BP.empty 0 0 where
+empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] BP.empty (ROB.empty 15) 0 0 where
     mem     = Mem.zeroed 127
     regs    = Mem.zeroed maxReg
     maxReg  = maximum [pc, sp, lr, bp, ret]
@@ -96,9 +99,12 @@ regVal i st =
     case BP.regVal i (bypass st) of
         Just val -> return val
         Nothing ->
-            case Reg.load i (regs st) of
-                Nothing  -> crash (RegOutOfRange i) st
+            case ROB.regVal i (rob st) of
                 Just val -> return val
+                Nothing -> 
+                    case Reg.load i (regs st) of
+                        Nothing  -> crash (RegOutOfRange i) st
+                        Just val -> return val
 
 -- Returns value of an address from bypass or memory. Crash if invalid address.
 memVal :: Addr -> State -> Res Val
@@ -106,9 +112,12 @@ memVal i st =
     case BP.memVal i (bypass st) of
         Just val -> return val
         Nothing ->
-            case Mem.load i (mem st) of
-                Nothing  -> crash (MemOutOfRange i) st
+            case ROB.memVal i (rob st) of
                 Just val -> return val
+                Nothing ->
+                    case Mem.load i (mem st) of
+                        Nothing  -> crash (MemOutOfRange i) st
+                        Just val -> return val
 
 -- Adds PC address at time of crash.
 crash :: (InstrAddr -> Error) -> State -> Res a

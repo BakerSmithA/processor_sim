@@ -12,7 +12,7 @@ data Queue a = Queue {
   , start  :: Int
     -- Points to end of queue, to where elements are taken from.
   , end    :: Int
-} deriving (Show)
+} deriving (Show, Eq)
 
 -- Return queue containing the given elements.
 fromList :: [a] -> Queue a

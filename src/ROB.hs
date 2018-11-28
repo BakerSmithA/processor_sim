@@ -11,6 +11,7 @@ type Entry = Maybe WriteBack
 
 -- Reorder Buffer, used to store write-back instructions before they are committed.
 data ROB = ROB (Queue Entry)
+         deriving (Eq)
 
 -- Creates a Reorder Buffer of the given length containing empty entries.
 empty :: Int -> ROB
