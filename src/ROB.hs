@@ -21,11 +21,13 @@ allocEmpty (ROB q) = (i, ROB q'') where
 -- Return all instructions that can be committed, i.e. are ready and are at the
 -- start of the queue.
 commitable :: ROB -> ([WriteBack], ROB)
-commitable (ROB q) =
-    case Q.peek q of
-        Nothing -> ([], ROB q)
-        Just wb -> (wb:wbs, rob) where
-            (wbs, rob) = commitable (ROB (Q.rem q))
+commitable (ROB q) = (wbs, ROB q') where
+    (wbs, q') = commitable' q
+    commitable' q =
+        case Q.peek q of
+            Nothing -> ([], q)
+            Just wb -> (wb:wbs, q') where
+                (wbs, q') = commitable' (Q.rem q)
 
 -- Set the writeback instruction computed by the execution step.
 set :: Int -> WriteBack -> ROB -> ROB
