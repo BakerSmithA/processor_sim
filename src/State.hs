@@ -7,7 +7,6 @@ import Instr
 import Bypass (Bypass)
 import qualified Bypass as BP
 import Error
-import RRT
 
 -- Stores current state of CPU at a point in time.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
