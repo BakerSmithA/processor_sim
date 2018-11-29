@@ -27,7 +27,7 @@ robSpec = describe "Reorder Buffer" $ do
 
             (i1, rob2) = ROB.alloc rob1
             (i2, rob3) = ROB.alloc rob2
-            (_,  rob4) = ROB.alloc rob3
+            (i3, rob4) = ROB.alloc rob3
             (i4, rob5) = ROB.alloc rob4
 
             rob6 = set i1 (WriteReg 0 10) rob5
@@ -35,8 +35,10 @@ robSpec = describe "Reorder Buffer" $ do
             rob8 = set i4 (WriteReg 1 5)  rob7
 
             (_, rob9) = ROB.commitable rob8
+            rob10     = set i3 (WriteReg 0 1) rob9
+            (cs, _)   = ROB.commitable rob10
 
-        rob9 `shouldBe` ROB.empty 5
+        cs `shouldBe` [WriteReg 0 1, WriteReg 1 5]
 
     it "allows allocation after commiting" $ do
         let rob1 = ROB.empty 5
@@ -50,7 +52,6 @@ robSpec = describe "Reorder Buffer" $ do
             (i3, rob6) = ROB.alloc rob5
             rob7       = ROB.set i2 (WriteReg 1 2) rob6
             rob8       = ROB.set i3 (WriteReg 2 3) rob7
-            (cs, rob9)    = ROB.commitable rob8
+            (cs, _)    = ROB.commitable rob8
 
         cs `shouldBe` [WriteReg 1 2, WriteReg 2 3]
-        rob9 `shouldBe` ROB.empty 5
