@@ -21,14 +21,14 @@ type Executer m a = Instr -> a -> m WriteBack
 -- Commits any executed instructions, and returns instructions that can be committed.
 type Committer m a = (ROBIdx, WriteBack) -> a -> m ([WriteBack], a)
 -- Writes instructions results to memory/registers.
-type Writer  m a = [WriteBack] -> a -> m a
+type Writer m a = [WriteBack] -> a -> m a
 
 -- Return pipeline with nothing in each stage.
 empty :: Pipeline
 empty = Pipeline Nothing Nothing Nothing Nothing
 
 -- Steps a fetched instruction through the decode section of the pipeline.
-decodeStep :: (Monad m) => Decoder m a -> Maybe (ROBIdx, Instr) -> a -> m (a, Maybe (ROBIdx, Instr))
+decodeStep :: (Monad m) => a -> Decoder m a -> Maybe (ROBIdx, Instr) -> m (a, Maybe (ROBIdx, Instr))
 decodeStep = undefined
 
 -- decodeStep decode x = maybe (return (Nothing, x)) success where
@@ -36,8 +36,14 @@ decodeStep = undefined
 --         (instr', x') <- decode instr x
 --         return $ Just (idx, instr', x')
 
-execStep :: (Monad m) => Executer m a -> Maybe (ROBIdx, Instr) -> a -> m (a, Maybe (ROBIdx, WriteBack))
+execStep :: (Monad m) => a -> Executer m a -> Maybe (ROBIdx, Instr) -> m (a, Maybe (ROBIdx, WriteBack))
 execStep = undefined
+
+commitStep :: (Monad m) => a -> Committer m a -> Maybe (ROBIdx, WriteBack) -> m (a, Maybe ([WriteBack]))
+commitStep = undefined
+
+wbStep :: (Monad m) => a -> Writer m a -> Maybe [WriteBack] -> m (Maybe a)
+wbStep = undefined
 
 -- Supplies new instruction into pipleine, and shifts in-flight instructions
 -- through pipeline. Returns write-back result, and new state of pipeline.
@@ -49,11 +55,12 @@ advance :: (Monad m) => Fetched a
                      -> Pipeline
                      -> m (Maybe a, Pipeline)
 
-advance newFetched decode exec commit write p = do
-    undefined
-
-snd3 :: (a, b, c) -> b
-snd3 (_, x, _) = x
+advance (f, x1) decode exec commit write p = do
+    (x2, d) <- decodeStep x1 decode f
+    (x3, e) <- execStep   x2 exec (decoded p)
+    (x4, c) <- commitStep x3 commit (executed p)
+    x5      <- wbStep     x4 write (committed p)
+    return (x5, Pipeline f d e c)
 
 -- -- Performs a step of the pipeline.
 -- step :: (Monad m) => (a -> m b) -> Maybe a -> m (Maybe b)
