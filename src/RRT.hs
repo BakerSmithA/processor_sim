@@ -12,13 +12,20 @@ type PhyReg = RegIdx
 data RRT = RRT { mapping :: Map RegIdx PhyReg, frees :: [PhyReg] }
          deriving (Show, Eq)
 
--- Return RRT with a maximum physical register index of that provided.
-empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> PhyReg -> RRT
-empty pc sp lr bp ret maxPhy = RRT (Map.empty) [0..maxPhy]
+-- Return RRT with a maximum physical register index of that provided, useful
+-- for testing.
+empty :: PhyReg -> RRT
+empty maxPhy = RRT (Map.empty) [0..maxPhy]
 
 -- Useful for testing.
 fromMapping :: [(RegIdx, PhyReg)] -> [PhyReg] -> RRT
 fromMapping m fs = RRT (Map.fromList m) fs
+
+-- Create RRT with specific registers, e.g. pc, already mapped.
+fromRegs :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> PhyReg -> RRT
+fromRegs pc sp lr bp ret maxPhy = fromMapping rs fs where
+    rs = [(reg, maxPhy-i) | (reg, i) <- zip [pc, sp, lr, bp, ret] (reverse [0..4])]
+    fs = [0..(maxPhy-5)]
 
 -- Create mapping from register name to physical register. The physical register
 -- is chosen from the remaining free registers. Or, returns Nothing if there
