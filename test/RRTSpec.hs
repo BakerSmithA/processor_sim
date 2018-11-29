@@ -1,13 +1,17 @@
 module RRTSpec (rrtSpec) where
 
 import Test.Hspec
-import RRT as RRT
+import RRT (RRT, PhyReg)
+import qualified RRT as RRT
+
+empty :: PhyReg -> RRT
+empty = RRT.empty 0 1 2 3 4
 
 rrtSpec :: Spec
 rrtSpec = describe "register rename table" $ do
     context "adding mapping" $ do
         it "allows adding mapping" $ do
-            let rrt  = RRT.empty 3
+            let rrt  = empty 3
                 rrt' = RRT.ins 1 rrt
                 exp  = Just (RRT.fromMapping [(1, 0)] [1, 2, 3])
             rrt' `shouldBe` exp
@@ -16,7 +20,7 @@ rrtSpec = describe "register rename table" $ do
         it "allows removal of mapping" $ do
             let rrt  = RRT.fromMapping [(1, 0)] [1, 2, 3]
                 rrt' = RRT.free 1 rrt
-                exp  = Just (RRT.empty 3)
+                exp  = Just (empty 3)
             rrt' `shouldBe` exp
 
         it "fails if no mapping exists" $ do

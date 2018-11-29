@@ -19,10 +19,10 @@ newlines (Ret)     = "\n"
 newlines (SysCall) = "\n"
 newlines _         = ""
 
-showInstrs :: [Instr] -> String
-showInstrs is = unlines strNumbered where
-    strNumbered = map (\(n, i) -> (show n) ++ ":\t" ++ (show i) ++ newlines i) numbered
-    numbered    = zip [0..] is
+-- showInstrs :: [Instr] -> String
+-- showInstrs is = unlines strNumbered where
+--     strNumbered = map (\(n, i) -> (show n) ++ ":\t" ++ (show i) ++ newlines i) numbered
+--     numbered    = zip [0..] is
 
 runBytecode :: FilePath -> IO ()
 runBytecode path = do
@@ -30,7 +30,7 @@ runBytecode path = do
     case P.parse P.instrs contents of
         Nothing -> putStrLn "Could not parse file"
         Just is -> do
-            putStrLn (showInstrs is)
+            --putStrLn (showInstrs is)
             runVm is
 
 main :: IO ()

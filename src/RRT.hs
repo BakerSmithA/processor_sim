@@ -13,8 +13,8 @@ data RRT = RRT { mapping :: Map RegIdx PhyReg, frees :: [PhyReg] }
          deriving (Show, Eq)
 
 -- Return RRT with a maximum physical register index of that provided.
-empty :: PhyReg -> RRT
-empty maxPhy = RRT (Map.empty) [0..maxPhy]
+empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> PhyReg -> RRT
+empty pc sp lr bp ret maxPhy = RRT (Map.empty) [0..maxPhy]
 
 -- Useful for testing.
 fromMapping :: [(RegIdx, PhyReg)] -> [PhyReg] -> RRT
