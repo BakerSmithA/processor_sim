@@ -28,7 +28,8 @@ fromWriteback (WriteReg reg val)  = BypassReg reg val
 fromWriteback (WriteMem addr val) = BypassMem addr val
 fromWriteback _ = Empty
 
--- Convenience method for generating bypass values from write-back stage of pipeline.
+-- Convenience method for generating bypass values from just executed stage of
+-- pipeline. The value is fed back into the pipeline.
 fromPipeline :: Pipeline -> Bypass
 fromPipeline p = maybe Empty fromWriteback (fmap snd (executed p))
 
