@@ -10,20 +10,24 @@ import ROB (ROB, ROBIdx)
 import qualified ROB as ROB
 import Error
 import WriteBack
+import RRT
 
 -- Stores current state of CPU at a point in time.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
 data State = State {
     -- Memory
     mem    :: Mem Addr Val
-  , regs   :: Mem RegIdx Val
+    -- Physical register file. Distinct from names of registers given in ASM.
+  , regs   :: Mem PhyReg Val
   , instrs :: Mem Addr Instr
+
     -- Register indices
   , pcIdx  :: RegIdx -- Program Counter
   , spIdx  :: RegIdx -- Stack Pointer
   , lrIdx  :: RegIdx -- Link Register
   , bpIdx  :: RegIdx -- Base Pointer
   , retIdx :: RegIdx -- Return value register (EAX in x86)
+
     -- Output
   , output :: String
 
@@ -34,6 +38,7 @@ data State = State {
    -- Stats
   , cycles :: Int
   , instrsExec :: Int
+
 } deriving (Eq)
 
 -- Current state of the virtual machine, or whether it crashed, e.g. by
@@ -81,7 +86,7 @@ empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] BP.empt
 
 -- Create default Res with 32 ints of memory, and 16 registers.
 emptyDefault :: [Instr] -> State
-emptyDefault = State.empty 12 13 14 15 16
+emptyDefault = State.empty 11 12 13 14 15
 
 withBypass :: Bypass -> State -> State
 withBypass b st = st { bypass = b }
