@@ -34,10 +34,14 @@ step f = maybe (return Nothing) success where
 
 -- Performs a step of the pipeline, passing through an acompanying ROBIdx.
 stepPassROB :: (Monad m) => (a -> m b) -> Maybe (ROBIdx, a) -> m (Maybe (ROBIdx, b))
-stepPassROB f pre = maybe (return Nothing) success pre where
-    success (idx, x) = do
-        post <- f x
-        return (Just (idx, post))
+stepPassROB f = step $ \(idx, x) -> do
+    y <- f x
+    return (idx, y)
+
+-- stepPassROB f pre = maybe (return Nothing) success pre where
+--     success (idx, x) = do
+--         post <- f x
+--         return (Just (idx, post))
 
 -- Supplies new instruction into pipleine, and shifts in-flight instructions
 -- through pipeline. Returns write-back result, and new state of pipeline.
