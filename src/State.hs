@@ -9,6 +9,7 @@ import qualified Bypass as BP
 import ROB (ROB, ROBIdx)
 import qualified ROB as ROB
 import Error
+import WriteBack
 
 -- Stores current state of CPU at a point in time.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -123,6 +124,12 @@ memVal i st =
 allocROB :: State -> (ROBIdx, State)
 allocROB st = (idx, st { rob = rob' }) where
     (idx, rob') = ROB.alloc (rob st)
+
+commit :: State -> [(ROBIdx, WriteBack)] -> ([WriteBack], State)
+commit st wbs =
+    let rob' = foldl (flip (uncurry ROB.set)) (rob st) wbs
+        (out, rob'') = ROB.commitable rob'
+    in (out, st { rob = rob'' })
 
 -- Adds PC address at time of crash.
 crash :: (InstrAddr -> Error) -> State -> Res a

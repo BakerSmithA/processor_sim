@@ -53,5 +53,5 @@ advance newFetched decode exec commit write p = do
     newDecoded  <- stepPassROB decode (fetched p)
     newExecuted <- stepPassROB exec   (decoded p)
     newComitted <- step        commit (executed p)
-    newWritten  <- step        (uncurry write)  newComitted
+    newWritten  <- step        (uncurry write) newComitted
     return (newWritten, Pipeline newFetched newDecoded newExecuted (fmap fst newComitted))

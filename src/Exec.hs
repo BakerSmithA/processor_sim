@@ -156,7 +156,7 @@ exec (PrintLn) _ =
 
 -- Places executed results in reorder buffer.
 commit :: State -> (ROBIdx, WriteBack) -> Res ([WriteBack], State)
-commit = undefined
+commit st wb = return (St.commit st [wb])
 
 -- Set the value stored in a register, or Crash if invalid index.
 setRegVal :: RegIdx -> Val -> State -> Res State
@@ -207,7 +207,7 @@ shouldStall p = f || d where
 advancePipeline :: Maybe (ROBIdx, Instr) -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st p = do
     let executer = (flip exec) st
-    (st', p') <- P.advance fetched decode executer (commit st) writeBack p
+    (st', p') <- P.advance fetched decode executer (Exec.commit st) writeBack p
     -- No write-back instructions may have been executed, in which case the state
     -- is not updated. Therefore, return old state.
     let st'' = maybe st id st'
