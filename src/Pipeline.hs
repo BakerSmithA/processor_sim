@@ -17,7 +17,7 @@ type Fetched a = (Maybe (ROBIdx, Instr), a)
 -- Decodes a fetched instruction.
 type Decoder m a = Instr -> a -> m (Instr, a)
 -- Executes a decoded instruction.
-type Executer m a = Instr -> a -> m WriteBack
+type Executer m a = Instr -> a -> m (WriteBack, a)
 -- Commits any executed instructions, and returns instructions that can be committed.
 type Committer m a = (ROBIdx, WriteBack) -> a -> m ([WriteBack], a)
 -- Writes instructions results to memory/registers.
@@ -29,19 +29,20 @@ empty = Pipeline Nothing Nothing Nothing Nothing
 
 -- Steps a fetched instruction through the decode section of the pipeline.
 decodeStep :: (Monad m) => a -> Decoder m a -> Maybe (ROBIdx, Instr) -> m (a, Maybe (ROBIdx, Instr))
-decodeStep = undefined
+decodeStep x decode = maybe (return (x, Nothing)) success where
+    success (idx, instr) = do
+        (instr', x') <- decode instr x
+        return (x', Just (idx, instr'))
 
--- decodeStep decode x = maybe (return (Nothing, x)) success where
---     success (idx, instr) = do
---         (instr', x') <- decode instr x
---         return $ Just (idx, instr', x')
-
+-- Steps a decoded instruction through the exectution step of the pipeline.
 execStep :: (Monad m) => a -> Executer m a -> Maybe (ROBIdx, Instr) -> m (a, Maybe (ROBIdx, WriteBack))
 execStep = undefined
 
+-- Steps an executed instruction through the commit stage of the pipeline.
 commitStep :: (Monad m) => a -> Committer m a -> Maybe (ROBIdx, WriteBack) -> m (a, Maybe ([WriteBack]))
 commitStep = undefined
 
+-- Steps a committed instruction through the writeback stage of the pipeline.
 wbStep :: (Monad m) => a -> Writer m a -> Maybe [WriteBack] -> m (Maybe a)
 wbStep = undefined
 

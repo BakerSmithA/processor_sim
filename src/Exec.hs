@@ -218,7 +218,9 @@ shouldStall p = f || d where
 -- Shifts instructions through pipeline.
 advancePipeline :: Maybe (ROBIdx, Instr) -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st p = do
-    (st', p') <- P.advance (fetched, st) decode exec Exec.commit writeBack p
+    -- TODO: Subsitute this with exec that updates state when RS implemented.
+    let executer = \i st -> fmap (\wb -> (wb, st)) (exec i st)
+    (st', p') <- P.advance (fetched, st) decode executer Exec.commit writeBack p
     -- No write-back instructions may have been executed, in which case the state
     -- is not updated. Therefore, return old state.
     let st'' = maybe st id st'
