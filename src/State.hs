@@ -34,6 +34,7 @@ data State = State {
    -- Pipeline
   , bypass :: Bypass
   , rob    :: ROB
+  , rrt    :: RRT
 
    -- Stats
   , cycles :: Int
@@ -78,11 +79,15 @@ instance Show State where
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [Instr] -> State
-empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] BP.empty (ROB.empty 15) 0 0 where
-    mem     = Mem.zeroed 127
-    regs    = Mem.zeroed maxReg
-    maxReg  = maximum [pc, sp, lr, bp, ret]
-    instrs' = Mem.fromList instrs
+empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt 0 0 where
+    maxPhyReg = 36
+    mem       = Mem.zeroed 127
+    regs      = Mem.zeroed maxPhyReg
+    maxReg    = maximum [pc, sp, lr, bp, ret]
+    instrs'   = Mem.fromList instrs
+    bypass    = BP.empty
+    rob       = ROB.empty 15
+    rrt       = RRT.fromRegs pc sp lr bp ret maxPhyReg
 
 -- Create default Res with 32 ints of memory, and 16 registers.
 emptyDefault :: [Instr] -> State
