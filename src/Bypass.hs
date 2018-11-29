@@ -16,7 +16,7 @@ import WriteBack
 data Bypass = Empty
             | BypassReg RegIdx Val
             | BypassMem Addr Val
-            deriving (Eq)
+            deriving (Eq, Show)
 
 empty :: Bypass
 empty = Empty

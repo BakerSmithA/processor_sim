@@ -74,18 +74,19 @@ instance Show State where
           "Cycles : "  ++ show (cycles st)
      ++ "\nInstrs : "  ++ show (instrsExec st)
      ++ "\nIpC    : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double)
+     ++ "\nROB    : "  ++ show (rob st)
      ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
      ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [Instr] -> State
 empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt 0 0 where
-    maxPhyReg = 36
+    maxPhyReg = 15
     mem       = Mem.zeroed 127
     regs      = Mem.zeroed maxPhyReg
     instrs'   = Mem.fromList instrs
     bypass    = BP.empty
-    rob       = ROB.empty 15
+    rob       = ROB.empty 5
     rrt       = RRT.fromRegs pc sp lr bp ret maxPhyReg
 
 -- Create default Res with 32 ints of memory, and 16 registers.

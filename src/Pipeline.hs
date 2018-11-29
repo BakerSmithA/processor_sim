@@ -27,24 +27,34 @@ type Writer m a = [WriteBack] -> a -> m a
 empty :: Pipeline
 empty = Pipeline Nothing Nothing Nothing Nothing
 
+-- Helper function for steps of pipeline.
+step :: (Monad m) => (a -> b -> m (a, c)) -> a -> Maybe b -> m (a, Maybe c)
+step f x = maybe (return (x, Nothing)) success where
+    success y = do
+        (x', z) <- f x y
+        return (x', Just z)
+
 -- Steps a fetched instruction through the decode section of the pipeline.
-decodeStep :: (Monad m) => a -> Decoder m a -> Maybe (ROBIdx, Instr) -> m (a, Maybe (ROBIdx, Instr))
-decodeStep x decode = maybe (return (x, Nothing)) success where
-    success (idx, instr) = do
-        (instr', x') <- decode instr x
-        return (x', Just (idx, instr'))
+decodeStep :: (Monad m) => Decoder m a -> a -> Maybe (ROBIdx, Instr) -> m (a, Maybe (ROBIdx, Instr))
+decodeStep decode = step $ \x (idx, instr) -> do
+    (decoded, x') <- decode instr x
+    return (x', (idx, decoded))
 
 -- Steps a decoded instruction through the exectution step of the pipeline.
-execStep :: (Monad m) => a -> Executer m a -> Maybe (ROBIdx, Instr) -> m (a, Maybe (ROBIdx, WriteBack))
-execStep = undefined
+execStep :: (Monad m) => Executer m a -> a -> Maybe (ROBIdx, Instr) -> m (a, Maybe (ROBIdx, WriteBack))
+execStep exec = step $ \x (idx, instr) -> do
+    (wb, x') <- exec instr x
+    return (x', (idx, wb))
 
 -- Steps an executed instruction through the commit stage of the pipeline.
-commitStep :: (Monad m) => a -> Committer m a -> Maybe (ROBIdx, WriteBack) -> m (a, Maybe ([WriteBack]))
-commitStep = undefined
+commitStep :: (Monad m) => Committer m a -> a -> Maybe (ROBIdx, WriteBack) -> m (a, Maybe ([WriteBack]))
+commitStep commit = step $ \x (idx, wb) -> do
+    (wbs, x') <- commit (idx, wb) x
+    return (x', wbs)
 
 -- Steps a committed instruction through the writeback stage of the pipeline.
-wbStep :: (Monad m) => a -> Writer m a -> Maybe [WriteBack] -> m (Maybe a)
-wbStep = undefined
+wbStep :: (Monad m) => Writer m a -> a -> Maybe [WriteBack] -> m a
+wbStep write x = maybe (return x) (\wbs -> write wbs x)
 
 -- Supplies new instruction into pipleine, and shifts in-flight instructions
 -- through pipeline. Returns write-back result, and new state of pipeline.
@@ -54,32 +64,11 @@ advance :: (Monad m) => Fetched a
                      -> Committer m a
                      -> Writer m a
                      -> Pipeline
-                     -> m (Maybe a, Pipeline)
+                     -> m (a, Pipeline)
 
 advance (f, x1) decode exec commit write p = do
-    (x2, d) <- decodeStep x1 decode f
-    (x3, e) <- execStep   x2 exec (decoded p)
-    (x4, c) <- commitStep x3 commit (executed p)
-    x5      <- wbStep     x4 write (committed p)
+    (x2, d) <- decodeStep decode x1 (fetched p)
+    (x3, e) <- execStep   exec   x2 (decoded p)
+    (x4, c) <- commitStep commit x3 (executed p)
+    x5      <- wbStep     write  x4 (committed p)
     return (x5, Pipeline f d e c)
-
--- -- Performs a step of the pipeline.
--- step :: (Monad m) => (a -> m b) -> Maybe a -> m (Maybe b)
--- step f = maybe (return Nothing) success where
---     success x = do
---         y <- f x
---         return (Just y)
---
--- -- Performs a step of the pipeline, passing through an acompanying ROBIdx.
--- stepPassROB :: (Monad m) => (a -> m b) -> Maybe (ROBIdx, a) -> m (Maybe (ROBIdx, b))
--- stepPassROB f = step $ \(idx, x) -> do
---     y <- f x
---     return (idx, y)
-
--- advance newFetched decode exec commit write p = do
---     -- Decode the previously fetched instruction to obtain the currently decoded instruction.
---     newDecoded  <- stepPassROB decode (fetched p)
---     newExecuted <- stepPassROB exec   (decoded p)
---     newComitted <- step        commit (executed p)
---     newWritten  <- step        (uncurry write) newComitted
---     return (newWritten, Pipeline newFetched newDecoded newExecuted (fmap fst newComitted))
