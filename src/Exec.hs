@@ -209,6 +209,7 @@ advancePipeline fetched st p = do
     case out of
         Nothing            -> return (st, p')
         Just (robIdx, st') -> return (st', p')
+
 -- Returns state which contains bypass value that was just written as part of
 -- the write-back stage of the pipeline. This makes this value available to
 -- previous stages of the pipeline.
