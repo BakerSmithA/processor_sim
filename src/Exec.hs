@@ -1,5 +1,6 @@
 module Exec where
 
+import Control.Monad (foldM)
 import State as St
 import Error
 import Instr
@@ -153,6 +154,10 @@ exec (Print r) st = do
 exec (PrintLn) _ =
     return (WritePrint "\n")
 
+-- Places executed results in reorder buffer.
+commit :: State -> (ROBIdx, WriteBack) -> Res ([WriteBack], State)
+commit = undefined
+
 -- Set the value stored in a register, or Crash if invalid index.
 setRegVal :: RegIdx -> Val -> State -> Res State
 setRegVal i val st =
@@ -172,16 +177,16 @@ addOutput :: String -> State -> Res State
 addOutput s st = return st { output = (output st) ++ s }
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
-writeBack :: WriteBack -> State -> Res State
-writeBack instr st = do
-    st' <- writeBack' instr
+writeBack :: [WriteBack] -> State -> Res State
+writeBack is st = do
+    st' <- foldM writeBack' st is
     return (St.incExec st')
         where
-            writeBack' (WriteReg r val) = setRegVal r val st
-            writeBack' (WriteMem i val) = setMemVal i val st
-            writeBack' (WritePrint s)   = addOutput s st
-            writeBack' (NoOp)           = return st
-            writeBack' (Terminate)      = Exit st
+            writeBack' st (WriteReg r val) = setRegVal r val st
+            writeBack' st (WriteMem i val) = setMemVal i val st
+            writeBack' st (WritePrint s)   = addOutput s st
+            writeBack' st (NoOp)           = return st
+            writeBack' st (Terminate)      = Exit st
 
 -- Increment PC by 1.
 incPc :: State -> Res State
@@ -202,13 +207,11 @@ shouldStall p = f || d where
 advancePipeline :: Maybe (ROBIdx, Instr) -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st p = do
     let executer = (flip exec) st
-        writer   = (flip writeBack) st
-    (out, p') <- P.advance fetched decode executer writer p
+    (st', p') <- P.advance fetched decode executer (commit st) writeBack p
     -- No write-back instructions may have been executed, in which case the state
     -- is not updated. Therefore, return old state.
-    case out of
-        Nothing            -> return (st, p')
-        Just (robIdx, st') -> return (st', p')
+    let st'' = maybe st id st'
+    return (st'', p')
 
 -- Returns state which contains bypass value that was just written as part of
 -- the write-back stage of the pipeline. This makes this value available to

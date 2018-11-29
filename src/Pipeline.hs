@@ -19,7 +19,7 @@ type Executer m = Instr -> m WriteBack
 -- Commits any executed instructions, and returns instructions that can be committed.
 type Committer m a = (ROBIdx, WriteBack) -> m ([WriteBack], a)
 -- Writes instructions results to memory/registers.
-type Writer  m a = ([WriteBack], a) -> m a
+type Writer  m a = [WriteBack] -> a -> m a
 
 -- Return pipeline with nothing in each stage.
 empty :: Pipeline
@@ -53,5 +53,5 @@ advance newFetched decode exec commit write p = do
     newDecoded  <- stepPassROB decode (fetched p)
     newExecuted <- stepPassROB exec   (decoded p)
     newComitted <- step        commit (executed p)
-    newWritten  <- step        write  newComitted
+    newWritten  <- step        (uncurry write)  newComitted
     return (newWritten, Pipeline newFetched newDecoded newExecuted (fmap fst newComitted))
