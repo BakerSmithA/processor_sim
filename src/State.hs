@@ -83,7 +83,6 @@ empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass 
     maxPhyReg = 36
     mem       = Mem.zeroed 127
     regs      = Mem.zeroed maxPhyReg
-    maxReg    = maximum [pc, sp, lr, bp, ret]
     instrs'   = Mem.fromList instrs
     bypass    = BP.empty
     rob       = ROB.empty 15
@@ -131,8 +130,10 @@ memVal i st =
                         Just val -> return val
 
 -- Allocates a space in the ROB, and returns index of allocated space.
-allocROB :: State -> (ROBIdx, State)
-allocROB st = (idx, st { rob = rob' }) where
+-- Returns Nothing if ROB is full.
+-- TODO: Check whether ROB is full.
+allocROB :: State -> Maybe (ROBIdx, State)
+allocROB st = Just (idx, st { rob = rob' }) where
     (idx, rob') = ROB.alloc (rob st)
 
 commit :: State -> [(ROBIdx, WriteBack)] -> ([WriteBack], State)

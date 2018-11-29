@@ -10,6 +10,7 @@ import qualified Mem as Reg
 import qualified Bypass as BP
 import ROB (ROBIdx)
 import WriteBack
+import RRT
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)
@@ -58,18 +59,27 @@ notVal :: Val -> Val
 notVal x | x == 1    = 0
          | otherwise = 1
 
--- Perform fetch state of pipeline by retreiving instruction. Or, return Nothing
--- if the value of the pc is after the last instruction.
-fetch :: State -> Res (Maybe Instr)
+-- Perform fetch state of pipeline by retreiving instruction, this instruction
+-- is then allocated a space in the ROB to have its result written to.
+-- Or, return Nothing if the value of the pc is after the last instruction,
+-- or there is no space in the ROB.
+fetch :: State -> Res (Maybe (ROBIdx, Instr, State))
 fetch st = do
     pc <- fmap fromIntegral (regVal (pcIdx st) st)
-    case Mem.load pc (instrs st) of
-        Nothing    -> return Nothing
-        Just instr -> return (Just instr)
+    return $ Mem.load pc (instrs st) >>= allocFetched st
 
--- Perform decode stage of pipeline.
-decode :: Instr -> Res Instr
-decode = return
+-- Allocate a space in the ROB for an instruction that was fetched.
+-- Returns an index in the ROB to write the result of the instruction to, or
+-- Nothing if the ROB is full.
+allocFetched :: State -> Instr -> Maybe (ROBIdx, Instr, State)
+allocFetched st instr = do
+    (idx, st') <- St.allocROB st
+    return (idx, instr, st')
+
+-- Because instruction are already parsed into struct, no need to decode.
+-- However, register renaming will be performed at this step.
+decode :: State -> Instr -> Res (Instr, State)
+decode st i = return (i, st)
 
 -- Executes a branch by writing PC.
 branch :: Addr -> State -> Res WriteBack
@@ -155,8 +165,8 @@ exec (PrintLn) _ =
     return (WritePrint "\n")
 
 -- Places executed results in reorder buffer.
-commit :: State -> (ROBIdx, WriteBack) -> Res ([WriteBack], State)
-commit st wb = return (St.commit st [wb])
+commit :: (ROBIdx, WriteBack) -> State -> Res ([WriteBack], State)
+commit wb st = return (St.commit st [wb])
 
 -- Set the value stored in a register, or Crash if invalid index.
 setRegVal :: RegIdx -> Val -> State -> Res State
@@ -204,10 +214,11 @@ shouldStall p = f || d where
     d  = maybe False isBranch (fmap snd (decoded p))
 
 -- Shifts instructions through pipeline.
-advancePipeline :: Maybe (ROBIdx, Instr) -> State -> Pipeline -> Res (State, Pipeline)
+advancePipeline :: Maybe (ROBIdx, Instr, State) -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st p = do
-    let executer = (flip exec) st
-    (st', p') <- P.advance fetched decode executer (Exec.commit st) writeBack p
+    let decoder   = decode st
+        committer = Exec.commit
+    (st', p') <- P.advance fetched decoder exec committer writeBack p
     -- No write-back instructions may have been executed, in which case the state
     -- is not updated. Therefore, return old state.
     let st'' = maybe st id st'
@@ -222,12 +233,10 @@ bypassed st p = St.withBypass b st where
 
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)
-cycle st1 p = do
-    let (robIdx, st2) = St.allocROB st1
-    fetched <- fetch st2
-    let robFetched = fmap (\f -> (robIdx, f)) fetched
-    (st3, p') <- advancePipeline robFetched st2 p
-    incSt <- incPc st3
+cycle st p = do
+    fetched <- fetch st
+    (st', p') <- advancePipeline fetched st p
+    incSt <- incPc st'
     return (bypassed incSt p', p')
 
 -- Shift instructions through pipeline without fetching a new instruction.
