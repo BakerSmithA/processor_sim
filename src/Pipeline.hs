@@ -13,9 +13,9 @@ data Pipeline = Pipeline {
 } deriving (Show)
 
 -- Instruction that was fetched.
-type Fetched a = Maybe (ROBIdx, Instr, a)
+type Fetched a = (Maybe (ROBIdx, Instr), a)
 -- Decodes a fetched instruction.
-type Decoder m a = Instr -> m (Instr, a)
+type Decoder m a = Instr -> a -> m (Instr, a)
 -- Executes a decoded instruction.
 type Executer m a = Instr -> a -> m WriteBack
 -- Commits any executed instructions, and returns instructions that can be committed.
@@ -27,6 +27,18 @@ type Writer  m a = [WriteBack] -> a -> m a
 empty :: Pipeline
 empty = Pipeline Nothing Nothing Nothing Nothing
 
+-- Steps a fetched instruction through the decode section of the pipeline.
+decodeStep :: (Monad m) => Decoder m a -> Maybe (ROBIdx, Instr) -> a -> m (a, Maybe (ROBIdx, Instr))
+decodeStep = undefined
+
+-- decodeStep decode x = maybe (return (Nothing, x)) success where
+--     success (idx, instr) = do
+--         (instr', x') <- decode instr x
+--         return $ Just (idx, instr', x')
+
+execStep :: (Monad m) => Executer m a -> Maybe (ROBIdx, Instr) -> a -> m (a, Maybe (ROBIdx, WriteBack))
+execStep = undefined
+
 -- Supplies new instruction into pipleine, and shifts in-flight instructions
 -- through pipeline. Returns write-back result, and new state of pipeline.
 advance :: (Monad m) => Fetched a
@@ -37,7 +49,11 @@ advance :: (Monad m) => Fetched a
                      -> Pipeline
                      -> m (Maybe a, Pipeline)
 
-advance = undefined
+advance newFetched decode exec commit write p = do
+    undefined
+
+snd3 :: (a, b, c) -> b
+snd3 (_, x, _) = x
 
 -- -- Performs a step of the pipeline.
 -- step :: (Monad m) => (a -> m b) -> Maybe a -> m (Maybe b)

@@ -63,10 +63,12 @@ notVal x | x == 1    = 0
 -- is then allocated a space in the ROB to have its result written to.
 -- Or, return Nothing if the value of the pc is after the last instruction,
 -- or there is no space in the ROB.
-fetch :: State -> Res (Maybe (ROBIdx, Instr, State))
+fetch :: State -> Res (Maybe (ROBIdx, Instr), State)
 fetch st = do
     pc <- fmap fromIntegral (regVal (pcIdx st) st)
-    return $ Mem.load pc (instrs st) >>= allocFetched st
+    case Mem.load pc (instrs st) >>= allocFetched st of
+        Nothing                -> return (Nothing, st)
+        Just (idx, instr, st') -> return (Just (idx, instr), st')
 
 -- Allocate a space in the ROB for an instruction that was fetched.
 -- Returns an index in the ROB to write the result of the instruction to, or
@@ -78,8 +80,8 @@ allocFetched st instr = do
 
 -- Because instruction are already parsed into struct, no need to decode.
 -- However, register renaming will be performed at this step.
-decode :: State -> Instr -> Res (Instr, State)
-decode st i = return (i, st)
+decode :: Instr -> State -> Res (Instr, State)
+decode i st = return (i, st)
 
 -- Executes a branch by writing PC.
 branch :: Addr -> State -> Res WriteBack
@@ -214,11 +216,9 @@ shouldStall p = f || d where
     d  = maybe False isBranch (fmap snd (decoded p))
 
 -- Shifts instructions through pipeline.
-advancePipeline :: Maybe (ROBIdx, Instr, State) -> State -> Pipeline -> Res (State, Pipeline)
+advancePipeline :: Maybe (ROBIdx, Instr) -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st p = do
-    let decoder   = decode st
-        committer = Exec.commit
-    (st', p') <- P.advance fetched decoder exec committer writeBack p
+    (st', p') <- P.advance (fetched, st) decode exec Exec.commit writeBack p
     -- No write-back instructions may have been executed, in which case the state
     -- is not updated. Therefore, return old state.
     let st'' = maybe st id st'
@@ -234,7 +234,7 @@ bypassed st p = St.withBypass b st where
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)
 cycle st p = do
-    fetched <- fetch st
+    (fetched, st) <- fetch st
     (st', p') <- advancePipeline fetched st p
     incSt <- incPc st'
     return (bypassed incSt p', p')
