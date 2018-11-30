@@ -107,11 +107,9 @@ incExec st = st { instrsExec = (instrsExec st) + 1 }
 
 -- Returns the index of the physical register mapped to the named register.
 namedReg :: (State -> RegIdx) -> State -> Res PhyReg
-namedReg getReg st =
+namedReg getReg st = do
     let reg = getReg st
-    in case RRT.get reg (rrt st) of
-        Nothing  -> crash (NoPhyRegAssigned reg) st
-        Just phy -> return phy
+    getPhyReg reg st
 
 -- Returns value of a named register, e.g. pc
 namedRegVal :: (State -> RegIdx) -> State -> Res Val
@@ -176,20 +174,6 @@ allocPhyReg reg st = do
     (phy, rrt') <- RRT.ins reg (rrt st)
     return (phy, st { rrt=rrt' })
 
--- Convenience function for allocating two physical registers.
-alloc2PhyReg :: RegIdx -> RegIdx -> State -> Maybe (PhyReg, PhyReg, State)
-alloc2PhyReg r1 r2 st1 = do
-    (p1, st2) <- allocPhyReg r1 st1
-    (p2, st3) <- allocPhyReg r2 st2
-    return (p1, p2, st3)
-
--- Convenience function for allocating three physical registers.
-alloc3PhyReg :: RegIdx -> RegIdx -> RegIdx -> State -> Maybe (PhyReg, PhyReg, PhyReg, State)
-alloc3PhyReg r1 r2 r3 st1 = do
-    (p1, p2, st2) <- alloc2PhyReg r1 r2 st1
-    (p3, st3)     <- allocPhyReg r3 st2
-    return (p1, p2, p3, st3)
-
 -- Frees a physical register allocated to a register name.
 -- Crashes if there if no mapping to the physical register.
 freePhyReg :: PhyReg -> State -> Res State
@@ -197,6 +181,14 @@ freePhyReg phy st =
     case RRT.free phy (rrt st) of
         Nothing   -> crash (FreeNonExistentPhyReg phy) st
         Just rrt' -> return st { rrt=rrt' }
+
+-- Returns physical register mapped to register name, or crashes if there
+-- is no mapping.
+getPhyReg :: RegIdx -> State -> Res PhyReg
+getPhyReg reg st =
+    case RRT.get reg (rrt st) of
+        Nothing  -> crash (NoPhyRegAssigned reg) st
+        Just phy -> return phy
 
 -- Adds PC address at time of crash.
 crash :: (InstrAddr -> Error) -> State -> Res a

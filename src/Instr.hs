@@ -4,11 +4,11 @@ import Data.Int (Int32)
 import Data.Word (Word8, Word32)
 
 type RegIdx = Word8
-type PhyReg = RegIdx--Int
+type PhyReg = RegIdx
 type Addr = Word32
 type Val = Int32
 
-data TemplateInstr reg addr
+data TemplateInstr reg
     -- Memory
     = MoveI        { r :: reg, val :: Val }                  -- r <- val
     | Move         { r :: reg, from :: reg }                 -- r <- [from]
@@ -29,9 +29,9 @@ data TemplateInstr reg addr
     | And  { r :: reg, x :: reg, y :: reg } -- r <- [x] && [y]
     | Not  { r :: reg, x :: reg }           -- r <- ![x]
     -- Branching
-    | B  { addr :: addr }              -- Unconditional branch to addr
-    | BT { r    :: reg, addr :: addr } -- Branch to addr if r == 1
-    | BF { r    :: reg, addr :: addr } -- Branch to addr if r == 0
+    | B  { addr :: Addr }              -- Unconditional branch to addr
+    | BT { r    :: reg, addr :: Addr } -- Branch to addr if r == 1
+    | BF { r    :: reg, addr :: Addr } -- Branch to addr if r == 0
     | Ret                              -- Branch to address in link register.
     | SysCall                          -- Terminates the program.
     -- Debugging
@@ -39,10 +39,12 @@ data TemplateInstr reg addr
     | PrintLn            -- Print a newline.
     deriving (Eq, Show)
 
-type FInstr = TemplateInstr RegIdx Addr
-type DInstr = TemplateInstr PhyReg Addr
+-- Fetched instruction.
+type FInstr = TemplateInstr RegIdx
+-- Decoded instruction.
+type DInstr = TemplateInstr PhyReg
 
-isBranch :: TemplateInstr r a -> Bool
+isBranch :: TemplateInstr r -> Bool
 isBranch (B _)    = True
 isBranch (BT _ _) = True
 isBranch (BF _ _) = True
