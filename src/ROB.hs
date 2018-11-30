@@ -34,8 +34,11 @@ commitable (ROB q) = (wbs, ROB q') where
     commitable' q =
         case Q.peek q of
             Nothing -> ([], q)
-            Just wb -> (wb:wbs, q') where
-                (wbs, q') = commitable' (Q.rem q)
+            Just entry ->
+                case entry of
+                    Nothing -> ([], q)
+                    Just wb -> (wb:wbs, q') where
+                        (wbs, q') = commitable' (Q.rem q)
 
 -- Set the writeback instruction computed by the execution step.
 set :: ROBIdx -> WriteBack -> ROB -> ROB

@@ -13,10 +13,10 @@ type Len   = Int
 data Range = Range Start End Len
            deriving (Show, Eq)
 
--- Returns index of last element in queue, or error if the queue is empty.
-last :: Range -> Int
-last r@(Range _ e l) | not (isEmpty r) = e
-                     | otherwise       = error "Last of empty Queue"
+-- Returns index of last element in queue, or Nothing if the queue is empty.
+last :: Range -> Maybe Int
+last r@(Range _ e l) | not (isEmpty r) = Just e
+                     | otherwise       = Nothing
 
 -- Decrements the start pointer, thus allowing space for a new element to be
 -- added. Returns the old start pointer, which can now be used to insert
@@ -67,7 +67,7 @@ allElems :: Queue a -> [a]
 allElems (Queue es _) = Arr.elems es
 
 -- Returns all valid elements of the queue, in order from start to end.
--- I.e. most recent to least recent.
+-- I.e. newest to oldest.
 elems :: Queue a -> [a]
 elems (Queue es r) = foldr f [] (indices r) where
     f i acc = (es ! i):acc
@@ -83,8 +83,8 @@ rem :: Queue a -> Queue a
 rem (Queue es r) = Queue es (decEnd r) where
 
 -- Return element at the start of the end, without modifying queue.
-peek :: (Show a) => Queue a -> a
-peek (Queue es r) = es ! (Queue.last r)
+peek :: (Show a) => Queue a -> Maybe a
+peek (Queue es r) = fmap (\i -> es ! i) (Queue.last r)
 
 -- Set the element stored at a given index.
 set :: Int -> a -> Queue a -> Queue a
