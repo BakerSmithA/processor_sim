@@ -27,6 +27,9 @@ decodeI (Move r from) st1 = do
     pfrom <- getPReg from st2
     return (Move pr pfrom, st2)
 
+decodeI (SysCall) st =
+    return (SysCall, st)
+
 -- Convenience function for allocating a physical register.
 takePReg :: RegIdx -> State -> MaybeT Res (PhyReg, State)
 takePReg r st = MaybeT (return (St.allocPhyReg r st))
