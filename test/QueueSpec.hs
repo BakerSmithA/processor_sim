@@ -8,17 +8,17 @@ queueSpec = describe "queue" $ do
     context "enq" $ do
         it "enqueues element" $ do
             let (_, q) = Q.enq 5 (Q.fromList [0, 0, 0, 0])
-            Q.elems q `shouldBe` [5, 0, 0, 0]
+            Q.elems q `shouldBe` [5]
 
-        it "inserts multiple elements and wraps start" $ do
+        it "inserts multiple elements" $ do
             let (_, q) = Q.enq 5 (snd $ Q.enq 10 (Q.fromList [0, 0, 0, 0]))
-            Q.elems q `shouldBe` [10, 0, 0, 5]
+            Q.elems q `shouldBe` [5, 10]
 
     context "set" $ do
         it "sets element" $ do
             let (i, q) = Q.enq 10 (Q.fromList [0, 0, 0, 0])
                 q' = Q.set i 5 q
-            Q.elems q' `shouldBe` [5, 0, 0, 0]
+            Q.elems q' `shouldBe` [5]
 
     context "get" $ do
         it "returns element at index" $ do
@@ -45,7 +45,7 @@ queueSpec = describe "queue" $ do
         it "returns element closest to tail (most recent) that matches predicate" $ do
             let q = snd $ Q.enq 15 (snd $ Q.enq 10 (snd $ Q.enq 5 (Q.fromList [0, 0, 0, 0])))
                 x = Q.findNewest (>9) q
-            x `shouldBe` Just 15
+            x `shouldBe` Just 10
 
         it "returns Nothing if no matches" $ do
             let q = snd $ Q.enq 15 (snd $ Q.enq 10 (snd $ Q.enq 5 (Q.fromList [0, 0, 0, 0])))
