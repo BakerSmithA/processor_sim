@@ -161,7 +161,10 @@ allocPhyReg reg st = do
 -- Frees a physical register allocated to a register name.
 -- Crashes if there if no mapping to the physical register.
 freePhyReg :: PhyReg -> State -> Res State
-freePhyReg phy st = undefined
+freePhyReg phy st =
+    case RRT.free phy (rrt st) of
+        Nothing   -> crash (FreeNonExistentPhyReg phy) st
+        Just rrt' -> return st { rrt=rrt' }
 
 -- Adds PC address at time of crash.
 crash :: (InstrAddr -> Error) -> State -> Res a
