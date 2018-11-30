@@ -154,7 +154,14 @@ commitROB st =
 -- Takes a free physical register and returns its index.
 -- Returns Nothing if there are no physical registers free.
 allocPhyReg :: RegIdx -> State -> Maybe (PhyReg, State)
-allocPhyReg reg st = undefined
+allocPhyReg reg st = do
+    (phy, rrt') <- RRT.ins reg (rrt st)
+    return (phy, st { rrt=rrt' })
+
+-- Frees a physical register allocated to a register name.
+-- Crashes if there if no mapping to the physical register.
+freePhyReg :: PhyReg -> State -> Res State
+freePhyReg phy st = undefined
 
 -- Adds PC address at time of crash.
 crash :: (InstrAddr -> Error) -> State -> Res a

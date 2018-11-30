@@ -10,7 +10,6 @@ import qualified Mem as Reg
 import qualified Bypass as BP
 import ROB (ROBIdx)
 import WriteBack
-import RRT
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)

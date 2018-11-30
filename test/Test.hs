@@ -10,8 +10,8 @@ import ExecSpec
 main :: IO ()
 main = hspec specs where
     specs = do
-        --parserSpec
-        --rrtSpec
-        --queueSpec
-        --robSpec
+        parserSpec
+        rrtSpec
+        queueSpec
+        robSpec
         execSpec
