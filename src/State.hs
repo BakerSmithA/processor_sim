@@ -11,7 +11,6 @@ import qualified ROB as ROB
 import Error
 import WriteBack
 import RRT
-import Debug.Trace
 
 -- Stores current state of CPU at a point in time.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -72,9 +71,10 @@ instance Monad Res where
 
 instance Show State where
     show st =
-          "Cycles : "  ++ show (cycles st)
-     ++ "\nInstrs : "  ++ show (instrsExec st)
-     ++ "\nIpC    : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double)
+     --      "Cycles : "  ++ show (cycles st)
+     -- ++ "\nInstrs : "  ++ show (instrsExec st)
+     -- ++ "\nIpC    : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double)
+        "\nBypass : "  ++ show (bypass st)
      ++ "\nROB    : "  ++ show (rob st)
      ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
      ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
@@ -110,7 +110,7 @@ regVal :: RegIdx -> State -> Res Val
 regVal i st =
     case BP.regVal i (bypass st) of
         Just val -> return val
-        Nothing -> trace ("CHECK ROB " ++ show i ++ ":\n\t" ++ show (rob st) ++ "\n") $
+        Nothing ->
             case ROB.regVal i (rob st) of
                 Just val -> return val
                 Nothing ->
@@ -138,11 +138,18 @@ allocROB :: State -> Maybe (ROBIdx, State)
 allocROB st = Just (idx, st { rob = rob' }) where
     (idx, rob') = ROB.alloc (rob st)
 
-commit :: State -> [(ROBIdx, WriteBack)] -> ([WriteBack], State)
-commit st wbs =
+-- Places writeback instructions in the reorder buffer.
+addROB :: State -> [(ROBIdx, WriteBack)] -> State
+addROB st wbs =
     let rob' = foldl (flip (uncurry ROB.set)) (rob st) wbs
-        (out, rob'') = ROB.commitable rob'
-    in (out, st { rob = rob'' })
+    in st { rob = rob' }
+
+-- Takes instruction that can be executed from ROB, to be passed to
+-- write back stage.
+commitROB :: State -> ([WriteBack], State)
+commitROB st =
+    let (out, rob') = ROB.commitable (rob st)
+    in (out, st { rob = rob' })
 
 -- Adds PC address at time of crash.
 crash :: (InstrAddr -> Error) -> State -> Res a

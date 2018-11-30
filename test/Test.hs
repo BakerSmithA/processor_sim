@@ -12,6 +12,6 @@ main = hspec specs where
     specs = do
         --parserSpec
         --rrtSpec
-        queueSpec
+        --queueSpec
         --robSpec
         execSpec

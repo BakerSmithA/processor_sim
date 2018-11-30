@@ -3,7 +3,6 @@ module Queue where
 import Data.Array (Array, (//), (!))
 import qualified Data.Array as Arr
 import Data.List (find)
-import Debug.Trace
 
 type Start = Int
 type End   = Int
@@ -15,7 +14,7 @@ data Range = Range Start End Len
 
 -- Returns index of last element in queue, or Nothing if the queue is empty.
 last :: Range -> Maybe Int
-last r@(Range _ e l) | not (isEmpty r) = Just e
+last r@(Range _ e _) | not (isEmpty r) = Just e
                      | otherwise       = Nothing
 
 -- Decrements the start pointer, thus allowing space for a new element to be
@@ -33,7 +32,10 @@ decEnd (Range s e len) = Range s e' len where
 
 -- Returns whether an index is in the range.
 inRange :: Int -> Range -> Bool
-inRange i (Range s e l) = True
+inRange i (Range s e l) | s == e = False
+                        | s <  e = s < i && i <= e
+                        | s >  e = (0 <= i && i <= e) || (s < i && i < l)
+                        | otherwise = error "Shouldn't be here"
 
 isEmpty :: Range -> Bool
 isEmpty (Range s e _) = s == e
@@ -103,4 +105,4 @@ get i (Queue es r) =
 
 -- Searches for most recent element (i.e. closest to start) that statisfies predicate.
 findNewest :: (Show a) => (a -> Bool) -> Queue a -> Maybe a
-findNewest cond q = trace ("Q AES: " ++ show (allElems q) ++ "\nQ VES: " ++ show (elems q)) $ find cond (elems q)
+findNewest cond q = find cond (elems q)

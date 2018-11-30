@@ -11,7 +11,6 @@ import qualified Bypass as BP
 import ROB (ROBIdx)
 import WriteBack
 import RRT
-import Debug.Trace
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)
@@ -65,7 +64,7 @@ notVal x | x == 1    = 0
 -- Or, return Nothing if the value of the pc is after the last instruction,
 -- or there is no space in the ROB.
 fetch :: State -> Res (Maybe (ROBIdx, Instr), State)
-fetch st = trace ("FET:\n" ++ show st ++ "\n") $ do
+fetch st = do
     pc <- fmap fromIntegral (regVal (pcIdx st) st)
     case Mem.load pc (instrs st) >>= allocFetched st of
         Nothing                -> return (Nothing, st)
@@ -82,7 +81,7 @@ allocFetched st instr = do
 -- Because instruction are already parsed into struct, no need to decode.
 -- However, register renaming will be performed at this step.
 decode :: Instr -> State -> Res (Instr, State)
-decode i st = trace ("DEC:\n" ++ show st ++ "\n") $ return (i, st)
+decode i st = return (i, st)
 
 -- Executes a branch by writing PC.
 branch :: Addr -> State -> Res WriteBack
@@ -168,8 +167,8 @@ exec (PrintLn) _ =
     return (WritePrint "\n")
 
 -- Places executed results in reorder buffer.
-commit :: (ROBIdx, WriteBack) -> State -> Res ([WriteBack], State)
-commit wb st = trace ("COM:\n" ++ show st ++ "\n") $ return (St.commit st [wb])
+commit :: (ROBIdx, WriteBack) -> State -> Res State
+commit wb st = return (St.addROB st [wb])
 
 -- Set the value stored in a register, or Crash if invalid index.
 setRegVal :: RegIdx -> Val -> State -> Res State
@@ -190,10 +189,11 @@ addOutput :: String -> State -> Res State
 addOutput s st = return st { output = (output st) ++ s }
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
-writeBack :: [WriteBack] -> State -> Res State
-writeBack is st = trace ("WB:\n" ++ show st ++ "\n") $ do
-    st' <- foldM writeBack' st is
-    return (St.incExec st')
+writeBack :: State -> Res State
+writeBack st1 = do
+    let (is, st2) = St.commitROB st1
+    st3 <- foldM writeBack' st2 is
+    return (St.incExec st3)
         where
             writeBack' st (WriteReg r val) = setRegVal r val st
             writeBack' st (WriteMem i val) = setMemVal i val st
@@ -220,7 +220,7 @@ shouldStall p = f || d where
 advancePipeline :: Maybe (ROBIdx, Instr) -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st1 p = do
     -- TODO: Subsitute this with exec that updates state when RS implemented.
-    let executer = \i st -> fmap (\wb -> (wb, st)) (trace ("EXEC:\n" ++ show st ++ "\n") $ exec i st)
+    let executer = \i st -> fmap (\wb -> (wb, st)) (exec i st)
     (st2, p') <- P.advance (fetched, st1) decode executer Exec.commit writeBack p
     return (st2, p')
 
@@ -248,7 +248,7 @@ cycleStall st1 p = do
 
 -- Run Res to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> Res (State, Pipeline)
-runPipeline st p = trace ("PIPE: " ++ show p ++ "\n") $ do
+runPipeline st p = do
     let x = if not (shouldStall p)
                 then Exec.cycle st p
                 else Exec.cycleStall st p

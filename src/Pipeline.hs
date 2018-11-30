@@ -9,7 +9,6 @@ data Pipeline = Pipeline {
     fetched   :: Maybe (ROBIdx, Instr)
   , decoded   :: Maybe (ROBIdx, Instr)
   , executed  :: Maybe (ROBIdx, WriteBack)
-  , committed :: Maybe [WriteBack]
 } deriving (Show)
 
 -- Instruction that was fetched.
@@ -18,14 +17,14 @@ type Fetched a = (Maybe (ROBIdx, Instr), a)
 type Decoder m a = Instr -> a -> m (Instr, a)
 -- Executes a decoded instruction.
 type Executer m a = Instr -> a -> m (WriteBack, a)
--- Commits any executed instructions, and returns instructions that can be committed.
-type Committer m a = (ROBIdx, WriteBack) -> a -> m ([WriteBack], a)
+-- Commits any executed instructions in ROB, and returns instructions that can be committed.
+type Committer m a = (ROBIdx, WriteBack) -> a -> m a
 -- Writes instructions results to memory/registers.
-type Writer m a = [WriteBack] -> a -> m a
+type Writer m a = a -> m a
 
 -- Return pipeline with nothing in each stage.
 empty :: Pipeline
-empty = Pipeline Nothing Nothing Nothing Nothing
+empty = Pipeline Nothing Nothing Nothing
 
 -- Helper function for steps of pipeline.
 step :: (Monad m) => (a -> b -> m (a, c)) -> a -> Maybe b -> m (a, Maybe c)
@@ -47,14 +46,8 @@ execStep exec = step $ \x (idx, instr) -> do
     return (x', (idx, wb))
 
 -- Steps an executed instruction through the commit stage of the pipeline.
-commitStep :: (Monad m) => Committer m a -> a -> Maybe (ROBIdx, WriteBack) -> m (a, Maybe ([WriteBack]))
-commitStep commit = step $ \x (idx, wb) -> do
-    (wbs, x') <- commit (idx, wb) x
-    return (x', wbs)
-
--- Steps a committed instruction through the writeback stage of the pipeline.
-wbStep :: (Monad m) => Writer m a -> a -> Maybe [WriteBack] -> m a
-wbStep write x = maybe (return x) (\wbs -> write wbs x)
+commitStep :: (Monad m) => Committer m a -> a -> Maybe (ROBIdx, WriteBack) -> m a
+commitStep commit x = maybe (return x) (\wb -> commit wb x)
 
 -- Supplies new instruction into pipleine, and shifts in-flight instructions
 -- through pipeline. Returns write-back result, and new state of pipeline.
@@ -69,6 +62,6 @@ advance :: (Monad m) => Fetched a
 advance (f, x1) decode exec commit write p = do
     (x2, d) <- decodeStep decode x1 (fetched p)
     (x3, e) <- execStep   exec   x2 (decoded p)
-    (x4, c) <- commitStep commit x3 (executed p)
-    x5      <- wbStep     write  x4 (committed p)
-    return (x5, Pipeline f d e c)
+    x4      <- commitStep commit x3 (executed p)
+    x5      <- write             x4
+    return (x5, Pipeline f d e)
