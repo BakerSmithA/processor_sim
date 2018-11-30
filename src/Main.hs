@@ -7,20 +7,20 @@ import qualified Parser as P
 import qualified Data.ByteString as B
 import System.Environment
 
-runVm :: [Instr] -> IO ()
+runVm :: [FInstr] -> IO ()
 runVm []     = putStrLn "No instructions to run"
 runVm instrs = do
     let vm = run (State.emptyDefault instrs)
     putStrLn $ State.output vm
     putStrLn (show vm)
 
-newlines :: Instr -> String
+newlines :: FInstr -> String
 newlines (Ret)     = "\n"
 newlines (SysCall) = "\n"
 newlines _         = ""
 
--- showInstrs :: [Instr] -> String
--- showInstrs is = unlines strNumbered where
+-- showFInstrs :: [FInstr] -> String
+-- showFInstrs is = unlines strNumbered where
 --     strNumbered = map (\(n, i) -> (show n) ++ ":\t" ++ (show i) ++ newlines i) numbered
 --     numbered    = zip [0..] is
 
@@ -30,7 +30,7 @@ runBytecode path = do
     case P.parse P.instrs contents of
         Nothing -> putStrLn "Could not parse file"
         Just is -> do
-            --putStrLn (showInstrs is)
+            --putStrLn (showFInstrs is)
             runVm is
 
 main :: IO ()

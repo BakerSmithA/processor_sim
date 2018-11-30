@@ -19,7 +19,7 @@ data State = State {
     mem    :: Mem Addr Val
     -- Physical register file. Distinct from names of registers given in ASM.
   , regs   :: Mem PhyReg Val
-  , instrs :: Mem Addr Instr
+  , instrs :: Mem Addr FInstr
 
     -- Register indices
   , pcIdx  :: RegIdx -- Program Counter
@@ -72,7 +72,7 @@ instance Monad Res where
 instance Show State where
     show st =
      --      "Cycles : "  ++ show (cycles st)
-     -- ++ "\nInstrs : "  ++ show (instrsExec st)
+     -- ++ "\nFInstrs : "  ++ show (instrsExec st)
      -- ++ "\nIpC    : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double)
         "\nBypass : "  ++ show (bypass st)
      ++ "\nROB    : "  ++ show (rob st)
@@ -80,9 +80,9 @@ instance Show State where
      ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
 
 -- Create state containing no values in memory or registers.
-empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [Instr] -> State
+empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt 0 0 where
-    maxPhyReg = 20
+    maxPhyReg = 15
     mem       = Mem.zeroed 127
     regs      = Mem.zeroed maxPhyReg
     instrs'   = Mem.fromList instrs
@@ -91,7 +91,7 @@ empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass 
     rrt       = RRT.fromConstRegs [pc, sp, lr, bp, ret] maxPhyReg
 
 -- Create default Res with 32 ints of memory, and 16 registers.
-emptyDefault :: [Instr] -> State
+emptyDefault :: [FInstr] -> State
 emptyDefault = State.empty 11 12 13 14 15
 
 withBypass :: Bypass -> State -> State
@@ -105,8 +105,26 @@ incCycles st = st { cycles = (cycles st) + 1 }
 incExec :: State -> State
 incExec st = st { instrsExec = (instrsExec st) + 1 }
 
+-- Returns the index of the physical register mapped to the named register.
+namedReg :: (State -> RegIdx) -> State -> Res PhyReg
+namedReg getReg st =
+    let reg = getReg st
+    in case RRT.get reg (rrt st) of
+        Nothing  -> crash (NoPhyRegAssigned reg) st
+        Just phy -> return phy
+
+-- Returns value of a named register, e.g. pc
+namedRegVal :: (State -> RegIdx) -> State -> Res Val
+namedRegVal getReg st = do
+    phy <- namedReg getReg st
+    regVal phy st
+
+-- Returns the value stored in the PC register.
+pcVal :: State -> Res Val
+pcVal = namedRegVal pcIdx
+
 -- Return value of a register, from bypass or register. Crash if invalid index.
-regVal :: RegIdx -> State -> Res Val
+regVal :: PhyReg -> State -> Res Val
 regVal i st =
     case BP.regVal i (bypass st) of
         Just val -> return val
@@ -169,5 +187,5 @@ freePhyReg phy st =
 -- Adds PC address at time of crash.
 crash :: (InstrAddr -> Error) -> State -> Res a
 crash f st = do
-    pc <- fmap fromIntegral (regVal (pcIdx st) st)
+    pc <- pcVal st
     Crash (f pc) st

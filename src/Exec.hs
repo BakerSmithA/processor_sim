@@ -15,25 +15,25 @@ import WriteBack
 type ValOp = (Val -> Val -> Val)
 
 -- Loads contents of memory at address into register.
-load :: Addr -> RegIdx -> State -> Res WriteBack
+load :: Addr -> PhyReg -> State -> Res WriteBack
 load addr r st = do
     val <- memVal addr st
     return (WriteReg r val)
 
 -- Stores contents of register into memory address.
-store :: RegIdx -> Addr -> State -> Res WriteBack
+store :: PhyReg -> Addr -> State -> Res WriteBack
 store r addr st = do
     val <- regVal r st
     return (WriteMem addr val)
 
 -- Perform operation on value stored in register, and immediate value.
-opI :: RegIdx -> RegIdx -> ValOp -> Val -> State -> Res WriteBack
+opI :: PhyReg -> PhyReg -> ValOp -> Val -> State -> Res WriteBack
 opI r x f imm st = do
     val <- regVal x st
     return (WriteReg r (f val imm))
 
 -- Perform operation on two values stored in registers.
-opReg :: RegIdx -> RegIdx -> ValOp -> RegIdx -> State -> Res WriteBack
+opReg :: PhyReg -> PhyReg -> ValOp -> PhyReg -> State -> Res WriteBack
 opReg r x f y st = do
     val <- regVal y st
     opI r x f val st
@@ -62,35 +62,36 @@ notVal x | x == 1    = 0
 -- is then allocated a space in the ROB to have its result written to.
 -- Or, return Nothing if the value of the pc is after the last instruction,
 -- or there is no space in the ROB.
-fetch :: State -> Res (Maybe (ROBIdx, Instr), State)
+fetch :: State -> Res (Maybe (ROBIdx, FInstr), State)
 fetch st = do
-    pc <- fmap fromIntegral (regVal (pcIdx st) st)
-    case Mem.load pc (instrs st) >>= allocFetched st of
+    pc <- St.pcVal st
+    case Mem.load (fromIntegral pc) (instrs st) >>= allocFetched st of
         Nothing                -> return (Nothing, st)
         Just (idx, instr, st') -> return (Just (idx, instr), st')
 
 -- Allocate a space in the ROB for an instruction that was fetched.
 -- Returns an index in the ROB to write the result of the instruction to, or
 -- Nothing if the ROB is full.
-allocFetched :: State -> Instr -> Maybe (ROBIdx, Instr, State)
+allocFetched :: State -> FInstr -> Maybe (ROBIdx, FInstr, State)
 allocFetched st instr = do
     (idx, st') <- St.allocROB st
     return (idx, instr, st')
 
 -- Because instruction are already parsed into struct, no need to decode.
 -- However, register renaming will be performed at this step.
-decode :: Instr -> State -> Res (Maybe Instr, State)
+decode :: FInstr -> State -> Res (Maybe DInstr, State)
 decode i st = return (Just i, st)
 
 -- Executes a branch by writing PC.
 branch :: Addr -> State -> Res WriteBack
-branch addr st = return (WriteReg pc addr') where
-    pc = pcIdx st
+branch addr st = do
+    pcReg <- namedReg pcIdx st
     -- +1 because pipeline stalls until branch executed, and PC not updated.
-    addr' = fromIntegral (addr+1)
+    let addr' = fromIntegral (addr+1)
+    return (WriteReg pcReg addr')
 
 -- Executes a branch if the value in a register passes a condition, otherwise NoOp.
-branchCond :: RegIdx -> (Val -> Bool) -> Addr -> State -> Res WriteBack
+branchCond :: PhyReg -> (Val -> Bool) -> Addr -> State -> Res WriteBack
 branchCond reg cond addr st = do
     val <- regVal reg st
     if cond val
@@ -99,7 +100,7 @@ branchCond reg cond addr st = do
 
 -- Perform execution stage of pipeline, and generate instruction of what
 -- to modify in machine.
-exec :: Instr -> State -> Res WriteBack
+exec :: DInstr -> State -> Res WriteBack
 -- Memory
 -- Move immediate value into register.
 exec (MoveI r val) _ =
@@ -151,7 +152,8 @@ exec (BT r addr) st = branchCond r (==1) addr st
 exec (BF r addr) st = branchCond r (==0) addr st
 -- Branch to value stored in link register.
 exec (Ret) st = do
-    addr <- regVal (lrIdx st) st
+    lrReg <- namedReg lrIdx st
+    addr <- regVal lrReg st
     branch (fromIntegral addr) st
 -- Terminate execution of the program.
 exec (SysCall) _ =
@@ -170,7 +172,7 @@ commit :: (ROBIdx, WriteBack) -> State -> Res State
 commit wb st = return (St.addROB st [wb])
 
 -- Set the value stored in a register, or Crash if invalid index.
-setRegVal :: RegIdx -> Val -> State -> Res State
+setRegVal :: PhyReg -> Val -> State -> Res State
 setRegVal i val st =
     case Reg.store i val (regs st) of
         Nothing   -> crash (RegOutOfRange i) st
@@ -203,8 +205,9 @@ writeBack st1 = do
 -- Increment PC by 1.
 incPc :: State -> Res State
 incPc st = do
-    pc <- regVal (pcIdx st) st
-    setRegVal (pcIdx st) (pc+1) st
+    pc <- pcVal st
+    pcReg <- St.namedReg pcIdx st
+    setRegVal pcReg (pc+1) st
 
 -- Return whether the pipeline should stall to wait for branch instructions
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
@@ -216,7 +219,7 @@ shouldStall p = f || d where
     d  = maybe False isBranch (fmap snd (decoded p))
 
 -- Shifts instructions through pipeline.
-advancePipeline :: Maybe (ROBIdx, Instr) -> State -> Pipeline -> Res (State, Pipeline)
+advancePipeline :: Maybe (ROBIdx, FInstr) -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st1 p = do
     -- TODO: Subsitute this with exec that updates state when RS implemented.
     let executer = \i st -> fmap (\wb -> (wb, st)) (exec i st)

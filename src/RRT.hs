@@ -2,11 +2,8 @@ module RRT where
 
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Instr (RegIdx)
+import Instr (RegIdx, PhyReg)
 import Control.Applicative ((<|>))
-
--- Physical register index.
-type PhyReg = RegIdx
 
 -- Register Rename Table, holds a mapping from names of registers in source
 -- code, e.g. reg 2, to physical registers, e.g. reg 45.

@@ -4,7 +4,6 @@ import Queue (Queue)
 import qualified Queue as Q
 import WriteBack
 import Instr
-import Debug.Trace
 
 type ROBIdx = Int
 
@@ -48,7 +47,7 @@ set i wb (ROB q) = ROB q' where
 
 -- Searches in the ROB for the most recent value of a register, or returns
 -- Nothing if an update to the register is not stored in the ROB.
-regVal :: RegIdx -> ROB -> Maybe Val
+regVal :: PhyReg -> ROB -> Maybe Val
 regVal exp (ROB q) = do
     Just (WriteReg _ val) <- Q.findNewest c q
     return val

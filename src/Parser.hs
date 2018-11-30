@@ -75,7 +75,7 @@ byte w = do
         then return w
         else failure
 
-instr :: Parser Instr
+instr :: Parser FInstr
 instr =
     -- Memory
         MoveI        <$ byte 0  <*> word8 <*> int32
@@ -106,7 +106,7 @@ instr =
     <|> Print   <$ byte 13 <*> word8
     <|> PrintLn <$ byte 20
 
-instrs :: Parser [Instr]
+instrs :: Parser [FInstr]
 instrs = many instr
 
 parse :: Parser a -> ByteString -> Maybe a

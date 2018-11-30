@@ -6,17 +6,17 @@ import ROB (ROBIdx)
 
 -- 5 stage pipeline: fetch, decod, execute, commit, and write-back.
 data Pipeline = Pipeline {
-    fetched   :: Maybe (ROBIdx, Instr)
-  , decoded   :: Maybe (ROBIdx, Instr)
+    fetched   :: Maybe (ROBIdx, FInstr)
+  , decoded   :: Maybe (ROBIdx, DInstr)
   , executed  :: Maybe (ROBIdx, WriteBack)
 } deriving (Show)
 
--- Instruction that was fetched, or Nothing if stalled at this stage.
-type Fetched a = (Maybe (ROBIdx, Instr), a)
+-- FInstruction that was fetched, or Nothing if stalled at this stage.
+type Fetched a = (Maybe (ROBIdx, FInstr), a)
 -- Decodes a fetched instruction, or Nothing if stalls at this stage.
-type Decoder m a = Instr -> a -> m (Maybe Instr, a)
+type Decoder m a = FInstr -> a -> m (Maybe DInstr, a)
 -- Executes a decoded instruction.
-type Executer m a = Instr -> a -> m (WriteBack, a)
+type Executer m a = DInstr -> a -> m (WriteBack, a)
 -- Commits any executed instructions in ROB, and returns instructions that can be committed.
 type Committer m a = (ROBIdx, WriteBack) -> a -> m a
 -- Writes instructions results to memory/registers.
@@ -34,14 +34,14 @@ step f x = maybe (return (x, Nothing)) success where
         return (x', z)
 
 -- Steps a fetched instruction through the decode section of the pipeline.
-decodeStep :: (Monad m) => Decoder m a -> a -> Maybe (ROBIdx, Instr) -> m (a, Maybe (ROBIdx, Instr))
+decodeStep :: (Monad m) => Decoder m a -> a -> Maybe (ROBIdx, FInstr) -> m (a, Maybe (ROBIdx, DInstr))
 decodeStep decode = step $ \x (idx, instr) -> do
     (decoded, x') <- decode instr x
     let idxDecoded = fmap (\d -> (idx, d)) decoded
     return (x', idxDecoded)
 
 -- Steps a decoded instruction through the exectution step of the pipeline.
-execStep :: (Monad m) => Executer m a -> a -> Maybe (ROBIdx, Instr) -> m (a, Maybe (ROBIdx, WriteBack))
+execStep :: (Monad m) => Executer m a -> a -> Maybe (ROBIdx, DInstr) -> m (a, Maybe (ROBIdx, WriteBack))
 execStep exec = step $ \x (idx, instr) -> do
     (wb, x') <- exec instr x
     return (x', Just (idx, wb))

@@ -14,7 +14,7 @@ import WriteBack
 -- and used in the SUB. Using a bypass, data is transferred backwards in the
 -- piepline.
 data Bypass = Empty
-            | BypassReg RegIdx Val
+            | BypassReg PhyReg Val
             | BypassMem Addr Val
             deriving (Eq, Show)
 
@@ -35,7 +35,7 @@ fromPipeline p = maybe Empty fromWriteback (fmap snd (executed p))
 
 -- Return value of register written if matches given register index, and bypass
 -- contains register write.
-regVal :: RegIdx -> Bypass -> Maybe Val
+regVal :: PhyReg -> Bypass -> Maybe Val
 regVal exp (BypassReg reg val) | exp == reg = Just val
                                | otherwise  = Nothing
 regVal _ _ = Nothing
