@@ -14,4 +14,4 @@ main = hspec specs where
         rrtSpec
         queueSpec
         robSpec
-        execSpec
+        --execSpec
