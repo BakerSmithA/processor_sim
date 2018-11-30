@@ -66,7 +66,8 @@ fromList xs = Queue arr (Range 0 0 (length xs)) where
 allElems :: Queue a -> [a]
 allElems (Queue es _) = Arr.elems es
 
--- Returns all valid elements of the queue.
+-- Returns all valid elements of the queue, in order from start to end.
+-- I.e. most recent to least recent.
 elems :: Queue a -> [a]
 elems (Queue es r) = foldr f [] (indices r) where
     f i acc = (es ! i):acc
@@ -99,8 +100,6 @@ get i (Queue es r) =
         then es ! i
         else error "Out of bounds get in Queue"
 
--- Searches through the queue from end to start looking for the first element
--- to statisfy the predicate. I.e. finds most recently added element.
--- Returns Nothing if none statisfy.
+-- Searches for most recent element (i.e. closest to start) that statisfies predicate.
 findNewest :: (a -> Bool) -> Queue a -> Maybe a
-findNewest cond q = find cond (reverse (elems q))
+findNewest cond q = find cond (elems q)
