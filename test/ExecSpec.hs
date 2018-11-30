@@ -24,22 +24,22 @@ execSpec = describe "execution" $ do
                 let vm = runVm [MoveI 0 6, Move 1 0] []
                 St.regVal 1 vm `shouldBe` Res 6
 
-        --     it "interprets LoadIdx" $ do
-        --         let vm  = runVm [MoveI 0 1, LoadIdx 1 0 2] [1, 2, 3, 4, 5]
-        --         St.regVal 1 vm `shouldBe` Res 4
-        --
-        --     it "interprets LoadBaseIdx" $ do
-        --         let vm  = runVm [MoveI 0 1, MoveI 1 3, LoadBaseIdx 2 0 1] [1, 2, 3, 4, 5]
-        --         St.regVal 2 vm `shouldBe` Res 5
-        --
-        --     it "interprets StoreIdx" $ do
-        --         let vm  = runVm [MoveI 0 7, MoveI 1 2, StoreIdx 0 1 2] [0, 0, 0, 0, 0]
-        --         St.mem vm `shouldBe` Mem.fromList [0, 0, 0, 0, 7]
-        --
-        --     it "interprets StoreBaseIdx" $ do
-        --         let vm  = runVm [MoveI 0 7, MoveI 1 2, MoveI 2 3, StoreBaseIdx 0 1 2] [0, 0, 0, 0, 0, 0]
-        --         St.mem vm `shouldBe` Mem.fromList [0, 0, 0, 0, 0, 7]
-        --
+            it "interprets LoadIdx" $ do
+                let vm  = runVm [MoveI 0 1, LoadIdx 1 0 2] [1, 2, 3, 4, 5]
+                St.regVal 1 vm `shouldBe` Res 4
+
+            it "interprets LoadBaseIdx" $ do
+                let vm  = runVm [MoveI 0 1, MoveI 1 3, LoadBaseIdx 2 0 1] [1, 2, 3, 4, 5]
+                St.regVal 2 vm `shouldBe` Res 5
+
+            it "interprets StoreIdx" $ do
+                let vm  = runVm [MoveI 0 7, MoveI 1 2, StoreIdx 0 1 2] [0, 0, 0, 0, 0]
+                St.mem vm `shouldBe` Mem.fromList [0, 0, 0, 0, 7]
+
+            it "interprets StoreBaseIdx" $ do
+                let vm  = runVm [MoveI 0 7, MoveI 1 2, MoveI 2 3, StoreBaseIdx 0 1 2] [0, 0, 0, 0, 0, 0]
+                St.mem vm `shouldBe` Mem.fromList [0, 0, 0, 0, 0, 7]
+
         -- context "ALU instructions" $ do
         --     it "interprets Add" $ do
         --         let vm  = runVm [MoveI 0 1, MoveI 1 2, Add 2 0 1] []

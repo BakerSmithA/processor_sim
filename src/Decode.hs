@@ -17,18 +17,40 @@ decode fi st = fmap (fmap addSt) runMaybeT (decodeI fi st) where
     addSt = maybe (Nothing, st) (\(di, st') -> (Just di, st'))
 
 decodeI :: FInstr -> State -> MaybeT Res (DInstr, State)
+decodeI (MoveI r i) = withPReg r $ \p _ ->
+    return (MoveI p i)
 
-decodeI (MoveI r i) st1 = do
-    (p, st2) <- takePReg r st1
-    return (MoveI p i, st2)
+decodeI (Move r from) = withPReg r $ \p st -> do
+    pfrom <- getPReg from st
+    return (Move p pfrom)
 
-decodeI (Move r from) st1 = do
+decodeI (LoadIdx r b off) = withPReg r $ \p st -> do
+    pb <- getPReg b st
+    return (LoadIdx p pb off)
+
+decodeI (LoadBaseIdx r b off) = withPReg r $ \p st -> do
+    pb   <- getPReg b st
+    poff <- getPReg off st
+    return (LoadBaseIdx p pb poff)
+
+decodeI (StoreIdx r b off) = \st -> do
+    pr   <- getPReg r st
+    pb   <- getPReg b st
+    return (StoreIdx pr pb off, st)
+
+decodeI (StoreBaseIdx r b off) = \st -> do
+    pr   <- getPReg r st
+    pb   <- getPReg b st
+    poff <- getPReg off st
+    return (StoreBaseIdx pr pb poff, st)
+
+decodeI (SysCall) = \st -> return (SysCall, st)
+
+-- Takes a physical register and handles state.
+withPReg :: RegIdx -> (PhyReg -> State -> MaybeT Res DInstr) -> State -> MaybeT Res (DInstr, State)
+withPReg r f st1 = do
     (pr, st2) <- takePReg r st1
-    pfrom <- getPReg from st2
-    return (Move pr pfrom, st2)
-
-decodeI (SysCall) st =
-    return (SysCall, st)
+    fmap (\di -> (di, st2)) (f pr st2)
 
 -- Convenience function for allocating a physical register.
 takePReg :: RegIdx -> State -> MaybeT Res (PhyReg, State)
