@@ -51,3 +51,8 @@ queueSpec = describe "queue" $ do
             let q = snd $ Q.enq 15 (snd $ Q.enq 10 (snd $ Q.enq 5 (Q.fromList [0, 0, 0, 0])))
                 x = Q.findNewest (>20) q
             x `shouldBe` Nothing
+
+        it "returns Nothing if no matches" $ do
+            let q = snd $ Q.enq 15 (snd $ Q.enq 10 (snd $ Q.enq 5 (Q.fromList [0, 0, 0, 0])))
+                x = Q.findNewest (<3) q
+            x `shouldBe` Nothing

@@ -1,6 +1,7 @@
 module Queue where
 
 import Data.Array as Arr
+import Debug.Trace
 
 -- Queue to which elements can be added to start, and from which elements can
 -- be taken from end.
@@ -55,12 +56,12 @@ get i (Queue xs _ _) = xs ! i
 -- Returns Nothing if none statisfy.
 findNewest :: (Show a) => (a -> Bool) -> Queue a -> Maybe a
 findNewest p (Queue es s e) = find' p es is where
-    is = wrapIdxs (wrapIdx (s+1) es) e (length es)
+    is = wrapIdxs (wrapIdx s es) e (length es)
 
     -- Search through given indices in es looking for match.
-    find' _ _  []     = Nothing
-    find' p es (i:is) | p (es ! i) = Just (es ! i)
-                      | otherwise  = find' p es is
+    find' _ _  []     = trace ("\tQ: found nothing") $ Nothing
+    find' p es (i:is) | p (es ! i) = trace ("\tQ found: " ++ show i) $ Just (es ! i)
+                      | otherwise  = trace ("\tQ no match: " ++ show i) $ find' p es is
 
 -- Stops index going out of bounds of array.
 wrapIdx :: Int -> Array Int a -> Int

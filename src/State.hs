@@ -11,6 +11,7 @@ import qualified ROB as ROB
 import Error
 import WriteBack
 import RRT
+import Debug.Trace
 
 -- Stores current state of CPU at a point in time.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -109,7 +110,7 @@ regVal :: RegIdx -> State -> Res Val
 regVal i st =
     case BP.regVal i (bypass st) of
         Just val -> return val
-        Nothing ->
+        Nothing -> trace ("CHECK ROB " ++ show i ++ ":\n\t" ++ show (rob st) ++ "\n") $
             case ROB.regVal i (rob st) of
                 Just val -> return val
                 Nothing ->
