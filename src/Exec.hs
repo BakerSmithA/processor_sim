@@ -10,6 +10,7 @@ import qualified Mem as Reg
 import qualified Bypass as BP
 import ROB (ROBIdx)
 import WriteBack
+import Decode
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)
@@ -76,11 +77,6 @@ allocFetched :: State -> FInstr -> Maybe (ROBIdx, FInstr, State)
 allocFetched st instr = do
     (idx, st') <- St.allocROB st
     return (idx, instr, st')
-
--- Because instruction are already parsed into struct, no need to decode.
--- However, register renaming will be performed at this step.
-decode :: FInstr -> State -> Res (Maybe DInstr, State)
-decode i st = return (Just i, st)
 
 -- Executes a branch by writing PC.
 branch :: Addr -> State -> Res WriteBack
