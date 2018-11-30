@@ -176,6 +176,20 @@ allocPhyReg reg st = do
     (phy, rrt') <- RRT.ins reg (rrt st)
     return (phy, st { rrt=rrt' })
 
+-- Convenience function for allocating two physical registers.
+alloc2PhyReg :: RegIdx -> RegIdx -> State -> Maybe (PhyReg, PhyReg, State)
+alloc2PhyReg r1 r2 st1 = do
+    (p1, st2) <- allocPhyReg r1 st1
+    (p2, st3) <- allocPhyReg r2 st2
+    return (p1, p2, st3)
+
+-- Convenience function for allocating three physical registers.
+alloc3PhyReg :: RegIdx -> RegIdx -> RegIdx -> State -> Maybe (PhyReg, PhyReg, PhyReg, State)
+alloc3PhyReg r1 r2 r3 st1 = do
+    (p1, p2, st2) <- alloc2PhyReg r1 r2 st1
+    (p3, st3)     <- allocPhyReg r3 st2
+    return (p1, p2, p3, st3)
+
 -- Frees a physical register allocated to a register name.
 -- Crashes if there if no mapping to the physical register.
 freePhyReg :: PhyReg -> State -> Res State
