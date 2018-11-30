@@ -80,8 +80,8 @@ allocFetched st instr = do
 
 -- Because instruction are already parsed into struct, no need to decode.
 -- However, register renaming will be performed at this step.
-decode :: Instr -> State -> Res (Instr, State)
-decode i st = return (i, st)
+decode :: Instr -> State -> Res (Maybe Instr, State)
+decode i st = return (Just i, st)
 
 -- Executes a branch by writing PC.
 branch :: Addr -> State -> Res WriteBack

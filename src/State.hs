@@ -82,13 +82,13 @@ instance Show State where
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [Instr] -> State
 empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt 0 0 where
-    maxPhyReg = 15
+    maxPhyReg = 20
     mem       = Mem.zeroed 127
     regs      = Mem.zeroed maxPhyReg
     instrs'   = Mem.fromList instrs
     bypass    = BP.empty
     rob       = ROB.empty 5
-    rrt       = RRT.fromRegs pc sp lr bp ret maxPhyReg
+    rrt       = RRT.empty maxPhyReg
 
 -- Create default Res with 32 ints of memory, and 16 registers.
 emptyDefault :: [Instr] -> State
@@ -150,6 +150,11 @@ commitROB :: State -> ([WriteBack], State)
 commitROB st =
     let (out, rob') = ROB.commitable (rob st)
     in (out, st { rob = rob' })
+
+-- Takes a free physical register and returns its index.
+-- Returns Nothing if there are no physical registers free.
+allocPhyReg :: RegIdx -> State -> Maybe (PhyReg, State)
+allocPhyReg reg st = undefined
 
 -- Adds PC address at time of crash.
 crash :: (InstrAddr -> Error) -> State -> Res a
