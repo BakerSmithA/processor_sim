@@ -88,7 +88,7 @@ empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass 
     instrs'   = Mem.fromList instrs
     bypass    = BP.empty
     rob       = ROB.empty 5
-    rrt       = RRT.empty maxPhyReg
+    rrt       = RRT.fromConstRegs [pc, sp, lr, bp, ret] maxPhyReg
 
 -- Create default Res with 32 ints of memory, and 16 registers.
 emptyDefault :: [Instr] -> State
