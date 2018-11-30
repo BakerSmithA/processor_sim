@@ -4,6 +4,7 @@ import Queue (Queue)
 import qualified Queue as Q
 import WriteBack
 import Instr
+import Debug.Trace
 
 type ROBIdx = Int
 
@@ -38,7 +39,7 @@ commitable (ROB q) = (wbs, ROB q') where
                 case entry of
                     Nothing -> ([], q)
                     Just wb -> (wb:wbs, q') where
-                        (wbs, q') = commitable' (Q.rem q)
+                        (wbs, q') = commitable' (Q.rem q Nothing)
 
 -- Set the writeback instruction computed by the execution step.
 set :: ROBIdx -> WriteBack -> ROB -> ROB

@@ -36,7 +36,7 @@ queueSpec = describe "queue" $ do
             let (_, q1) = Q.enq 5 (Q.fromList [0, 0, 0, 0])
                 (_, q2) = Q.enq 10 q1
                 x       = Q.peek q2
-                q3      = Q.rem q2
+                q3      = Q.rem q2 0
                 y       = Q.peek q3
             x `shouldBe` Just 5
             y `shouldBe` Just 10

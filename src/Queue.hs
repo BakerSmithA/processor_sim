@@ -33,9 +33,7 @@ decEnd (Range s e len) = Range s e' len where
 
 -- Returns whether an index is in the range.
 inRange :: Int -> Range -> Bool
-inRange i (Range s e l) | s == e = False
-                        | s <  e = s < i && i <= e
-                        | s >  e = (0 <= i && i <= e) || (s < i && i < l)
+inRange i (Range s e l) = True
 
 isEmpty :: Range -> Bool
 isEmpty (Range s e _) = s == e
@@ -78,9 +76,12 @@ enq x (Queue es r) = (i, Queue es' r') where
     es'     = es // [(i, x)]
     (i, r') = decStart r
 
--- Remove element from end of queue.
-rem :: Queue a -> Queue a
-rem (Queue es r) = Queue es (decEnd r) where
+-- Remove element from end of queue and replace with given, or perform no
+-- action if empty.
+rem :: Queue a -> a -> Queue a
+rem q@(Queue es r) x = maybe q f (Queue.last r) where
+    f i = Queue es' (decEnd r) where
+        es' = es // [(i, x)]
 
 -- Return element at the start of the end, without modifying queue.
 peek :: (Show a) => Queue a -> Maybe a
@@ -101,5 +102,5 @@ get i (Queue es r) =
         else error "Out of bounds get in Queue"
 
 -- Searches for most recent element (i.e. closest to start) that statisfies predicate.
-findNewest :: (a -> Bool) -> Queue a -> Maybe a
-findNewest cond q = find cond (elems q)
+findNewest :: (Show a) => (a -> Bool) -> Queue a -> Maybe a
+findNewest cond q = trace ("Q AES: " ++ show (allElems q) ++ "\nQ VES: " ++ show (elems q)) $ find cond (elems q)
