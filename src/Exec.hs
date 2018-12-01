@@ -190,7 +190,9 @@ writeBack :: State -> Res State
 writeBack st1 = do
     let (is, st2) = St.commitROB st1
     st3 <- foldM writeBack' st2 is
-    return (St.incExec st3)
+    -- Only increment the number of instructions executed if any were.
+    let st4 = if is /= [] then St.incExec st3 else st3
+    return st4
         where
             writeBack' st (WriteReg r val) = setRegVal r val st
             writeBack' st (WriteMem i val) = setMemVal i val st
