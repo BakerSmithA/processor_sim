@@ -138,16 +138,16 @@ execSpec = describe "execution" $ do
             --     let lrIdx = 13
             --         vm    = runVm [MoveI lrIdx 2, Ret, MoveI 0 5] []
             --     St.regVal 0 vm `shouldBe` Res 0
-        --
-        -- context "output instructions" $ do
-        --     it "interprets Print" $ do
-        --         let vm  = runVm [MoveI 0 10, Print 0] []
-        --         St.output vm `shouldBe` "10"
-        --
-        --     it "interprets PrintLn" $ do
-        --         let vm  = runVm [PrintLn] []
-        --         St.output vm `shouldBe` "\n"
-        --
+
+        context "output instructions" $ do
+            it "interprets Print" $ do
+                let vm  = runVm [MoveI 0 10, Print 0] []
+                St.output vm `shouldBe` "10"
+
+            it "interprets PrintLn" $ do
+                let vm  = runVm [PrintLn] []
+                St.output vm `shouldBe` "\n"
+
         -- context "running example programs" $ do
         --     it "runs bubble-sort" $ do
         --         let vm = runVm bubbleSort (replicate 32 0)

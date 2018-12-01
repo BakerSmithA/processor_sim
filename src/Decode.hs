@@ -50,6 +50,11 @@ decodeI (BT r addr) = decodeRAddr BT r addr
 decodeI (BF r addr) = decodeRAddr BF r addr
 decodeI (Ret)       = pass Ret
 
+decodeI (Print r) = \st -> do
+    p <- getPReg r st
+    return (Print p, st)
+decodeI (PrintLn) = pass PrintLn
+
 decodeI (SysCall) = pass SysCall
 
 -- Convenience function for decoding branch instructions that are dependent
@@ -97,7 +102,7 @@ decodeRI :: (PhyReg -> Val -> DInstr)
           -> RegIdx -> Val
           -> State
           -> MaybeT Res (DInstr, State)
-decodeRI f r i = withPReg r $ \p st -> do
+decodeRI f r i = withPReg r $ \p _ -> do
     return (f p i)
 
 pass :: DInstr -> State -> MaybeT Res (DInstr, State)
