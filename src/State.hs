@@ -82,7 +82,7 @@ instance Show State where
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt 0 0 where
-    maxPhyReg = 20
+    maxPhyReg = 15
     mem       = Mem.zeroed 127
     regs      = Mem.zeroed maxPhyReg
     instrs'   = Mem.fromList instrs

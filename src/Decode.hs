@@ -45,7 +45,22 @@ decodeI (Or   r x y) = decodeRRR Or   r x y
 decodeI (And  r x y) = decodeRRR And  r x y
 decodeI (Not  r x)   = decodeRR  Not  r x
 
-decodeI (SysCall) = \st -> return (SysCall, st)
+decodeI (B addr)    = pass (B addr)
+decodeI (BT r addr) = decodeRAddr BT r addr
+decodeI (BF r addr) = decodeRAddr BF r addr
+decodeI (Ret)       = pass Ret
+
+decodeI (SysCall) = pass SysCall
+
+-- Convenience function for decoding branch instructions that are dependent
+-- on a register value.
+decodeRAddr :: (PhyReg -> Addr -> DInstr)
+             -> RegIdx -> Addr
+             -> State
+             -> MaybeT Res (DInstr, State)
+decodeRAddr f r addr st = do
+    pr <- getPReg r st
+    return (f pr addr, st)
 
 -- Convenience function for decoding instructions consisting of a destination
 -- register and two source registers.
@@ -84,6 +99,9 @@ decodeRI :: (PhyReg -> Val -> DInstr)
           -> MaybeT Res (DInstr, State)
 decodeRI f r i = withPReg r $ \p st -> do
     return (f p i)
+
+pass :: DInstr -> State -> MaybeT Res (DInstr, State)
+pass i st = return (i, st)
 
 -- Takes a physical register and handles state.
 withPReg :: RegIdx

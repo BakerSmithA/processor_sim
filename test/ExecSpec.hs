@@ -109,35 +109,35 @@ execSpec = describe "execution" $ do
                 let vm  = runVm [MoveI 0 0, Not 1 0] []
                 St.regVal 1 vm `shouldBe` Res 1
 
-        -- context "branch instructions" $ do
-        --     it "interprets B" $ do
-        --         -- Branch should cause MoveI instruction to be skipped.
-        --         let vm  = runVm [B 1, MoveI 0 5] []
-        --         St.regVal 0 vm `shouldBe` Res 0
-        --
-        --     it "interprets BT and takes branch" $ do
-        --         -- BT instruction should cause MoveI to be skipped.
-        --         let vm  = runVm [MoveI 0 1, BT 0 2, MoveI 1 5] []
-        --         St.regVal 1 vm `shouldBe` Res 0
-        --
-        --     it "interprets BT and does not take branch" $ do
-        --         let vm  = runVm [MoveI 0 0, BT 0 1, MoveI 1 5] []
-        --         St.regVal 1 vm `shouldBe` Res 5
-        --
-        --     it "interprets BF and takes branch" $ do
-        --         -- BT instruction should cause MoveI to be skipped.
-        --         let vm  = runVm [MoveI 0 0, BF 0 2, MoveI 1 5] []
-        --         St.regVal 1 vm `shouldBe` Res 0
-        --
-        --     it "interprets BF and does not take branch" $ do
-        --         let vm  = runVm [MoveI 0 1, BF 0 1, MoveI 1 5] []
-        --         St.regVal 1 vm `shouldBe` Res 5
-        --
-        --     it "interprets Ret" $ do
-        --         -- Ret instruction should cause MoveI to be skipped.
-        --         let lrIdx = 13
-        --             vm    = runVm [MoveI lrIdx 2, Ret, MoveI 0 5] []
-        --         St.regVal 0 vm `shouldBe` Res 0
+        context "branch instructions" $ do
+            it "interprets B" $ do
+                -- Branch should cause MoveI instruction to be skipped.
+                let vm  = runVm [B 1, MoveI 0 5] []
+                St.regVal 0 vm `shouldBe` Res 0
+
+            it "interprets BT and takes branch" $ do
+                -- BT instruction should cause MoveI to be skipped.
+                let vm  = runVm [MoveI 0 1, BT 0 2, MoveI 1 5] []
+                St.regVal 1 vm `shouldBe` Res 0
+
+            it "interprets BT and does not take branch" $ do
+                let vm  = runVm [MoveI 0 0, BT 0 1, MoveI 1 5] []
+                St.regVal 1 vm `shouldBe` Res 5
+
+            it "interprets BF and takes branch" $ do
+                -- BT instruction should cause MoveI to be skipped.
+                let vm  = runVm [MoveI 0 0, BF 0 2, MoveI 1 5] []
+                St.regVal 1 vm `shouldBe` Res 0
+
+            it "interprets BF and does not take branch" $ do
+                let vm  = runVm [MoveI 0 1, BF 0 1, MoveI 1 5] []
+                St.regVal 1 vm `shouldBe` Res 5
+
+            -- it "interprets Ret" $ do
+            --     -- Ret instruction should cause MoveI to be skipped.
+            --     let lrIdx = 13
+            --         vm    = runVm [MoveI lrIdx 2, Ret, MoveI 0 5] []
+            --     St.regVal 0 vm `shouldBe` Res 0
         --
         -- context "output instructions" $ do
         --     it "interprets Print" $ do
