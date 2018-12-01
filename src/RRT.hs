@@ -45,14 +45,17 @@ ins name rrt@(RRT reg2phy phy2reg cs frees) =
             (phy:rest) = frees
 
 -- Frees the physical register from being mapped to a register name.
--- Returns Nothing if there is no mapping to the physical register.
-free :: PhyReg -> RRT -> Maybe RRT
+-- Or, does nothing if there is no mapping. Useful if trying to free a const
+-- mapping.
+free :: PhyReg -> RRT -> RRT
 free phy rrt = do
-    reg <- Map.lookup phy (phy2reg rrt)
-    let reg2phy' = Map.delete reg (reg2phy rrt)
-        phy2reg' = Map.delete phy (phy2reg rrt)
-        frees'   = phy:(frees rrt)
-    return rrt { reg2phy=reg2phy', phy2reg=phy2reg', frees=frees' }
+    case Map.lookup phy (phy2reg rrt) of
+        Nothing -> rrt
+        Just reg ->
+            let reg2phy' = Map.delete reg (reg2phy rrt)
+                phy2reg' = Map.delete phy (phy2reg rrt)
+                frees'   = phy:(frees rrt)
+            in rrt { reg2phy=reg2phy', phy2reg=phy2reg', frees=frees' }
 
 -- Return physical register mapped to name of register in source code, or
 -- Nothing if no mapping exists.

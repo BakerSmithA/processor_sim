@@ -178,11 +178,8 @@ allocPhyReg reg st =
 
 -- Frees a physical register allocated to a register name.
 -- Crashes if there if no mapping to the physical register.
-freePhyReg :: PhyReg -> State -> Res State
-freePhyReg phy st =
-    case RRT.free phy (rrt st) of
-        Nothing   -> crash (FreeNonExistentPhyReg phy) st
-        Just rrt' -> return st { rrt=rrt' }
+freePhyReg :: PhyReg -> State -> State
+freePhyReg phy st = st { rrt=RRT.free phy (rrt st) }
 
 -- Returns physical register mapped to register name, or crashes if there
 -- is no mapping.
