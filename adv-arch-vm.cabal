@@ -29,6 +29,9 @@ executable vm
                      , Helper
                      , RRT
                      , Decode
+                     , Queue
+                     , ROB
+                     , WriteBack
   build-depends:       base >=4.10 && <4.11
                      , array
                      , bytestring
