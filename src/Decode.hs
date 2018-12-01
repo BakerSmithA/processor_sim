@@ -17,9 +17,9 @@ decode fi st = fmap (fmap addSt) runMaybeT (decodeI fi st) where
     addSt = maybe (Nothing, st) (\(di, st') -> (Just di, st'))
 
 decodeI :: FInstr -> State -> MaybeT Res (DInstr, State)
-decodeI (MoveI r i)           = decodeRI MoveI r i
-decodeI (Move r from)         = decodeRR Move  r from
-decodeI (LoadIdx r b off)     = decodeRRI LoadIdx r b off
+decodeI (MoveI r i)           = decodeRI  MoveI       r i
+decodeI (Move r from)         = decodeRR  Move        r from
+decodeI (LoadIdx r b off)     = decodeRRI LoadIdx     r b off
 decodeI (LoadBaseIdx r b off) = decodeRRR LoadBaseIdx r b off
 -- Stores cannot use decodeXXX functions because the their 'r' register is not
 -- treated as a destination register, and so does not need renaming/
