@@ -111,4 +111,7 @@ withPReg :: RegIdx
         -> Res (DInstr, State)
 withPReg r f st1 = do
     (pr, st2) <- St.allocPhyReg r st1
-    fmap (\di -> (di, st2)) (f pr st2)
+    -- Use old state (st1) as arg to `f` because allocating a new physical register
+    -- may overwrite a mapping that is still being used. This affects instructions
+    -- where the source and destination are the same register.
+    fmap (\di -> (di, st2)) (f pr st1)
