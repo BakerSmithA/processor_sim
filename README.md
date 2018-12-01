@@ -1,2 +1,10 @@
-# adv_arch_vm
-Register based Res.
+# Processor
+
+# Install 
+
+```
+> cd adv_arch_vm
+> cabal sandbox init
+> cabal install
+> cabal build
+```
