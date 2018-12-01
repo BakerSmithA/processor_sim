@@ -14,139 +14,139 @@ runVm instrs memCnts = run state' where
 
 execSpec :: Spec
 execSpec = describe "execution" $ do
-    context "normal execution" $ do
-        context "memory" $ do
-            it "interprets MoveI" $ do
-                let vm = runVm [MoveI 0 5] []
-                St.regVal 0 vm `shouldBe` Res 5
-
-            it "interprets Move" $ do
-                let vm = runVm [MoveI 0 6, Move 1 0] []
-                St.regVal 1 vm `shouldBe` Res 6
-
-            it "interprets LoadIdx" $ do
-                let vm  = runVm [MoveI 0 1, LoadIdx 1 0 2] [1, 2, 3, 4, 5]
-                St.regVal 1 vm `shouldBe` Res 4
-
-            it "interprets LoadBaseIdx" $ do
-                let vm  = runVm [MoveI 0 1, MoveI 1 3, LoadBaseIdx 2 0 1] [1, 2, 3, 4, 5]
-                St.regVal 2 vm `shouldBe` Res 5
-
-            it "interprets StoreIdx" $ do
-                let vm  = runVm [MoveI 0 7, MoveI 1 2, StoreIdx 0 1 2] [0, 0, 0, 0, 0]
-                St.mem vm `shouldBe` Mem.fromList [0, 0, 0, 0, 7]
-
-            it "interprets StoreBaseIdx" $ do
-                let vm  = runVm [MoveI 0 7, MoveI 1 2, MoveI 2 3, StoreBaseIdx 0 1 2] [0, 0, 0, 0, 0, 0]
-                St.mem vm `shouldBe` Mem.fromList [0, 0, 0, 0, 0, 7]
-
-        context "ALU instructions" $ do
-            it "interprets Add" $ do
-                let vm  = runVm [MoveI 0 1, MoveI 1 2, Add 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 3
-
-            it "interprets AddI" $ do
-                let vm  = runVm [MoveI 0 2, AddI 1 0 10] []
-                St.regVal 1 vm `shouldBe` Res 12
-
-            it "interprets Sub" $ do
-                let vm  = runVm [MoveI 0 5, MoveI 1 3, Sub 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 2
-
-            it "interprets SubI" $ do
-                let vm  = runVm [MoveI 0 10, SubI 1 0 3] []
-                St.regVal 1 vm `shouldBe` Res 7
-
-            it "interprets Mult" $ do
-                let vm  = runVm [MoveI 0 10, MoveI 1 3, Mult 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 30
-
-            it "interprets Div" $ do
-                let vm = runVm [MoveI 0 10, MoveI 1 2, Div 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 5
-
-            it "interprets Div to produce integer" $ do
-                let vm = runVm [MoveI 0 7, MoveI 1 2, Div 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 3
-
-            it "interprets Eq to be True" $ do
-                let vm  = runVm [MoveI 0 1, MoveI 1 1, Eq 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 1
-
-            it "interprets Eq to be False" $ do
-                let vm  = runVm [MoveI 0 1, MoveI 1 2, Eq 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 0
-
-            it "interprets Lt to be True" $ do
-                let vm  = runVm [MoveI 0 1, MoveI 1 2, Lt 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 1
-
-            it "interprets Lt to be False" $ do
-                let vm  = runVm [MoveI 0 3, MoveI 1 2, Lt 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 0
-
-            it "interprets Or to be True" $ do
-                let vm  = runVm [MoveI 0 0, MoveI 1 1, Or 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 1
-
-            it "interprets Or to be False" $ do
-                let vm  = runVm [MoveI 0 0, MoveI 1 0, Or 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 0
-
-            it "interprets And to be True" $ do
-                let vm  = runVm [MoveI 0 1, MoveI 1 1, And 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 1
-
-            it "interprets And to be False" $ do
-                let vm  = runVm [MoveI 0 0, MoveI 1 1, And 2 0 1] []
-                St.regVal 2 vm `shouldBe` Res 0
-
-            it "interprets Not to be True" $ do
-                let vm  = runVm [MoveI 0 1, Not 1 0] []
-                St.regVal 1 vm `shouldBe` Res 0
-
-            it "interprets Not to be False" $ do
-                let vm  = runVm [MoveI 0 0, Not 1 0] []
-                St.regVal 1 vm `shouldBe` Res 1
-
-        context "branch instructions" $ do
-            it "interprets B" $ do
-                -- Branch should cause MoveI instruction to be skipped.
-                let vm  = runVm [B 1, MoveI 0 5] []
-                St.regVal 0 vm `shouldBe` Res 0
-
-            it "interprets BT and takes branch" $ do
-                -- BT instruction should cause MoveI to be skipped.
-                let vm  = runVm [MoveI 0 1, BT 0 2, MoveI 1 5] []
-                St.regVal 1 vm `shouldBe` Res 0
-
-            it "interprets BT and does not take branch" $ do
-                let vm  = runVm [MoveI 0 0, BT 0 1, MoveI 1 5] []
-                St.regVal 1 vm `shouldBe` Res 5
-
-            it "interprets BF and takes branch" $ do
-                -- BT instruction should cause MoveI to be skipped.
-                let vm  = runVm [MoveI 0 0, BF 0 2, MoveI 1 5] []
-                St.regVal 1 vm `shouldBe` Res 0
-
-            it "interprets BF and does not take branch" $ do
-                let vm  = runVm [MoveI 0 1, BF 0 1, MoveI 1 5] []
-                St.regVal 1 vm `shouldBe` Res 5
-
-            it "interprets Ret" $ do
-                -- Ret instruction should cause MoveI to be skipped.
-                let lrIdx = 13
-                    vm    = runVm [MoveI lrIdx 2, Ret, MoveI 0 5] []
-                St.regVal 0 vm `shouldBe` Res 0
-
-        context "output instructions" $ do
-            it "interprets Print" $ do
-                let vm  = runVm [MoveI 0 10, Print 0] []
-                St.output vm `shouldBe` "10"
-
-            it "interprets PrintLn" $ do
-                let vm  = runVm [PrintLn] []
-                St.output vm `shouldBe` "\n"
+    -- context "normal execution" $ do
+    --     context "memory" $ do
+    --         it "interprets MoveI" $ do
+    --             let vm = runVm [MoveI 0 5] []
+    --             St.regVal 0 vm `shouldBe` Res 5
+    --
+    --         it "interprets Move" $ do
+    --             let vm = runVm [MoveI 0 6, Move 1 0] []
+    --             St.regVal 1 vm `shouldBe` Res 6
+    --
+    --         it "interprets LoadIdx" $ do
+    --             let vm  = runVm [MoveI 0 1, LoadIdx 1 0 2] [1, 2, 3, 4, 5]
+    --             St.regVal 1 vm `shouldBe` Res 4
+    --
+    --         it "interprets LoadBaseIdx" $ do
+    --             let vm  = runVm [MoveI 0 1, MoveI 1 3, LoadBaseIdx 2 0 1] [1, 2, 3, 4, 5]
+    --             St.regVal 2 vm `shouldBe` Res 5
+    --
+    --         it "interprets StoreIdx" $ do
+    --             let vm  = runVm [MoveI 0 7, MoveI 1 2, StoreIdx 0 1 2] [0, 0, 0, 0, 0]
+    --             St.mem vm `shouldBe` Mem.fromList [0, 0, 0, 0, 7]
+    --
+    --         it "interprets StoreBaseIdx" $ do
+    --             let vm  = runVm [MoveI 0 7, MoveI 1 2, MoveI 2 3, StoreBaseIdx 0 1 2] [0, 0, 0, 0, 0, 0]
+    --             St.mem vm `shouldBe` Mem.fromList [0, 0, 0, 0, 0, 7]
+    --
+    --     context "ALU instructions" $ do
+    --         it "interprets Add" $ do
+    --             let vm  = runVm [MoveI 0 1, MoveI 1 2, Add 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 3
+    --
+    --         it "interprets AddI" $ do
+    --             let vm  = runVm [MoveI 0 2, AddI 1 0 10] []
+    --             St.regVal 1 vm `shouldBe` Res 12
+    --
+    --         it "interprets Sub" $ do
+    --             let vm  = runVm [MoveI 0 5, MoveI 1 3, Sub 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 2
+    --
+    --         it "interprets SubI" $ do
+    --             let vm  = runVm [MoveI 0 10, SubI 1 0 3] []
+    --             St.regVal 1 vm `shouldBe` Res 7
+    --
+    --         it "interprets Mult" $ do
+    --             let vm  = runVm [MoveI 0 10, MoveI 1 3, Mult 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 30
+    --
+    --         it "interprets Div" $ do
+    --             let vm = runVm [MoveI 0 10, MoveI 1 2, Div 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 5
+    --
+    --         it "interprets Div to produce integer" $ do
+    --             let vm = runVm [MoveI 0 7, MoveI 1 2, Div 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 3
+    --
+    --         it "interprets Eq to be True" $ do
+    --             let vm  = runVm [MoveI 0 1, MoveI 1 1, Eq 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 1
+    --
+    --         it "interprets Eq to be False" $ do
+    --             let vm  = runVm [MoveI 0 1, MoveI 1 2, Eq 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 0
+    --
+    --         it "interprets Lt to be True" $ do
+    --             let vm  = runVm [MoveI 0 1, MoveI 1 2, Lt 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 1
+    --
+    --         it "interprets Lt to be False" $ do
+    --             let vm  = runVm [MoveI 0 3, MoveI 1 2, Lt 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 0
+    --
+    --         it "interprets Or to be True" $ do
+    --             let vm  = runVm [MoveI 0 0, MoveI 1 1, Or 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 1
+    --
+    --         it "interprets Or to be False" $ do
+    --             let vm  = runVm [MoveI 0 0, MoveI 1 0, Or 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 0
+    --
+    --         it "interprets And to be True" $ do
+    --             let vm  = runVm [MoveI 0 1, MoveI 1 1, And 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 1
+    --
+    --         it "interprets And to be False" $ do
+    --             let vm  = runVm [MoveI 0 0, MoveI 1 1, And 2 0 1] []
+    --             St.regVal 2 vm `shouldBe` Res 0
+    --
+    --         it "interprets Not to be True" $ do
+    --             let vm  = runVm [MoveI 0 1, Not 1 0] []
+    --             St.regVal 1 vm `shouldBe` Res 0
+    --
+    --         it "interprets Not to be False" $ do
+    --             let vm  = runVm [MoveI 0 0, Not 1 0] []
+    --             St.regVal 1 vm `shouldBe` Res 1
+    --
+    --     context "branch instructions" $ do
+    --         it "interprets B" $ do
+    --             -- Branch should cause MoveI instruction to be skipped.
+    --             let vm  = runVm [B 1, MoveI 0 5] []
+    --             St.regVal 0 vm `shouldBe` Res 0
+    --
+    --         it "interprets BT and takes branch" $ do
+    --             -- BT instruction should cause MoveI to be skipped.
+    --             let vm  = runVm [MoveI 0 1, BT 0 2, MoveI 1 5] []
+    --             St.regVal 1 vm `shouldBe` Res 0
+    --
+    --         it "interprets BT and does not take branch" $ do
+    --             let vm  = runVm [MoveI 0 0, BT 0 1, MoveI 1 5] []
+    --             St.regVal 1 vm `shouldBe` Res 5
+    --
+    --         it "interprets BF and takes branch" $ do
+    --             -- BT instruction should cause MoveI to be skipped.
+    --             let vm  = runVm [MoveI 0 0, BF 0 2, MoveI 1 5] []
+    --             St.regVal 1 vm `shouldBe` Res 0
+    --
+    --         it "interprets BF and does not take branch" $ do
+    --             let vm  = runVm [MoveI 0 1, BF 0 1, MoveI 1 5] []
+    --             St.regVal 1 vm `shouldBe` Res 5
+    --
+    --         it "interprets Ret" $ do
+    --             -- Ret instruction should cause MoveI to be skipped.
+    --             let lrIdx = 13
+    --                 vm    = runVm [MoveI lrIdx 2, Ret, MoveI 0 5] []
+    --             St.regVal 0 vm `shouldBe` Res 0
+    --
+    --     context "output instructions" $ do
+    --         it "interprets Print" $ do
+    --             let vm  = runVm [MoveI 0 10, Print 0] []
+    --             St.output vm `shouldBe` "10"
+    --
+    --         it "interprets PrintLn" $ do
+    --             let vm  = runVm [PrintLn] []
+    --             St.output vm `shouldBe` "\n"
 
         context "running example programs" $ do
             it "runs bubble-sort" $ do

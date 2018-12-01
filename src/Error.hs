@@ -15,4 +15,7 @@ data Error
     | NoPhyRegAssigned { regIdx :: RegIdx, pc :: InstrAddr }
     -- Tried to free a physical register that was not assigned to a register name.
     | FreeNonExistentPhyReg { phyReg :: PhyReg, pc :: InstrAddr }
+    -- Tried to allocate a physical register when there are none free. Should
+    -- stall if there are none free.
+    | NoFreePhyRegs { pc :: InstrAddr }
     deriving (Eq, Show)

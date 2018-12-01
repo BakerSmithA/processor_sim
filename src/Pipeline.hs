@@ -14,7 +14,7 @@ data Pipeline = Pipeline {
 -- FInstruction that was fetched, or Nothing if stalled at this stage.
 type Fetched a = (Maybe (ROBIdx, FInstr), a)
 -- Decodes a fetched instruction, or Nothing if stalls at this stage.
-type Decoder m a = FInstr -> a -> m (Maybe DInstr, a)
+type Decoder m a = FInstr -> a -> m (DInstr, a)
 -- Executes a decoded instruction.
 type Executer m a = DInstr -> a -> m (WriteBack, a)
 -- Commits any executed instructions in ROB, and returns instructions that can be committed.
@@ -37,8 +37,7 @@ step f x = maybe (return (x, Nothing)) success where
 decodeStep :: (Monad m) => Decoder m a -> a -> Maybe (ROBIdx, FInstr) -> m (a, Maybe (ROBIdx, DInstr))
 decodeStep decode = step $ \x (idx, instr) -> do
     (decoded, x') <- decode instr x
-    let idxDecoded = fmap (\d -> (idx, d)) decoded
-    return (x', idxDecoded)
+    return (x', Just (idx, decoded))
 
 -- Steps a decoded instruction through the exectution step of the pipeline.
 execStep :: (Monad m) => Executer m a -> a -> Maybe (ROBIdx, DInstr) -> m (a, Maybe (ROBIdx, WriteBack))

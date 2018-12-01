@@ -170,10 +170,11 @@ commitROB st =
 
 -- Takes a free physical register and returns its index.
 -- Returns Nothing if there are no physical registers free.
-allocPhyReg :: RegIdx -> State -> Maybe (PhyReg, State)
-allocPhyReg reg st = do
-    (phy, rrt') <- RRT.ins reg (rrt st)
-    return (phy, st { rrt=rrt' })
+allocPhyReg :: RegIdx -> State -> Res (PhyReg, State)
+allocPhyReg reg st =
+    case RRT.ins reg (rrt st) of
+        Nothing -> crash NoFreePhyRegs st
+        Just (phy, rrt') -> return (phy, st { rrt=rrt' })
 
 -- Frees a physical register allocated to a register name.
 -- Crashes if there if no mapping to the physical register.
