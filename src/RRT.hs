@@ -39,9 +39,12 @@ ins name rrt@(RRT reg2phy phy2reg cs frees) =
     case Map.lookup name cs of
         Just phy -> Just (phy, rrt) -- Already exists in consts.
         Nothing  -> Just (phy, rrt') where -- Insert new.
-            rrt'       = RRT reg2phy' phy2reg' cs rest
+            rrt'       = RRT reg2phy' phy2reg' cs rest'
             reg2phy'   = Map.insert name phy reg2phy
             phy2reg'   = Map.insert phy name phy2reg
+            -- We are overwriting the register mapping. Therefore, if a mapping
+            -- already exists it can be freed.
+            rest'      = maybe rest (:rest) (Map.lookup name reg2phy)
             (phy:rest) = frees
 
 -- Frees the physical register from being mapped to a register name.
