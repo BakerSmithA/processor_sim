@@ -71,9 +71,14 @@ instance Monad Res where
 
 instance Show State where
     show st =
-     --      "Cycles : "  ++ show (cycles st)
-     -- ++ "\nFInstrs : "  ++ show (instrsExec st)
-     -- ++ "\nIpC    : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double)
+          "Cycles : "  ++ show (cycles st)
+     ++ "\nInstrs : "  ++ show (instrsExec st)
+     ++ "\nIpC    : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double)
+     ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
+     ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
+
+debugShow :: State -> String
+debugShow st =
         "\nBypass : "  ++ show (bypass st)
      ++ "\nRRT    : "  ++ show (rrt st)
      ++ "\nROB    : "  ++ show (rob st)
