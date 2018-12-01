@@ -104,6 +104,7 @@ instr =
     <|> SysCall <$ byte 21
     -- Debugging
     <|> Print   <$ byte 13 <*> word8
+    <|> PrintC  <$ byte 24 <*> word8
     <|> PrintLn <$ byte 20
 
 instrs :: Parser [FInstr]

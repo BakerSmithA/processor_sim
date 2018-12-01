@@ -182,6 +182,10 @@ instrSpec = describe "instr" $ do
         let bs = pack [13, 3]
         parse instr bs `shouldBe` Just (Print 3)
 
+    it "parses PrintC" $ do
+        let bs = pack [24, 3]
+        parse instr bs `shouldBe` Just (PrintC 3)
+
     it "parses PrintLn" $ do
         let bs = pack [20]
         parse instr bs `shouldBe` Just PrintLn

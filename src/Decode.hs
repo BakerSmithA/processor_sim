@@ -45,12 +45,20 @@ decode (BT r addr) = decodeRAddr BT r addr
 decode (BF r addr) = decodeRAddr BF r addr
 decode (Ret)       = pass Ret
 
-decode (Print r) = \st -> do
-    p <- St.getPhyReg r st
-    return (Print p, st)
-decode (PrintLn) = pass PrintLn
+decode (Print r)  = decodeR Print r
+decode (PrintC r) = decodeR PrintC r
+decode (PrintLn)  = pass PrintLn
 
 decode (SysCall) = pass SysCall
+
+-- Convenience function for decoding instruction with only one register operand.
+decodeR :: (PhyReg -> DInstr)
+         -> RegIdx
+         -> State
+         -> Res (DInstr, State)
+decodeR f r st = do
+    p <- St.getPhyReg r st
+    return (f p, st)
 
 -- Convenience function for decoding branch instructions that are dependent
 -- on a register value.

@@ -35,8 +35,9 @@ data TemplateInstr reg
     | Ret                              -- Branch to address in link register.
     | SysCall                          -- Terminates the program.
     -- Debugging
-    | Print { r :: reg } -- Print value in a register.
-    | PrintLn            -- Print a newline.
+    | Print { r :: reg }  -- Print value in a register.
+    | PrintC { r :: reg } -- Prints the value in a register as an ASCII character.
+    | PrintLn             -- Print a newline.
     deriving (Eq, Show)
 
 -- Fetched instruction.

@@ -1,6 +1,7 @@
 module Exec where
 
 import Control.Monad (foldM)
+import Data.Char
 import State as St
 import Error
 import Instr
@@ -159,6 +160,11 @@ exec (SysCall) _ =
 exec (Print r) st = do
     val <- regVal r st
     return (WritePrint (show val))
+-- Print value in a register as an ASCII character.
+exec (PrintC r) st = do
+    val <- regVal r st
+    let c = chr (fromIntegral val)
+    return (WritePrint [c])
 -- Print newline.
 exec (PrintLn) _ =
     return (WritePrint "\n")
