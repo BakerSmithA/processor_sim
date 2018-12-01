@@ -259,4 +259,4 @@ run st =
     case runPipeline st P.empty of
         Exit st    -> st
         Crash e st -> error (show e ++ "\n" ++ show st)
-        Res x       -> error ("Did not terminate:" ++ show x)
+        Res x      -> error ("Did not terminate:" ++ show x)
