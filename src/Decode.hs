@@ -3,7 +3,6 @@ module Decode where
 import Instr
 import State (State, Res)
 import qualified State as St
-import Control.Monad.Trans.Maybe
 
 -- Because instruction are already parsed into struct, no need to decode.
 -- However, register renaming will be performed at this step.
