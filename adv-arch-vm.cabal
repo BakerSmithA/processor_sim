@@ -32,7 +32,7 @@ executable vm
                      , Queue
                      , ROB
                      , WriteBack
-  build-depends:       base >=4.10 && <4.11
+  build-depends:       base
                      , array
                      , bytestring
                      , mtl
@@ -44,7 +44,7 @@ test-suite spec
   type:                exitcode-stdio-1.0
   ghc-options:         -Wall -fno-warn-name-shadowing -Wno-type-defaults -O0
   main-is:             Test.hs
-  build-depends:       base >=4.10 && <4.11
+  build-depends:       base
                      , array
                      , hspec
                      , bytestring
