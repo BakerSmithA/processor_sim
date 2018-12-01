@@ -19,6 +19,12 @@ rrtSpec = describe "register rename table" $ do
                 exp  = Just (0, RRT.fromMapping [(1, 0)] [] [1, 2, 3])
             rrt' `shouldBe` exp
 
+        it "returns const if already exists in const" $ do
+            let rrt            = RRT.fromMapping [(1, 0)] [(2, 1)] [2, 3]
+                Just (i, rrt') = RRT.ins 2 rrt
+            rrt' `shouldBe` rrt
+            i    `shouldBe` 1
+
     context "freeing mapping" $ do
         it "allows removal of mapping" $ do
             let rrt  = RRT.fromMapping [(1, 0)] [] [1, 2, 3]

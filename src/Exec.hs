@@ -11,6 +11,7 @@ import qualified Bypass as BP
 import ROB (ROBIdx)
 import WriteBack
 import Decode
+import Debug.Trace
 
 -- E.g. Mult, Add, And, Or, etc
 type ValOp = (Val -> Val -> Val)
@@ -251,7 +252,7 @@ runPipeline st p = do
                 then Exec.cycle st p
                 else Exec.cycleStall st p
     (st', p') <- x
-    runPipeline (St.incCycles st') p'
+    trace (show st ++ "\n\n" ++ show p ++ "\n=======\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State

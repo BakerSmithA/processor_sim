@@ -34,11 +34,15 @@ fromConstRegs regs maxPhy = fromMapping [] consts fs where
 -- is chosen from the remaining free registers. Or, returns Nothing if there
 -- are no free registers.
 ins :: RegIdx -> RRT -> Maybe (PhyReg, RRT)
-ins _    (RRT _ _ _ [])                      = Nothing
-ins name (RRT reg2phy phy2reg cs (phy:rest)) = Just (phy, rrt') where
-    rrt'     = RRT reg2phy' phy2reg' cs rest
-    reg2phy' = Map.insert name phy reg2phy
-    phy2reg' = Map.insert phy name phy2reg
+ins _        (RRT _ _ _ []) = Nothing
+ins name rrt@(RRT reg2phy phy2reg cs frees) =
+    case Map.lookup name cs of
+        Just phy -> Just (phy, rrt) -- Already exists in consts.
+        Nothing  -> Just (phy, rrt') where -- Insert new.
+            rrt'       = RRT reg2phy' phy2reg' cs rest
+            reg2phy'   = Map.insert name phy reg2phy
+            phy2reg'   = Map.insert phy name phy2reg
+            (phy:rest) = frees
 
 -- Frees the physical register from being mapped to a register name.
 -- Returns Nothing if there is no mapping to the physical register.

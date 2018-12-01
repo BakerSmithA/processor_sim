@@ -75,6 +75,7 @@ instance Show State where
      -- ++ "\nFInstrs : "  ++ show (instrsExec st)
      -- ++ "\nIpC    : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double)
         "\nBypass : "  ++ show (bypass st)
+     ++ "\nRRT    : "  ++ show (rrt st)
      ++ "\nROB    : "  ++ show (rob st)
      ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
      ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
