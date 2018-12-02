@@ -19,19 +19,12 @@ newlines (Ret)     = "\n"
 newlines (SysCall) = "\n"
 newlines _         = ""
 
--- showFInstrs :: [FInstr] -> String
--- showFInstrs is = unlines strNumbered where
---     strNumbered = map (\(n, i) -> (show n) ++ ":\t" ++ (show i) ++ newlines i) numbered
---     numbered    = zip [0..] is
-
 runBytecode :: FilePath -> IO ()
 runBytecode path = do
     contents <- B.readFile path
     case P.parse P.instrs contents of
         Nothing -> putStrLn "Could not parse file"
-        Just is -> do
-            --putStrLn (showFInstrs is)
-            runVm is
+        Just is -> runVm is
 
 main :: IO ()
 main = do
