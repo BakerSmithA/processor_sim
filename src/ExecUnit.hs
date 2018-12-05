@@ -3,6 +3,7 @@ module ExecUnit where
 import State
 import Instr
 import WriteBack
+import Data.Char (chr)
 
 -- Load/Store Unit.
 lsu :: EInstr -> State -> Res WriteBack
@@ -29,12 +30,23 @@ alu (Not   r x)   = writeReg r (notVal x)
 alu _             = error "Unsupported ALU Instr"
 
 -- Branch Unit.
-bu :: EInstr -> WriteBack
-bu = undefined
+bu :: EInstr -> State -> Res WriteBack
+bu (B addr)    st = branch addr st
+bu (BT r addr) st = branchCond (r==1) addr st
+bu (BF r addr) st = branchCond (r==0) addr st
+bu (SysCall)   _  = return Terminate
+bu (Ret)       st  = do
+    lrReg <- namedReg lrIdx st
+    addr <- regVal lrReg st
+    branch (fromIntegral addr) st
+bu  _         _  = error "Unsupported BU Instr"
 
 -- Output Unit (for debugging).
-ou :: EInstr -> WriteBack
-ou = undefined
+ou :: EInstr -> Res WriteBack
+ou (Print r)  = writePrint (show r)
+ou (PrintC r) = writePrint ([chr (fromIntegral r)])
+ou (PrintLn)  = writePrint "\n"
+ou _          = error "Unsupported OU Instr"
 
 -- Convenience method for WriteReg in Res.
 writeReg :: PhyReg -> Val -> Res WriteBack
@@ -71,3 +83,19 @@ andVal x y | x == 1 && y == 1 = 1
 notVal :: Val -> Val
 notVal x | x == 1    = 0
          | otherwise = 1
+
+-- Executes a branch by writing PC.
+branch :: Addr -> State -> Res WriteBack
+branch addr st = do
+    pcReg <- namedReg pcIdx st
+    -- +1 because pipeline stalls until branch executed, and PC not updated.
+    let addr' = fromIntegral (addr+1)
+    return (WriteReg pcReg addr')
+
+-- Executes a branch if the condition is true, otherwise NoOp.
+branchCond :: Bool -> Addr -> State -> Res WriteBack
+branchCond True  addr st = branch addr st
+branchCond False _    _  = return NoOp
+
+writePrint :: String -> Res WriteBack
+writePrint = return . WritePrint
