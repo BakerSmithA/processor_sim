@@ -60,6 +60,19 @@ mapIM fd fs _ (LoadIdx      r b off) = mapRVI LoadIdx      (fd r) (fs b) off
 mapIM fd fs _ (LoadBaseIdx  r b off) = mapRVV LoadBaseIdx  (fd r) (fs b) (fs off)
 mapIM _  fs _ (StoreIdx     r b off) = mapVVI StoreIdx     (fs r) (fs b) off
 mapIM _  fs _ (StoreBaseIdx r b off) = mapVVV StoreBaseIdx (fs r) (fs b) (fs off)
+-- Arithmetic/Logic
+mapIM fd fs _ (Add  r x y) = mapRVV Add  (fd r) (fs x) (fs y)
+mapIM fd fs _ (AddI r x i) = mapRVI AddI (fd r) (fs x) i
+mapIM fd fs _ (Sub  r x y) = mapRVV Sub  (fd r) (fs x) (fs y)
+mapIM fd fs _ (SubI r x i) = mapRVI SubI (fd r) (fs x) i
+mapIM fd fs _ (Mult r x y) = mapRVV Mult (fd r) (fs x) (fs y)
+mapIM fd fs _ (Div  r x y) = mapRVV Div  (fd r) (fs x) (fs y)
+mapIM fd fs _ (Eq   r x y) = mapRVV Eq   (fd r) (fs x) (fs y)
+mapIM fd fs _ (Lt   r x y) = mapRVV Lt   (fd r) (fs x) (fs y)
+mapIM fd fs _ (Or   r x y) = mapRVV Or   (fd r) (fs x) (fs y)
+mapIM fd fs _ (And  r x y) = mapRVV And  (fd r) (fs x) (fs y)
+mapIM fd fs _ (Not  r x)   = mapRR  Not  (fd r) (fs x)
+-- Branching
 
 mapRV :: (Monad m)
     => (rd -> Val -> TemplateInstr rd rs)
