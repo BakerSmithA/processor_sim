@@ -46,7 +46,8 @@ type FInstr = TemplateInstr RegIdx RegIdx
 type DInstr = TemplateInstr PhyReg PhyReg
 -- Instruction stored in reservation station.
 -- Stores partially 'filled-in' instrucions.
-type RSInstr = TemplateInstr PhyReg (Either PhyReg Val)
+type FillVal = Either PhyReg Val
+type RSInstr = TemplateInstr PhyReg FillVal
 -- Executed instruction with computed values filled in.
 type EInstr = TemplateInstr PhyReg Val
 
@@ -112,6 +113,7 @@ mapIM fd _ _ (MoveI r v) = do
 -- mapI _ fs fa (BT r addr) = BT (fs r) (fa addr)
 -- mapI _ fs fa (BF r addr) = BF (fs r) (fa addr)
 -- mapI _ _  _  (Ret)       = Ret
+
 -- mapI _ _  _  (SysCall)   = SysCall
 -- -- Debugging
 -- mapI _ fs _ (Print  r) = Print  (fs r)
