@@ -70,5 +70,6 @@ test-suite spec
                      , WriteBack
                      , Decode
                      , RS
+                     , ExecUnit
   hs-source-dirs:      src, test
   default-language:    Haskell2010

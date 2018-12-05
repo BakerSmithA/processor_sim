@@ -36,7 +36,6 @@ promote cond = foldr checkDone ([], []) where
                                   then (execInstr:execIs, rs)
                                   else (execIs, rsInstr:rs)
 
-
 -- Checks whether an entry in the reservation station has all operands filled,
 -- and if so returns instruction containing filled values.
 checkFilled :: RSInstr -> Maybe EInstr
