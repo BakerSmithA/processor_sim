@@ -73,6 +73,15 @@ mapIM fd fs _ (Or   r x y) = mapRVV Or   (fd r) (fs x) (fs y)
 mapIM fd fs _ (And  r x y) = mapRVV And  (fd r) (fs x) (fs y)
 mapIM fd fs _ (Not  r x)   = mapRR  Not  (fd r) (fs x)
 -- Branching
+mapIM _ _  fa (B addr)    = fa addr >>= \a -> return (B a)
+mapIM _ fs fa (BT r addr) = mapVA BT (fs r) (fa addr)
+mapIM _ fs fa (BF r addr) = mapVA BF (fs r) (fa addr)
+mapIM _ _  _  (Ret)       = return Ret
+mapIM _ _  _  (SysCall)   = return SysCall
+-- Debugging
+mapIM _ fs _ (Print  r) = mapV Print  (fs r)
+mapIM _ fs _ (PrintC r) = mapV PrintC (fs r)
+mapIM _ _  _ (PrintLn)  = return PrintLn
 
 mapRV :: (Monad m)
     => (rd -> Val -> TemplateInstr rd rs)
@@ -128,6 +137,23 @@ mapVVV f s1 s2 s3 = do
     s2' <- s2
     s3' <- s3
     return (f s1' s2' s3')
+
+mapVA :: (Monad m)
+    => (rs -> Addr -> TemplateInstr rd rs)
+    -> m rs -> m Addr
+    -> m (TemplateInstr rd rs)
+mapVA f s a = do
+    s' <- s
+    a' <- a
+    return (f s' a')
+
+mapV :: (Monad m)
+    => (rs -> TemplateInstr rd rs)
+    -> m rs
+    -> m (TemplateInstr rd rs)
+mapV f s = do
+    s' <- s
+    return (f s')
 
 isBranch :: TemplateInstr rDst rSrc -> Bool
 isBranch (B _)    = True
