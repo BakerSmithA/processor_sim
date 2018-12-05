@@ -4,15 +4,22 @@ import Instr
 import State as St
 
 -- Reservation station.
-newtype RS = RS [RSInstr]
+type RS = [RSInstr]
 
 -- Iterates through instructions in reservation station and tries to 'fill in'
 -- missing operands.
-tryFill :: State -> RS -> RS
-tryFill = undefined
+tryFill :: State -> RS -> Res RS
+tryFill st = mapM fill where
+    fill :: RSInstr -> Res RSInstr
+    fill = mapIM return fillRSrc return
 
--- tryFill st (RS is) = RS (map fill is) where
---     fill = mapI id fillRSrc fillAddr
---
---     fillRSrc r =
---         case St.regVal
+    -- Fills in the source register in an instruction with a value read from
+    -- the state's registers, bypass, reorder-buffer, etc.
+    fillRSrc :: Either PhyReg Val -> Res (Either PhyReg Val)
+    fillRSrc = either f (return . Right) where
+        f :: PhyReg -> Res (Either PhyReg Val)
+        f phy = do
+            maybeVal <- St.regVal phy st
+            return $ case maybeVal of
+                Nothing  -> Left phy
+                Just val -> Right val
