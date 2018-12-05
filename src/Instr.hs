@@ -47,6 +47,8 @@ type DInstr = TemplateInstr PhyReg PhyReg Addr
 -- Instruction stored in reservation station.
 -- Stores partially 'filled-in' instrucions.
 type RSInstr = TemplateInstr PhyReg (Either PhyReg Val) (Either Addr Val)
+-- Executed instruction with computed values filled in.
+type EInstr = TemplateInstr PhyReg Val Val
 
 -- Map register and address values stored in instruction.
 mapI :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (a1 -> a2) -> TemplateInstr rDst1 rSrc1 a1 -> TemplateInstr rDst2 rSrc2 a2
@@ -79,36 +81,6 @@ mapI _ _  _  (SysCall)   = SysCall
 mapI _ fs _ (Print  r) = Print  (fs r)
 mapI _ fs _ (PrintC r) = PrintC (fs r)
 mapI _ _  _ (PrintLn)  = PrintLn
-
--- -- Memory.
--- mapI fr _ (MoveI r v)            = MoveI        (fr r) v
--- mapI fr _ (Move r from)          = Move         (fr r) (fr from)
--- mapI fr _ (LoadIdx r b off)      = LoadIdx      (fr r) (fr b) off
--- mapI fr _ (LoadBaseIdx r b off)  = LoadBaseIdx  (fr r) (fr b) (fr off)
--- mapI fr _ (StoreIdx r b off)     = StoreIdx     (fr r) (fr b) off
--- mapI fr _ (StoreBaseIdx r b off) = StoreBaseIdx (fr r) (fr b) (fr off)
--- -- Arithmetic/Logic.
--- mapI fr _ (Add  r x y) = Add  (fr r) (fr x) (fr y)
--- mapI fr _ (AddI r x i) = AddI (fr r) (fr x) i
--- mapI fr _ (Sub  r x y) = Sub  (fr r) (fr x) (fr y)
--- mapI fr _ (SubI r x i) = SubI (fr r) (fr x) i
--- mapI fr _ (Mult r x y) = Mult (fr r) (fr x) (fr y)
--- mapI fr _ (Div  r x y) = Div  (fr r) (fr x) (fr y)
--- mapI fr _ (Eq   r x y) = Eq   (fr r) (fr x) (fr y)
--- mapI fr _ (Lt   r x y) = Lt   (fr r) (fr x) (fr y)
--- mapI fr _ (Or   r x y) = Or   (fr r) (fr x) (fr y)
--- mapI fr _ (And  r x y) = And  (fr r) (fr x) (fr y)
--- mapI fr _ (Not  r x)   = Not  (fr r) (fr x)
--- -- Branching
--- mapI _  fa (B addr)    = B  (fa addr)
--- mapI fr fa (BT r addr) = BT (fr r) (fa addr)
--- mapI fr fa (BF r addr) = BF (fr r) (fa addr)
--- mapI _  _  (Ret)       = Ret
--- mapI _  _  (SysCall)   = SysCall
--- -- Debugging
--- mapI fr _ (Print r)  = Print  (fr r)
--- mapI fr _ (PrintC r) = PrintC (fr r)
--- mapI _  _ (PrintLn)  = PrintLn
 
 isBranch :: TemplateInstr rDst rSrc a -> Bool
 isBranch (B _)    = True
