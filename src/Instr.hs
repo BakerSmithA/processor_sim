@@ -155,9 +155,36 @@ mapV f s = do
     s' <- s
     return (f s')
 
+isMem :: TemplateInstr rDst rSrc -> Bool
+isMem (LoadIdx      _ _ _) = True
+isMem (LoadBaseIdx  _ _ _) = True
+isMem (StoreIdx     _ _ _) = True
+isMem (StoreBaseIdx _ _ _) = True
+isMem _                    = False
+
+isAL :: TemplateInstr rDst rSrc -> Bool
+isAL (Add  _ _ _) = True
+isAL (AddI _ _ _) = True
+isAL (Sub  _ _ _) = True
+isAL (SubI _ _ _) = True
+isAL (Mult _ _ _) = True
+isAL (Div  _ _ _) = True
+isAL (Eq   _ _ _) = True
+isAL (Lt   _ _ _) = True
+isAL (Or   _ _ _) = True
+isAL (And  _ _ _) = True
+isAL (Not  _ _)   = True
+isAL _            = False
+
 isBranch :: TemplateInstr rDst rSrc -> Bool
 isBranch (B _)    = True
 isBranch (BT _ _) = True
 isBranch (BF _ _) = True
 isBranch (Ret)    = True
 isBranch _        = False
+
+isOut :: TemplateInstr rDst rSrc -> Bool
+isOut (Print  _) = True
+isOut (PrintC _) = True
+isOut (PrintLn)  = True
+isOut _          = False
