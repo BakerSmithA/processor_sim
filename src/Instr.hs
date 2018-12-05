@@ -96,8 +96,8 @@ mapRR :: (Monad m)
     -> m rd -> m rs
     -> m (TemplateInstr rd rs)
 mapRR f r s = do
-    r' <- r
     s' <- s
+    r' <- r
     return (f r' s')
 
 mapRVI :: (Monad m)
@@ -105,8 +105,8 @@ mapRVI :: (Monad m)
     -> m rd -> m rs -> Val
     -> m (TemplateInstr rd rs)
 mapRVI f r s i = do
-    r' <- r
     s' <- s
+    r' <- r
     return (f r' s' i)
 
 mapRVV :: (Monad m)
@@ -114,9 +114,9 @@ mapRVV :: (Monad m)
     -> m rd -> m rs -> m rs
     -> m (TemplateInstr rd rs)
 mapRVV f r s1 s2 = do
-    r' <- r
     s1' <- s1
     s2' <- s2
+    r' <- r
     return (f r' s1' s2')
 
 mapVVI :: (Monad m)

@@ -49,6 +49,7 @@ test-suite spec
                      , hspec
                      , bytestring
                      , containers
+                     , transformers
   other-modules:       Instr
                      , Mem
                      , State

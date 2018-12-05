@@ -17,9 +17,7 @@ import RRT
 data State = State {
     -- Memory
     mem    :: Mem Addr Val
-    -- Physical register file. Distinct from names of registers given in ASM.
-    -- Contains Nothing if the value is not ready to be read.
-  , regs   :: Mem PhyReg (Maybe Val)
+  , regs   :: Mem PhyReg Val
   , instrs :: Mem Addr FInstr
 
     -- Register indices
@@ -91,7 +89,7 @@ empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt 0 0 where
     maxPhyReg = 15
     mem       = Mem.zeroed 127
-    regs      = Mem.fromList (replicate maxPhyReg Nothing)--Mem.zeroed maxPhyReg
+    regs      = Mem.zeroed maxPhyReg
     instrs'   = Mem.fromList instrs
     bypass    = BP.empty
     rob       = ROB.empty 5
@@ -122,21 +120,20 @@ namedReg getReg st = do
 namedRegVal :: (State -> RegIdx) -> State -> Res Val
 namedRegVal getReg st = do
     phy <- namedReg getReg st
-    Just val <- regVal phy st
-    return val
+    regVal phy st
 
 -- Returns the value stored in the PC register.
 pcVal :: State -> Res Val
 pcVal = namedRegVal pcIdx
 
 -- Return value of a register, from bypass or register. Crash if invalid index.
-regVal :: PhyReg -> State -> Res (Maybe Val)
+regVal :: PhyReg -> State -> Res Val
 regVal i st =
     case BP.regVal i (bypass st) of
-        Just val -> return (Just val)
+        Just val -> return val
         Nothing ->
             case ROB.regVal i (rob st) of
-                Just val -> return (Just val)
+                Just val -> return val
                 Nothing ->
                     case Reg.load i (regs st) of
                         Nothing  -> crash (RegOutOfRange i) st

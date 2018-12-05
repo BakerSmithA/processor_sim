@@ -20,7 +20,7 @@ tryFill st = mapM fill where
         f :: PhyReg -> Res (Either PhyReg Val)
         f phy = do
             maybeVal <- St.regVal phy st
-            return $ case maybeVal of
+            return $ case (Just maybeVal) of -- TODO: Get maybe from reg val instead of Just.
                 Nothing  -> Left phy
                 Just val -> Right val
 
