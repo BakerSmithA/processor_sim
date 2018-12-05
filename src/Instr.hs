@@ -46,79 +46,75 @@ type FInstr = TemplateInstr RegIdx RegIdx
 type DInstr = TemplateInstr PhyReg PhyReg
 -- Instruction stored in reservation station.
 -- Stores partially 'filled-in' instrucions.
-type FillVal = Either PhyReg Val
-type RSInstr = TemplateInstr PhyReg FillVal
+type RSInstr = TemplateInstr PhyReg (Either PhyReg Val)
 -- Executed instruction with computed values filled in.
 type EInstr = TemplateInstr PhyReg Val
 
--- Map register and address values stored in instruction.
-mapI :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (Addr -> Addr) -> TemplateInstr rDst1 rSrc1 -> TemplateInstr rDst2 rSrc2
+mapIM :: (Monad m) => (rd1 -> m rd2) -> (rs1 -> m rs2) -> (Addr -> m Addr)
+                   -> TemplateInstr rd1 rs1
+                   -> m (TemplateInstr rd2 rs2)
 -- Memory
-mapI fd _  _ (MoveI r v)            = MoveI (fd r) v
-mapI fd fs _ (Move r from)          = Move (fd r) (fs from)
-mapI fd fs _ (LoadIdx r b off)      = LoadIdx (fd r) (fs b) off
-mapI fd fs _ (LoadBaseIdx r b off)  = LoadBaseIdx (fd r) (fs b) (fs off)
-mapI _  fs _ (StoreIdx r b off)     = StoreIdx (fs r) (fs b) off
-mapI _  fs _ (StoreBaseIdx r b off) = StoreBaseIdx (fs r) (fs b) (fs off)
--- Arithmetic/Logic
-mapI fd fs _ (Add  r x y) = Add  (fd r) (fs x) (fs y)
-mapI fd fs _ (AddI r x i) = AddI (fd r) (fs x) i
-mapI fd fs _ (Sub  r x y) = Sub  (fd r) (fs x) (fs y)
-mapI fd fs _ (SubI r x i) = SubI (fd r) (fs x) i
-mapI fd fs _ (Mult r x y) = Mult (fd r) (fs x) (fs y)
-mapI fd fs _ (Div  r x y) = Div  (fd r) (fs x) (fs y)
-mapI fd fs _ (Eq   r x y) = Eq   (fd r) (fs x) (fs y)
-mapI fd fs _ (Lt   r x y) = Lt   (fd r) (fs x) (fs y)
-mapI fd fs _ (Or   r x y) = Or   (fd r) (fs x) (fs y)
-mapI fd fs _ (And  r x y) = And  (fd r) (fs x) (fs y)
-mapI fd fs _ (Not  r x)   = Not  (fd r) (fs x)
--- Branching
-mapI _  _ fa (B addr)    = B  (fa addr)
-mapI _ fs fa (BT r addr) = BT (fs r) (fa addr)
-mapI _ fs fa (BF r addr) = BF (fs r) (fa addr)
-mapI _ _  _  (Ret)       = Ret
-mapI _ _  _  (SysCall)   = SysCall
--- Debugging
-mapI _ fs _ (Print  r) = Print  (fs r)
-mapI _ fs _ (PrintC r) = PrintC (fs r)
-mapI _ _  _ (PrintLn)  = PrintLn
+mapIM fd _  _ (MoveI        r i)     = mapRV  MoveI        (fd r) i
+mapIM fd fs _ (Move         r from)  = mapRR  Move         (fd r) (fs from)
+mapIM fd fs _ (LoadIdx      r b off) = mapRVI LoadIdx      (fd r) (fs b) off
+mapIM fd fs _ (LoadBaseIdx  r b off) = mapRVV LoadBaseIdx  (fd r) (fs b) (fs off)
+mapIM _  fs _ (StoreIdx     r b off) = mapVVI StoreIdx     (fs r) (fs b) off
+mapIM _  fs _ (StoreBaseIdx r b off) = mapVVV StoreBaseIdx (fs r) (fs b) (fs off)
 
-mapIM :: (Monad m) => (rDst1 -> m rDst2) -> (rSrc1 -> m rSrc2) -> (Addr -> m Addr) -> TemplateInstr rDst1 rSrc1 -> m (TemplateInstr rDst2 rSrc2)
--- Memory
-mapIM fd _ _ (MoveI r v) = do
-    r' <- fd r
-    return (MoveI r' v)
+mapRV :: (Monad m)
+    => (rd -> Val -> TemplateInstr rd rs)
+    -> m rd -> Val
+    -> m (TemplateInstr rd rs)
+mapRV f r i = do
+    r' <- r
+    return (f r' i)
 
--- -- Memory
--- mapI fd _  _ (MoveI r v)            = MoveI (fd r) v
--- mapI fd fs _ (Move r from)          = Move (fd r) (fs from)
--- mapI fd fs _ (LoadIdx r b off)      = LoadIdx (fd r) (fs b) off
--- mapI fd fs _ (LoadBaseIdx r b off)  = LoadBaseIdx (fd r) (fs b) (fs off)
--- mapI _  fs _ (StoreIdx r b off)     = StoreIdx (fs r) (fs b) off
--- mapI _  fs _ (StoreBaseIdx r b off) = StoreBaseIdx (fs r) (fs b) (fs off)
--- -- Arithmetic/Logic
--- mapI fd fs _ (Add  r x y) = Add  (fd r) (fs x) (fs y)
--- mapI fd fs _ (AddI r x i) = AddI (fd r) (fs x) i
--- mapI fd fs _ (Sub  r x y) = Sub  (fd r) (fs x) (fs y)
--- mapI fd fs _ (SubI r x i) = SubI (fd r) (fs x) i
--- mapI fd fs _ (Mult r x y) = Mult (fd r) (fs x) (fs y)
--- mapI fd fs _ (Div  r x y) = Div  (fd r) (fs x) (fs y)
--- mapI fd fs _ (Eq   r x y) = Eq   (fd r) (fs x) (fs y)
--- mapI fd fs _ (Lt   r x y) = Lt   (fd r) (fs x) (fs y)
--- mapI fd fs _ (Or   r x y) = Or   (fd r) (fs x) (fs y)
--- mapI fd fs _ (And  r x y) = And  (fd r) (fs x) (fs y)
--- mapI fd fs _ (Not  r x)   = Not  (fd r) (fs x)
--- -- Branching
--- mapI _  _ fa (B addr)    = B  (fa addr)
--- mapI _ fs fa (BT r addr) = BT (fs r) (fa addr)
--- mapI _ fs fa (BF r addr) = BF (fs r) (fa addr)
--- mapI _ _  _  (Ret)       = Ret
+mapRR :: (Monad m)
+    => (rd -> rs -> TemplateInstr rd rs)
+    -> m rd -> m rs
+    -> m (TemplateInstr rd rs)
+mapRR f r s = do
+    r' <- r
+    s' <- s
+    return (f r' s')
 
--- mapI _ _  _  (SysCall)   = SysCall
--- -- Debugging
--- mapI _ fs _ (Print  r) = Print  (fs r)
--- mapI _ fs _ (PrintC r) = PrintC (fs r)
--- mapI _ _  _ (PrintLn)  = PrintLn
+mapRVI :: (Monad m)
+    => (rd -> rs -> Val -> TemplateInstr rd rs)
+    -> m rd -> m rs -> Val
+    -> m (TemplateInstr rd rs)
+mapRVI f r s i = do
+    r' <- r
+    s' <- s
+    return (f r' s' i)
+
+mapRVV :: (Monad m)
+    => (rd -> rs -> rs -> TemplateInstr rd rs)
+    -> m rd -> m rs -> m rs
+    -> m (TemplateInstr rd rs)
+mapRVV f r s1 s2 = do
+    r' <- r
+    s1' <- s1
+    s2' <- s2
+    return (f r' s1' s2')
+
+mapVVI :: (Monad m)
+    => (rs -> rs -> Val -> TemplateInstr rd rs)
+    -> m rs -> m rs -> Val
+    -> m (TemplateInstr rd rs)
+mapVVI f s1 s2 i = do
+    s1' <- s1
+    s2' <- s2
+    return (f s1' s2' i)
+
+mapVVV :: (Monad m)
+    => (rs -> rs -> rs -> TemplateInstr rd rs)
+    -> m rs -> m rs -> m rs
+    -> m (TemplateInstr rd rs)
+mapVVV f s1 s2 s3 = do
+    s1' <- s1
+    s2' <- s2
+    s3' <- s3
+    return (f s1' s2' s3')
 
 isBranch :: TemplateInstr rDst rSrc -> Bool
 isBranch (B _)    = True
