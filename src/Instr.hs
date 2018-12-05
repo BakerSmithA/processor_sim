@@ -8,7 +8,7 @@ type PhyReg = Int
 type Addr = Word32
 type Val = Int32
 
-data TemplateInstr reg
+data TemplateInstr reg addr
     -- Memory
     = MoveI        { r :: reg, val :: Val }                  -- r <- val
     | Move         { r :: reg, from :: reg }                 -- r <- [from]
@@ -29,9 +29,9 @@ data TemplateInstr reg
     | And  { r :: reg, x :: reg, y :: reg } -- r <- [x] && [y]
     | Not  { r :: reg, x :: reg }           -- r <- ![x]
     -- Branching
-    | B  { addr :: Addr }              -- Unconditional branch to addr
-    | BT { r    :: reg, addr :: Addr } -- Branch to addr if r == 1
-    | BF { r    :: reg, addr :: Addr } -- Branch to addr if r == 0
+    | B  { addr :: addr }              -- Unconditional branch to addr
+    | BT { r    :: reg, addr :: addr } -- Branch to addr if r == 1
+    | BF { r    :: reg, addr :: addr } -- Branch to addr if r == 0
     | Ret                              -- Branch to address in link register.
     | SysCall                          -- Terminates the program.
     -- Debugging
@@ -41,11 +41,11 @@ data TemplateInstr reg
     deriving (Eq, Show)
 
 -- Fetched instruction.
-type FInstr = TemplateInstr RegIdx
+type FInstr = TemplateInstr RegIdx Addr
 -- Decoded instruction.
-type DInstr = TemplateInstr PhyReg
+type DInstr = TemplateInstr PhyReg Addr
 
-isBranch :: TemplateInstr r -> Bool
+isBranch :: TemplateInstr r a -> Bool
 isBranch (B _)    = True
 isBranch (BT _ _) = True
 isBranch (BF _ _) = True
