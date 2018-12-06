@@ -161,9 +161,9 @@ allocROB st = (idx, st { rob = rob' }) where
     (idx, rob') = ROB.alloc (rob st)
 
 -- Places writeback instructions in the reorder buffer.
-addROB :: State -> [(ROBIdx, WriteBack)] -> State
+addROB :: State -> [(WriteBack, ROBIdx)] -> State
 addROB st wbs =
-    let rob' = foldl (flip (uncurry ROB.set)) (rob st) wbs
+    let rob' = foldl (\rob (wb, idx) -> ROB.set idx wb rob) (rob st) wbs
     in st { rob = rob' }
 
 -- Takes instruction that can be executed from ROB, to be passed to

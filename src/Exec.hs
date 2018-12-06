@@ -160,7 +160,7 @@ exec (PrintLn) _ =
     return (WritePrint "\n")
 
 -- Places executed results in reorder buffer.
-commit :: (ROBIdx, WriteBack) -> State -> Res State
+commit :: (WriteBack, ROBIdx) -> State -> Res State
 commit wb st = return (St.addROB st [wb])
 
 -- Set the value stored in a register, or Crash if invalid index.
@@ -210,13 +210,13 @@ incPc st = do
 shouldStall :: Pipeline -> Bool
 shouldStall p = f || d where
     f  = maybe False isBranch (fetched p)
-    d  = maybe False isBranch (fmap snd (decoded p))
+    d  = maybe False isBranch (fmap fst (decoded p))
 
 -- Shifts instructions through pipeline.
 advancePipeline :: Maybe FInstr -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st1 p = do
     -- TODO: Subsitute this with exec that updates state when RS implemented.
-    let executer = \i st -> fmap (\wb -> (wb, st)) (exec i st)
+    let executer = \(di, idx) st -> fmap (\wb -> (wb, idx, st)) (exec di st)
     (st2, p') <- P.advance (fetched, st1) decode executer Exec.commit writeBack p
     return (st2, p')
 

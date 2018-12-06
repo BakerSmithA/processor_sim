@@ -7,18 +7,18 @@ import Types
 -- 5 stage pipeline: fetch, decod, execute, commit, and write-back.
 data Pipeline = Pipeline {
     fetched   :: Maybe FInstr
-  , decoded   :: Maybe (ROBIdx, DInstr)
-  , executed  :: Maybe (ROBIdx, WriteBack)
+  , decoded   :: Maybe DInstrIdx
+  , executed  :: Maybe (WriteBack, ROBIdx)
 } deriving (Show)
 
 -- FInstruction that was fetched, or Nothing if stalled at this stage.
 type Fetched a = (Maybe FInstr, a)
 -- Decodes a fetched instruction, or Nothing if stalls at this stage.
-type Decoder m a = FInstr -> a -> m ((ROBIdx, DInstr), a)
+type Decoder m a = FInstr -> a -> m (DInstrIdx, a)
 -- Executes a decoded instruction.
-type Executer m a = DInstr -> a -> m (WriteBack, a)
+type Executer m a = DInstrIdx -> a -> m (WriteBack, ROBIdx, a)
 -- Commits any executed instructions in ROB, and returns instructions that can be committed.
-type Committer m a = (ROBIdx, WriteBack) -> a -> m a
+type Committer m a = (WriteBack, ROBIdx) -> a -> m a
 -- Writes instructions results to memory/registers.
 type Writer m a = a -> m a
 
@@ -34,19 +34,19 @@ step f x = maybe (return (x, Nothing)) success where
         return (x', z)
 
 -- Steps a fetched instruction through the decode section of the pipeline.
-decodeStep :: (Monad m) => Decoder m a -> a -> Maybe FInstr -> m (a, Maybe (ROBIdx, DInstr))
+decodeStep :: (Monad m) => Decoder m a -> a -> Maybe FInstr -> m (a, Maybe DInstrIdx)
 decodeStep decode = step $ \x instr -> do
     (decoded, x') <- decode instr x
     return (x', Just decoded)
 
 -- Steps a decoded instruction through the exectution step of the pipeline.
-execStep :: (Monad m) => Executer m a -> a -> Maybe (ROBIdx, DInstr) -> m (a, Maybe (ROBIdx, WriteBack))
-execStep exec = step $ \x (idx, instr) -> do
-    (wb, x') <- exec instr x
-    return (x', Just (idx, wb))
+execStep :: (Monad m) => Executer m a -> a -> Maybe DInstrIdx -> m (a, Maybe (WriteBack, ROBIdx))
+execStep exec = step $ \x instr -> do
+    (wb, idx, x') <- exec instr x
+    return (x', Just (wb, idx))
 
 -- Steps an executed instruction through the commit stage of the pipeline.
-commitStep :: (Monad m) => Committer m a -> a -> Maybe (ROBIdx, WriteBack) -> m a
+commitStep :: (Monad m) => Committer m a -> a -> Maybe (WriteBack, ROBIdx) -> m a
 commitStep commit x = maybe (return x) (\wb -> commit wb x)
 
 -- Supplies new instruction into pipleine, and shifts in-flight instructions

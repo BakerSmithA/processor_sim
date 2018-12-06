@@ -34,19 +34,21 @@ data Instr rDst rSrc
     | PrintLn                 -- Print a newline.
     deriving (Eq, Show)
 
--- Stores an instruction and an accompanying index in the reorder buffer
+-- An instruction and an accompanying index in the reorder buffer
 -- where the result of the instruction will be stored.
-data InstrIdx rDst rSrc = InstrIdx (Instr rDst rSrc) ROBIdx
+
 
 -- Fetched instruction.
 type FInstr = Instr RegIdx RegIdx
 -- Decoded instruction.
 type DInstr = Instr PhyReg PhyReg
+type DInstrIdx = (DInstr, ROBIdx)
 -- Instruction stored in reservation station.
 -- Stores partially 'filled-in' instrucions.
-type RSInstr = Instr PhyReg (Either PhyReg Val)
+type RSInstrIdx = (Instr PhyReg (Either PhyReg Val), ROBIdx)
 -- Executed instruction with computed values filled in.
 type EInstr = Instr PhyReg Val
+type EInstrIdx = (EInstr, ROBIdx)
 
 -- Map register and address values stored in instruction.
 mapI :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (Addr -> Addr) -> Instr rDst1 rSrc1 -> Instr rDst2 rSrc2
@@ -186,15 +188,17 @@ mapV f s = do
     return (f s')
 
 -- Map the instruction stored with a reorder buffer index.
-mapIIdx :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (Addr -> Addr) -> InstrIdx rDst1 rSrc1 -> InstrIdx rDst2 rSrc2
-mapIIdx fd fs fa (InstrIdx instr idx) = InstrIdx (mapI fd fs fa instr) idx
+mapIIdx :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (Addr -> Addr)
+        -> (Instr rDst1 rSrc1, ROBIdx)
+        -> (Instr rDst2 rSrc2, ROBIdx)
+mapIIdx fd fs fa (instr, idx) = (mapI fd fs fa instr, idx)
 
 mapIIdxM :: (Monad m) => (rd1 -> m rd2) -> (rs1 -> m rs2) -> (Addr -> m Addr)
-                      -> InstrIdx rd1 rs1
-                      -> m (InstrIdx rd2 rs2)
-mapIIdxM fd fs fa (InstrIdx instr idx) = do
+                      -> (Instr rd1 rs1, ROBIdx)
+                      -> m (Instr rd2 rs2, ROBIdx)
+mapIIdxM fd fs fa (instr, idx) = do
     instr' <- mapIM fd fs fa instr
-    return (InstrIdx instr' idx)
+    return (instr', idx)
 
 isMem :: Instr rDst rSrc -> Bool
 isMem (LoadIdx      _ _ _) = True
