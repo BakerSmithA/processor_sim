@@ -16,7 +16,6 @@ add = (:) . mapI id Left id
 -- missing operands.
 tryFill :: State -> RS -> Res RS
 tryFill st = mapM fill where
-    fill :: RSInstr -> Res RSInstr
     fill = mapIM return fillRSrc return
 
     -- Fills in the source register in an instruction with a value read from
@@ -34,7 +33,6 @@ tryFill st = mapM fill where
 -- Performs additional check given, and only promotes if returns true.
 promote :: (EInstr -> Bool) -> RS -> ([EInstr], RS)
 promote cond = foldr checkDone ([], []) where
-    checkDone :: RSInstr -> ([EInstr], RS) -> ([EInstr], RS)
     checkDone rsInstr (execIs, rs) =
         case checkFilled rsInstr of
             Nothing        -> (execIs, rsInstr:rs)
