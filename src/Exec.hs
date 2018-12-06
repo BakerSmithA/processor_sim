@@ -225,7 +225,7 @@ advancePipeline fetched st1 p = do
 -- previous stages of the pipeline.
 bypassed :: State -> Pipeline -> State
 bypassed st p = St.withBypass b st where
-    b = BP.fromPipeline p
+    b = BP.fromWbs (fmap fst (executed p))
 
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)

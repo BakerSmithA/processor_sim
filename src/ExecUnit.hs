@@ -6,6 +6,9 @@ import Instr
 import WriteBack
 import Types
 
+exec :: DInstr -> State -> Res WriteBack
+exec = undefined
+
 -- Load/Store Unit.
 lsu :: EInstr -> State -> Res WriteBack
 lsu (LoadIdx      r b off) st = load  r b off st

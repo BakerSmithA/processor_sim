@@ -11,6 +11,8 @@ import qualified ROB as ROB
 import Error
 import WriteBack
 import RRT
+import RS (RS)
+import qualified RS as RS
 import Types
 
 -- Stores current state of CPU at a point in time.
@@ -35,6 +37,7 @@ data State = State {
   , bypass :: Bypass
   , rob    :: ROB
   , rrt    :: RRT
+  , rs     :: RS
 
    -- Stats
   , cycles :: Int
@@ -87,7 +90,7 @@ debugShow st =
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
-empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt 0 0 where
+empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt rs 0 0 where
     maxPhyReg = 15
     mem       = Mem.zeroed 255
     regs      = Mem.zeroed maxPhyReg
@@ -95,6 +98,7 @@ empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass 
     bypass    = BP.empty
     rob       = ROB.empty 5
     rrt       = RRT.fromConstRegs [pc, sp, lr, bp, ret] maxPhyReg
+    rs        = RS.empty
 
 -- Create default Res with 32 ints of memory, and 16 registers.
 emptyDefault :: [FInstr] -> State
