@@ -8,6 +8,7 @@ type RS = [RSInstr]
 
 -- Add a decoded instruction to the reservation station.
 -- Once all operands are available the instruction will be promoted from the RS.
+-- When put in the RS, none of the operands are marked as 'filled in'.
 add :: DInstr -> RS -> RS
 add = (:) . mapI id Left id
 
