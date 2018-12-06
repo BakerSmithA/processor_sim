@@ -27,3 +27,18 @@ rsSpec = describe "reservation station" $ do
                 expInstr = [Move 0 (Right 5), StoreBaseIdx (Right 2) (Left 3) (Left 5), AddI 3 (Left 5) 10]
                 exp      = return (RS.fromList expInstr)
             rs `shouldBe` exp
+
+    context "promote" $ do
+        it "removes instructions that have all operands filled" $ do
+            let rs         = RS.fromList [Move 0 (Right 5), Mult 1 (Right 3) (Left 0), Print (Right 3)]
+                (eis, rs') = RS.promote (const True) rs
+                expExec    = [Move 0 5, Print 3] :: [EInstr]
+                expRs      = RS.fromList [Mult 1 (Right 3) (Left 0)]
+            eis `shouldBe` expExec
+            rs' `shouldBe` expRs
+
+        it "does not remove operands if the condition fails" $ do
+            let rs         = RS.fromList [Move 0 (Right 5), Mult 1 (Right 3) (Left 0), Print (Right 3)]
+                (eis, rs') = RS.promote (const False) rs
+            eis `shouldBe` []
+            rs' `shouldBe` rs
