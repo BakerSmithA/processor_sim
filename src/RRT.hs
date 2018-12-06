@@ -34,7 +34,7 @@ fromConstRegs regs maxPhy = fromMapping [] consts fs where
 -- is chosen from the remaining free registers. Or, returns Nothing if there
 -- are no free registers. Also returns the old register that was freed, if
 -- one was freed.
-ins :: RegIdx -> RRT -> Maybe (PhyReg, RRT, Maybe PhyReg)
+ins :: RegIdx -> RRT -> Maybe (PhyReg, RRT, FreedReg)
 ins _        (RRT _ _ _ []) = Nothing
 ins name rrt@(RRT reg2phy phy2reg cs frees) =
     case Map.lookup name cs of

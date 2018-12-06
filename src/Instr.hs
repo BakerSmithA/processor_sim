@@ -34,21 +34,17 @@ data Instr rDst rSrc
     | PrintLn                 -- Print a newline.
     deriving (Eq, Show)
 
--- An instruction and an accompanying index in the reorder buffer
--- where the result of the instruction will be stored.
-
-
 -- Fetched instruction.
 type FInstr = Instr RegIdx RegIdx
 -- Decoded instruction.
 type DInstr = Instr PhyReg PhyReg
-type DInstrIdx = (DInstr, ROBIdx)
+type DInstrIdx = (DInstr, ROBIdx, Maybe PhyReg)
 -- Instruction stored in reservation station.
 -- Stores partially 'filled-in' instrucions.
-type RSInstrIdx = (Instr PhyReg (Either PhyReg Val), ROBIdx)
+type RSInstrIdx = (Instr PhyReg (Either PhyReg Val), ROBIdx, Maybe PhyReg)
 -- Executed instruction with computed values filled in.
 type EInstr = Instr PhyReg Val
-type EInstrIdx = (EInstr, ROBIdx)
+type EInstrIdx = (EInstr, ROBIdx, Maybe PhyReg)
 
 -- Map register and address values stored in instruction.
 mapI :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (Addr -> Addr) -> Instr rDst1 rSrc1 -> Instr rDst2 rSrc2
@@ -189,16 +185,16 @@ mapV f s = do
 
 -- Map the instruction stored with a reorder buffer index.
 mapIIdx :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (Addr -> Addr)
-        -> (Instr rDst1 rSrc1, ROBIdx)
-        -> (Instr rDst2 rSrc2, ROBIdx)
-mapIIdx fd fs fa (instr, idx) = (mapI fd fs fa instr, idx)
+        -> (Instr rDst1 rSrc1, ROBIdx, FreedReg)
+        -> (Instr rDst2 rSrc2, ROBIdx, FreedReg)
+mapIIdx fd fs fa (instr, idx, freed) = (mapI fd fs fa instr, idx, freed)
 
 mapIIdxM :: (Monad m) => (rd1 -> m rd2) -> (rs1 -> m rs2) -> (Addr -> m Addr)
-                      -> (Instr rd1 rs1, ROBIdx)
-                      -> m (Instr rd2 rs2, ROBIdx)
-mapIIdxM fd fs fa (instr, idx) = do
+                      -> (Instr rd1 rs1, ROBIdx, FreedReg)
+                      -> m (Instr rd2 rs2, ROBIdx, FreedReg)
+mapIIdxM fd fs fa (instr, idx, freed) = do
     instr' <- mapIM fd fs fa instr
-    return (instr', idx)
+    return (instr', idx, freed)
 
 isMem :: Instr rDst rSrc -> Bool
 isMem (LoadIdx      _ _ _) = True

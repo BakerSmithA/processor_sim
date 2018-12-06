@@ -179,7 +179,7 @@ setRegVal i val st =
 
 -- Used to clear a register (make non-ready) after its mapping from an
 -- architectural register has been removed.
-clearFreedReg :: Maybe PhyReg -> State -> Res State
+clearFreedReg :: FreedReg -> State -> Res State
 clearFreedReg mPhy st =
     case mPhy of
         Nothing  -> return st
@@ -213,12 +213,13 @@ commitROB st =
     in (out, st { rob = rob' })
 
 -- Takes a free physical register and returns its index.
--- Returns Nothing if there are no physical registers free.
-allocPhyReg :: RegIdx -> State -> Res (PhyReg, State)
+-- Also returns the physical register that was freed, if the architectural
+-- register was already mapped to a value.
+allocPhyReg :: RegIdx -> State -> Res ((PhyReg, FreedReg), State)
 allocPhyReg reg st =
     case RRT.ins reg (rrt st) of
         Nothing -> crash NoFreePhyRegs st
-        Just (phy, rrt', free) -> return (phy, st { rrt=rrt' })
+        Just (phy, rrt', freed) -> return ((phy, freed), st { rrt=rrt' })
 
 -- Frees a physical register allocated to a register name.
 -- Crashes if there if no mapping to the physical register.

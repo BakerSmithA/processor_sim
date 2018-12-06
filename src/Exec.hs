@@ -62,7 +62,7 @@ incPc st = do
 shouldStall :: Pipeline -> Bool
 shouldStall p = f || d where
     f  = maybe False isBranch (fetched p)
-    d  = maybe False isBranch (fmap fst (decoded p))
+    d  = maybe False isBranch (fmap (\(di, _, _) -> di) (decoded p))
 
 -- Shifts instructions through pipeline.
 advancePipeline :: Maybe FInstr -> State -> Pipeline -> Res (State, Pipeline)

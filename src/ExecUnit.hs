@@ -24,7 +24,7 @@ combine st acc instr = do
 
 -- Executes the instruction and passes the associate reorder buffer index through.
 execWithROBIdx :: EInstrIdx -> State -> Res (WriteBack, ROBIdx)
-execWithROBIdx (instr, idx) st = do
+execWithROBIdx (instr, idx, freed) st = do
     wb <- execI instr st
     return (wb, idx)
 
