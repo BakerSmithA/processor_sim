@@ -85,6 +85,7 @@ debugShow st =
         "\nBypass : "  ++ show (bypass st)
      ++ "\nRRT    : "  ++ show (rrt st)
      ++ "\nROB    : "  ++ show (rob st)
+     ++ "\nRS     : "  ++ show (rs st)
      ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
      ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
 
