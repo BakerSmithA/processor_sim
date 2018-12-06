@@ -38,13 +38,13 @@ data Instr rDst rSrc
 type FInstr = Instr RegIdx RegIdx
 -- Decoded instruction.
 type DInstr = Instr PhyReg PhyReg
-type DInstrIdx = (DInstr, ROBIdx, Maybe PhyReg)
+type DInstrIdx = (DInstr, ROBIdx, FreedReg)
 -- Instruction stored in reservation station.
 -- Stores partially 'filled-in' instrucions.
-type RSInstrIdx = (Instr PhyReg (Either PhyReg Val), ROBIdx, Maybe PhyReg)
+type RSInstrIdx = (Instr PhyReg (Either PhyReg Val), ROBIdx, FreedReg)
 -- Executed instruction with computed values filled in.
 type EInstr = Instr PhyReg Val
-type EInstrIdx = (EInstr, ROBIdx, Maybe PhyReg)
+type EInstrIdx = (EInstr, ROBIdx, FreedReg)
 
 -- Map register and address values stored in instruction.
 mapI :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (Addr -> Addr) -> Instr rDst1 rSrc1 -> Instr rDst2 rSrc2
