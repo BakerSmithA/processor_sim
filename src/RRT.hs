@@ -32,19 +32,21 @@ fromConstRegs regs maxPhy = fromMapping [] consts fs where
 
 -- Create mapping from register name to physical register. The physical register
 -- is chosen from the remaining free registers. Or, returns Nothing if there
--- are no free registers.
-ins :: RegIdx -> RRT -> Maybe (PhyReg, RRT)
+-- are no free registers. Also returns the old register that was freed, if
+-- one was freed.
+ins :: RegIdx -> RRT -> Maybe (PhyReg, RRT, Maybe PhyReg)
 ins _        (RRT _ _ _ []) = Nothing
 ins name rrt@(RRT reg2phy phy2reg cs frees) =
     case Map.lookup name cs of
-        Just phy -> Just (phy, rrt) -- Already exists in consts.
-        Nothing  -> Just (phy, rrt') where -- Insert new.
+        Just phy -> Just (phy, rrt, Nothing) -- Already exists in consts.
+        Nothing  -> Just (phy, rrt', freedReg) where -- Insert new.
             rrt'       = RRT reg2phy' phy2reg' cs rest'
             reg2phy'   = Map.insert name phy reg2phy
             phy2reg'   = Map.insert phy name phy2reg
             -- We are overwriting the register mapping. Therefore, if a mapping
             -- already exists it can be freed.
-            rest'      = maybe rest (:rest) (Map.lookup name reg2phy)
+            rest'      = maybe rest (:rest) freedReg
+            freedReg   = Map.lookup name reg2phy
             (phy:rest) = frees
 
 -- Frees the physical register from being mapped to a register name.

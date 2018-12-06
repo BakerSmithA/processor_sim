@@ -1,13 +1,10 @@
 module Exec where
 
 import Control.Monad (foldM)
-import Data.Char
 import State as St
-import Error
 import Instr
 import Pipeline as P
 import qualified Mem as Mem
-import qualified Mem as Reg
 import qualified Bypass as BP
 import WriteBack
 import Decode
@@ -29,17 +26,7 @@ commit wbs st = return (St.addROB st wbs)
 
 -- Set the value stored in a register, or Crash if invalid index.
 setRegVal :: PhyReg -> Val -> State -> Res State
-setRegVal i val st =
-    case Reg.store i val (regs st) of
-        Nothing   -> crash (RegOutOfRange i) st
-        Just regs -> return st { regs = regs }
-
--- Set the value at a memory address, or Crash if invalid address.
-setMemVal :: Addr -> Val -> State -> Res State
-setMemVal i val st =
-    case Mem.store i val (mem st) of
-        Nothing  -> crash (MemOutOfRange i) st
-        Just mem -> return st { mem = mem }
+setRegVal i val = St.setRegVal i (Just val)
 
 -- Add string to output of Res.
 addOutput :: String -> State -> Res State
@@ -54,8 +41,8 @@ writeBack st1 = do
     let st4 = if is /= [] then St.incExec st3 else st3
     return st4
         where
-            writeBack' st (WriteReg r val) = setRegVal r val st
-            writeBack' st (WriteMem i val) = setMemVal i val st
+            writeBack' st (WriteReg r val) = Exec.setRegVal r val st
+            writeBack' st (WriteMem i val) = St.setMemVal i val st
             writeBack' st (WritePrint s)   = addOutput s st
             writeBack' st (NoOp)           = return st
             writeBack' st (Terminate)      = Exit st
@@ -65,7 +52,7 @@ incPc :: State -> Res State
 incPc st = do
     pc <- pcVal st
     pcReg <- St.namedReg pcIdx st
-    setRegVal pcReg (pc+1) st
+    Exec.setRegVal pcReg (pc+1) st
 
 -- Return whether the pipeline should stall to wait for branch instructions
 -- to be executed, i.e. if there are branch instructions in the fetch or decode

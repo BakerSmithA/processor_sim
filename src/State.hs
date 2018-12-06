@@ -20,7 +20,10 @@ import Types
 data State = State {
     -- Memory
     mem    :: Mem Addr Val
-  , regs   :: Mem PhyReg Val
+    -- Register contains Nothing if it has not yet been written to, or it was
+    -- invalidated when the physical regsiter was assigned to a new architectural
+    -- register.
+  , regs   :: Mem PhyReg (Maybe Val)
   , instrs :: Mem Addr FInstr
 
     -- Register indices
@@ -94,7 +97,7 @@ empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt rs 0 0 where
     maxPhyReg = 15
     mem       = Mem.zeroed 255
-    regs      = Mem.zeroed maxPhyReg
+    regs      = Mem.fromList (replicate maxPhyReg (Just 0))
     instrs'   = Mem.fromList instrs
     bypass    = BP.empty
     rob       = ROB.empty 5
@@ -132,20 +135,23 @@ namedReg getReg st = do
 namedRegVal :: (State -> RegIdx) -> State -> Res Val
 namedRegVal getReg st = do
     phy <- namedReg getReg st
-    regVal phy st
+    val <- regVal phy st
+    case val of
+        Nothing  -> error "Named reg contained no value"
+        Just val -> return val
 
 -- Returns the value stored in the PC register.
 pcVal :: State -> Res Val
 pcVal = namedRegVal pcIdx
 
 -- Return value of a register, from bypass or register. Crash if invalid index.
-regVal :: PhyReg -> State -> Res Val
+regVal :: PhyReg -> State -> Res (Maybe Val)
 regVal i st =
     case BP.regVal i (bypass st) of
-        Just val -> return val
+        Just val -> return (Just val)
         Nothing ->
             case ROB.regVal i (rob st) of
-                Just val -> return val
+                Just val -> return (Just val)
                 Nothing ->
                     case Reg.load i (regs st) of
                         Nothing  -> crash (RegOutOfRange i) st
@@ -163,6 +169,20 @@ memVal i st =
                     case Mem.load i (mem st) of
                         Nothing  -> crash (MemOutOfRange i) st
                         Just val -> return val
+
+-- Sets the value of a register in the physical register file.
+setRegVal :: PhyReg -> Maybe Val -> State -> Res State
+setRegVal i val st =
+    case Reg.store i val (regs st) of
+        Nothing   -> crash (RegOutOfRange i) st
+        Just regs -> return st { regs = regs }
+
+-- Set the value at a memory address, or Crash if invalid address.
+setMemVal :: Addr -> Val -> State -> Res State
+setMemVal i val st =
+    case Mem.store i val (mem st) of
+        Nothing  -> crash (MemOutOfRange i) st
+        Just mem -> return st { mem = mem }
 
 -- Allocates a space in the ROB, and returns index of allocated space.
 -- Returns Nothing if ROB is full.
@@ -190,7 +210,7 @@ allocPhyReg :: RegIdx -> State -> Res (PhyReg, State)
 allocPhyReg reg st =
     case RRT.ins reg (rrt st) of
         Nothing -> crash NoFreePhyRegs st
-        Just (phy, rrt') -> return (phy, st { rrt=rrt' })
+        Just (phy, rrt', freed) -> return (phy, st { rrt=rrt' })
 
 -- Frees a physical register allocated to a register name.
 -- Crashes if there if no mapping to the physical register.
@@ -215,6 +235,6 @@ addRS di st =
 -- and removes instructions with all operands filled.
 runRS :: State -> Res ([EInstrIdx], State)
 runRS st = do
-    let getRegVal phy = fmap Just (regVal phy st) -- TODO: Check reg val is ready.
+    let getRegVal phy = regVal phy st
     (execIs, rs') <- RS.run getRegVal (const True) (rs st)
     return (execIs, st { rs=rs' })

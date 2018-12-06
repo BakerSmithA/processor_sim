@@ -68,8 +68,7 @@ bu (BT r addr) st = branchCond (r==1) addr st
 bu (BF r addr) st = branchCond (r==0) addr st
 bu (SysCall)   _  = return Terminate
 bu (Ret)       st  = do
-    lrReg <- namedReg lrIdx st
-    addr <- regVal lrReg st
+    addr <- namedRegVal lrIdx st
     branch (fromIntegral addr) st
 bu  i         _  = errUnsupported "BU" i
 
