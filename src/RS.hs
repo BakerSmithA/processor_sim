@@ -6,6 +6,11 @@ import State as St
 -- Reservation station.
 type RS = [RSInstr]
 
+-- Add a decoded instruction to the reservation station.
+-- Once all operands are available the instruction will be promoted from the RS.
+add :: DInstr -> RS -> RS
+add = (:) . mapI id Left id
+
 -- Iterates through instructions in reservation station and tries to 'fill in'
 -- missing operands.
 tryFill :: State -> RS -> Res RS
