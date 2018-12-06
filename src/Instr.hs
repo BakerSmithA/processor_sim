@@ -208,25 +208,28 @@ isMem (StoreBaseIdx _ _ _) = True
 isMem _                    = False
 
 isAL :: Instr rDst rSrc -> Bool
-isAL (Add  _ _ _) = True
-isAL (AddI _ _ _) = True
-isAL (Sub  _ _ _) = True
-isAL (SubI _ _ _) = True
-isAL (Mult _ _ _) = True
-isAL (Div  _ _ _) = True
-isAL (Eq   _ _ _) = True
-isAL (Lt   _ _ _) = True
-isAL (Or   _ _ _) = True
-isAL (And  _ _ _) = True
-isAL (Not  _ _)   = True
+isAL (MoveI _ _)   = True
+isAL (Move  _ _)   = True
+isAL (Add   _ _ _) = True
+isAL (AddI  _ _ _) = True
+isAL (Sub   _ _ _) = True
+isAL (SubI  _ _ _) = True
+isAL (Mult  _ _ _) = True
+isAL (Div   _ _ _) = True
+isAL (Eq    _ _ _) = True
+isAL (Lt    _ _ _) = True
+isAL (Or    _ _ _) = True
+isAL (And   _ _ _) = True
+isAL (Not   _ _)   = True
 isAL _            = False
 
 isBranch :: Instr rDst rSrc -> Bool
-isBranch (B _)    = True
-isBranch (BT _ _) = True
-isBranch (BF _ _) = True
-isBranch (Ret)    = True
-isBranch _        = False
+isBranch (B _)     = True
+isBranch (BT _ _)  = True
+isBranch (BF _ _)  = True
+isBranch (Ret)     = True
+isBranch (SysCall) = True
+isBranch _         = False
 
 isOut :: Instr rDst rSrc -> Bool
 isOut (Print  _) = True

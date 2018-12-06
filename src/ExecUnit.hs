@@ -1,13 +1,40 @@
 module ExecUnit where
 
 import Data.Char (chr)
-import State
+import Control.Monad (foldM)
+import State as St
 import Instr
 import WriteBack
 import Types
 
-exec :: DInstr -> State -> Res WriteBack
-exec di st = undefined
+-- Add decoded instruction to a reservation station, then promote any completed,
+-- instructions, and finally execute those and return the writeback instructions.
+exec :: DInstrIdx -> State -> Res ([(WriteBack, ROBIdx)], State)
+exec di st1 = do
+    let st2 = St.addRS di st1
+    (execIs, st3) <- St.runRS st2
+    wbs <- foldM (combine st3) [] execIs
+    return (wbs, st3)
+
+-- Accumulate the writebacks of multiple executed instructions.
+combine :: State -> [(WriteBack, ROBIdx)] -> EInstrIdx -> Res [(WriteBack, ROBIdx)]
+combine st acc instr = do
+    wb <- execWithROBIdx instr st
+    return (wb:acc)
+
+-- Executes the instruction and passes the associate reorder buffer index through.
+execWithROBIdx :: EInstrIdx -> State -> Res (WriteBack, ROBIdx)
+execWithROBIdx (instr, idx) st = do
+    wb <- execI instr st
+    return (wb, idx)
+
+-- Execute an instruction by sending it to the appropriate unit, e.g. ALU.
+execI :: EInstr -> State -> Res WriteBack
+execI instr st | isMem    instr = lsu instr st
+               | isAL     instr = alu instr
+               | isBranch instr = bu  instr st
+               | isOut    instr = ou  instr
+               | otherwise      = errUnsupported "" instr
 
 -- Load/Store Unit.
 lsu :: EInstr -> State -> Res WriteBack
@@ -15,7 +42,7 @@ lsu (LoadIdx      r b off) st = load  r b off st
 lsu (LoadBaseIdx  r b off) st = load  r b off st
 lsu (StoreIdx     r b off) _  = store r b off
 lsu (StoreBaseIdx r b off) _  = store r b off
-lsu _                      _  = error "Unsupported LSU Instr"
+lsu i                      _  = errUnsupported "LSU" i
 
 -- Arithmetic/Logic Unit.
 alu :: EInstr -> Res WriteBack
@@ -28,10 +55,11 @@ alu (SubI  r x i) = writeReg r (x - i)
 alu (Mult  r x y) = writeReg r (x * y)
 alu (Div   r x y) = writeReg r (x `div` y)
 alu (Eq    r x y) = writeReg r (x `eqVal` y)
+alu (Lt    r x y) = writeReg r (x `ltVal` y)
 alu (Or    r x y) = writeReg r (x `orVal` y)
 alu (And   r x y) = writeReg r (x `andVal` y)
 alu (Not   r x)   = writeReg r (notVal x)
-alu _             = error "Unsupported ALU Instr"
+alu i             = errUnsupported "ALU" i
 
 -- Branch Unit.
 bu :: EInstr -> State -> Res WriteBack
@@ -43,14 +71,14 @@ bu (Ret)       st  = do
     lrReg <- namedReg lrIdx st
     addr <- regVal lrReg st
     branch (fromIntegral addr) st
-bu  _         _  = error "Unsupported BU Instr"
+bu  i         _  = errUnsupported "BU" i
 
 -- Output Unit (for debugging).
 ou :: EInstr -> Res WriteBack
 ou (Print r)  = writePrint (show r)
 ou (PrintC r) = writePrint ([chr (fromIntegral r)])
 ou (PrintLn)  = writePrint "\n"
-ou _          = error "Unsupported OU Instr"
+ou i          = errUnsupported "OU" i
 
 -- Convenience method for WriteReg in Res.
 writeReg :: PhyReg -> Val -> Res WriteBack
@@ -103,3 +131,6 @@ branchCond False _    _  = return NoOp
 
 writePrint :: String -> Res WriteBack
 writePrint = return . WritePrint
+
+errUnsupported :: String -> EInstr -> a
+errUnsupported s i = error ("Unsupported " ++ s ++ "Instr: " ++ show i)
