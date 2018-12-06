@@ -2,7 +2,7 @@ module RRT where
 
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Instr (RegIdx, PhyReg)
+import Types
 import Control.Applicative ((<|>))
 
 -- Register Rename Table, holds a mapping from names of registers in source

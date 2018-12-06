@@ -1,5 +1,6 @@
 module RS where
 
+import Types
 import Instr
 
 -- Reservation station.
@@ -31,7 +32,7 @@ tryFill regVal = mapM fill where
     fillRSrc = either f (return . Right) where
         f phy = do
             maybeVal <- regVal phy
-            return $ case maybeVal of 
+            return $ case maybeVal of
                 Nothing  -> Left phy
                 Just val -> Right val
 

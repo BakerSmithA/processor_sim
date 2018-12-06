@@ -1,12 +1,6 @@
 module Instr where
 
-import Data.Int (Int32)
-import Data.Word (Word8, Word32)
-
-type RegIdx = Word8
-type PhyReg = Int
-type Addr = Word32
-type Val = Int32
+import Types
 
 data TemplateInstr rDst rSrc
     -- Memory
@@ -49,6 +43,9 @@ type DInstr = TemplateInstr PhyReg PhyReg
 type RSInstr = TemplateInstr PhyReg (Either PhyReg Val)
 -- Executed instruction with computed values filled in.
 type EInstr = TemplateInstr PhyReg Val
+
+-- Stores an instruction and an accompanying piece of data.
+data InstrTuple a rDst rSrc = InstrTuple a (TemplateInstr rDst rSrc)
 
 -- Map register and address values stored in instruction.
 mapI :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (Addr -> Addr) -> TemplateInstr rDst1 rSrc1 -> TemplateInstr rDst2 rSrc2

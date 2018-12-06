@@ -1,9 +1,10 @@
 module Decode where
 
+import Control.Monad.Trans.State.Lazy (StateT(..), runStateT)
 import Instr
 import State (State, Res)
 import qualified State as St
-import Control.Monad.Trans.State.Lazy (StateT(..), runStateT)
+import Types
 
 -- Because instruction are already parsed into struct, no need to decode.
 -- However, register renaming will be performed at this step.

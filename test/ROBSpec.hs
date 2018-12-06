@@ -3,6 +3,7 @@ module ROBSpec where
 import Test.Hspec
 import ROB as ROB
 import WriteBack
+import Types
 
 robSpec :: Spec
 robSpec = describe "Reorder Buffer" $ do

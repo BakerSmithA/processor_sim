@@ -1,8 +1,6 @@
 module Error where
 
-import Instr (RegIdx, PhyReg, Addr, Val)
-
-type InstrAddr = Val
+import Types
 
 data Error
     -- Tried to access a register with an invalid index.

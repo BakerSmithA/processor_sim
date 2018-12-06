@@ -1,9 +1,10 @@
 module ExecUnit where
 
+import Data.Char (chr)
 import State
 import Instr
 import WriteBack
-import Data.Char (chr)
+import Types
 
 -- Load/Store Unit.
 lsu :: EInstr -> State -> Res WriteBack

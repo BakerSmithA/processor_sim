@@ -1,6 +1,6 @@
 module Bypass where
 
-import Instr
+import Types
 import Pipeline
 import WriteBack
 

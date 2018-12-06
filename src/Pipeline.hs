@@ -2,7 +2,7 @@ module Pipeline where
 
 import Instr
 import WriteBack
-import ROB (ROBIdx)
+import Types
 
 -- 5 stage pipeline: fetch, decod, execute, commit, and write-back.
 data Pipeline = Pipeline {

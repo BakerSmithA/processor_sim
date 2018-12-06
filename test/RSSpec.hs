@@ -2,6 +2,7 @@ module RSSpec where
 
 import Test.Hspec
 import qualified Data.Map as Map
+import Types
 import Instr
 import RS as RS
 import Control.Monad.Identity

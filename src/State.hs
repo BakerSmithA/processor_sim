@@ -6,11 +6,12 @@ import qualified Mem as Reg
 import Instr
 import Bypass (Bypass)
 import qualified Bypass as BP
-import ROB (ROB, ROBIdx)
+import ROB (ROB)
 import qualified ROB as ROB
 import Error
 import WriteBack
 import RRT
+import Types
 
 -- Stores current state of CPU at a point in time.
 -- Uses Von Newmann architecture, and so data and instructions are separate.

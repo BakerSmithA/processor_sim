@@ -3,9 +3,7 @@ module ROB where
 import Queue (Queue)
 import qualified Queue as Q
 import WriteBack
-import Instr
-
-type ROBIdx = Int
+import Types
 
 -- Entry into the Reorder Buffer. Whether the instruction is present determines
 -- whether the entry is ready to be committed.
