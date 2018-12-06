@@ -5,6 +5,7 @@ import ParserSpec
 import RRTSpec
 import QueueSpec
 import ROBSpec
+import RSSpec
 import ExecSpec
 
 main :: IO ()
@@ -14,4 +15,5 @@ main = hspec specs where
         rrtSpec
         queueSpec
         robSpec
+        rsSpec
         execSpec

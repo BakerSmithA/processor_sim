@@ -6,6 +6,14 @@ import State as St
 -- Reservation station.
 type RS = [RSInstr]
 
+-- Empty reservation station with no entries.
+empty :: RS
+empty = []
+
+-- Return RS contaning given entries.
+fromList :: [RSInstr] -> RS
+fromList = id
+
 -- Add a decoded instruction to the reservation station.
 -- Once all operands are available the instruction will be promoted from the RS.
 -- When put in the RS, none of the operands are marked as 'filled in'.
