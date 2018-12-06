@@ -2,7 +2,7 @@ module Instr where
 
 import Types
 
-data TemplateInstr rDst rSrc
+data Instr rDst rSrc
     -- Memory
     = MoveI        { r    :: rDst, val :: Val }                    -- r <- val
     | Move         { r    :: rDst, from :: rSrc }                  -- r <- [from]
@@ -34,21 +34,22 @@ data TemplateInstr rDst rSrc
     | PrintLn                 -- Print a newline.
     deriving (Eq, Show)
 
+-- Stores an instruction and an accompanying index in the reorder buffer
+-- where the result of the instruction will be stored.
+data InstrIdx rDst rSrc = InstrIdx (Instr rDst rSrc) ROBIdx
+
 -- Fetched instruction.
-type FInstr = TemplateInstr RegIdx RegIdx
+type FInstr = Instr RegIdx RegIdx
 -- Decoded instruction.
-type DInstr = TemplateInstr PhyReg PhyReg
+type DInstr = Instr PhyReg PhyReg
 -- Instruction stored in reservation station.
 -- Stores partially 'filled-in' instrucions.
-type RSInstr = TemplateInstr PhyReg (Either PhyReg Val)
+type RSInstr = Instr PhyReg (Either PhyReg Val)
 -- Executed instruction with computed values filled in.
-type EInstr = TemplateInstr PhyReg Val
-
--- Stores an instruction and an accompanying piece of data.
-data InstrTuple a rDst rSrc = InstrTuple a (TemplateInstr rDst rSrc)
+type EInstr = Instr PhyReg Val
 
 -- Map register and address values stored in instruction.
-mapI :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (Addr -> Addr) -> TemplateInstr rDst1 rSrc1 -> TemplateInstr rDst2 rSrc2
+mapI :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (Addr -> Addr) -> Instr rDst1 rSrc1 -> Instr rDst2 rSrc2
 -- Memory
 mapI fd _  _ (MoveI r v)            = MoveI (fd r) v
 mapI fd fs _ (Move r from)          = Move (fd r) (fs from)
@@ -80,8 +81,8 @@ mapI _ fs _ (PrintC r) = PrintC (fs r)
 mapI _ _  _ (PrintLn)  = PrintLn
 
 mapIM :: (Monad m) => (rd1 -> m rd2) -> (rs1 -> m rs2) -> (Addr -> m Addr)
-                   -> TemplateInstr rd1 rs1
-                   -> m (TemplateInstr rd2 rs2)
+                   -> Instr rd1 rs1
+                   -> m (Instr rd2 rs2)
 -- Memory
 mapIM fd _  _ (MoveI        r i)     = mapRV  MoveI        (fd r) i
 mapIM fd fs _ (Move         r from)  = mapRR  Move         (fd r) (fs from)
@@ -113,35 +114,35 @@ mapIM _ fs _ (PrintC r) = mapV PrintC (fs r)
 mapIM _ _  _ (PrintLn)  = return PrintLn
 
 mapRV :: (Monad m)
-    => (rd -> Val -> TemplateInstr rd rs)
+    => (rd -> Val -> Instr rd rs)
     -> m rd -> Val
-    -> m (TemplateInstr rd rs)
+    -> m (Instr rd rs)
 mapRV f r i = do
     r' <- r
     return (f r' i)
 
 mapRR :: (Monad m)
-    => (rd -> rs -> TemplateInstr rd rs)
+    => (rd -> rs -> Instr rd rs)
     -> m rd -> m rs
-    -> m (TemplateInstr rd rs)
+    -> m (Instr rd rs)
 mapRR f r s = do
     s' <- s
     r' <- r
     return (f r' s')
 
 mapRVI :: (Monad m)
-    => (rd -> rs -> Val -> TemplateInstr rd rs)
+    => (rd -> rs -> Val -> Instr rd rs)
     -> m rd -> m rs -> Val
-    -> m (TemplateInstr rd rs)
+    -> m (Instr rd rs)
 mapRVI f r s i = do
     s' <- s
     r' <- r
     return (f r' s' i)
 
 mapRVV :: (Monad m)
-    => (rd -> rs -> rs -> TemplateInstr rd rs)
+    => (rd -> rs -> rs -> Instr rd rs)
     -> m rd -> m rs -> m rs
-    -> m (TemplateInstr rd rs)
+    -> m (Instr rd rs)
 mapRVV f r s1 s2 = do
     s1' <- s1
     s2' <- s2
@@ -149,18 +150,18 @@ mapRVV f r s1 s2 = do
     return (f r' s1' s2')
 
 mapVVI :: (Monad m)
-    => (rs -> rs -> Val -> TemplateInstr rd rs)
+    => (rs -> rs -> Val -> Instr rd rs)
     -> m rs -> m rs -> Val
-    -> m (TemplateInstr rd rs)
+    -> m (Instr rd rs)
 mapVVI f s1 s2 i = do
     s1' <- s1
     s2' <- s2
     return (f s1' s2' i)
 
 mapVVV :: (Monad m)
-    => (rs -> rs -> rs -> TemplateInstr rd rs)
+    => (rs -> rs -> rs -> Instr rd rs)
     -> m rs -> m rs -> m rs
-    -> m (TemplateInstr rd rs)
+    -> m (Instr rd rs)
 mapVVV f s1 s2 s3 = do
     s1' <- s1
     s2' <- s2
@@ -168,30 +169,41 @@ mapVVV f s1 s2 s3 = do
     return (f s1' s2' s3')
 
 mapVA :: (Monad m)
-    => (rs -> Addr -> TemplateInstr rd rs)
+    => (rs -> Addr -> Instr rd rs)
     -> m rs -> m Addr
-    -> m (TemplateInstr rd rs)
+    -> m (Instr rd rs)
 mapVA f s a = do
     s' <- s
     a' <- a
     return (f s' a')
 
 mapV :: (Monad m)
-    => (rs -> TemplateInstr rd rs)
+    => (rs -> Instr rd rs)
     -> m rs
-    -> m (TemplateInstr rd rs)
+    -> m (Instr rd rs)
 mapV f s = do
     s' <- s
     return (f s')
 
-isMem :: TemplateInstr rDst rSrc -> Bool
+-- Map the instruction stored with a reorder buffer index.
+mapIIdx :: (rDst1 -> rDst2) -> (rSrc1 -> rSrc2) -> (Addr -> Addr) -> InstrIdx rDst1 rSrc1 -> InstrIdx rDst2 rSrc2
+mapIIdx fd fs fa (InstrIdx instr idx) = InstrIdx (mapI fd fs fa instr) idx
+
+mapIIdxM :: (Monad m) => (rd1 -> m rd2) -> (rs1 -> m rs2) -> (Addr -> m Addr)
+                      -> InstrIdx rd1 rs1
+                      -> m (InstrIdx rd2 rs2)
+mapIIdxM fd fs fa (InstrIdx instr idx) = do
+    instr' <- mapIM fd fs fa instr
+    return (InstrIdx instr' idx)
+
+isMem :: Instr rDst rSrc -> Bool
 isMem (LoadIdx      _ _ _) = True
 isMem (LoadBaseIdx  _ _ _) = True
 isMem (StoreIdx     _ _ _) = True
 isMem (StoreBaseIdx _ _ _) = True
 isMem _                    = False
 
-isAL :: TemplateInstr rDst rSrc -> Bool
+isAL :: Instr rDst rSrc -> Bool
 isAL (Add  _ _ _) = True
 isAL (AddI _ _ _) = True
 isAL (Sub  _ _ _) = True
@@ -205,14 +217,14 @@ isAL (And  _ _ _) = True
 isAL (Not  _ _)   = True
 isAL _            = False
 
-isBranch :: TemplateInstr rDst rSrc -> Bool
+isBranch :: Instr rDst rSrc -> Bool
 isBranch (B _)    = True
 isBranch (BT _ _) = True
 isBranch (BF _ _) = True
 isBranch (Ret)    = True
 isBranch _        = False
 
-isOut :: TemplateInstr rDst rSrc -> Bool
+isOut :: Instr rDst rSrc -> Bool
 isOut (Print  _) = True
 isOut (PrintC _) = True
 isOut (PrintLn)  = True
