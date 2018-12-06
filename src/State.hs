@@ -156,8 +156,8 @@ memVal i st =
 -- Allocates a space in the ROB, and returns index of allocated space.
 -- Returns Nothing if ROB is full.
 -- TODO: Check whether ROB is full.
-allocROB :: State -> Maybe (ROBIdx, State)
-allocROB st = Just (idx, st { rob = rob' }) where
+allocROB :: State -> (ROBIdx, State)
+allocROB st = (idx, st { rob = rob' }) where
     (idx, rob') = ROB.alloc (rob st)
 
 -- Places writeback instructions in the reorder buffer.

@@ -60,24 +60,14 @@ notVal :: Val -> Val
 notVal x | x == 1    = 0
          | otherwise = 1
 
--- Perform fetch state of pipeline by retreiving instruction, this instruction
--- is then allocated a space in the ROB to have its result written to.
--- Or, return Nothing if the value of the pc is after the last instruction,
--- or there is no space in the ROB.
-fetch :: State -> Res (Maybe (ROBIdx, FInstr), State)
+-- Perform fetch state of pipeline by retreiving instruction.
+-- Or, return Nothing if the value of the pc is after the last instruction.
+fetch :: State -> Res (Maybe FInstr, State)
 fetch st = do
     pc <- St.pcVal st
-    case Mem.load (fromIntegral pc) (instrs st) >>= allocFetched st of
-        Nothing                -> return (Nothing, st)
-        Just (idx, instr, st') -> return (Just (idx, instr), st')
-
--- Allocate a space in the ROB for an instruction that was fetched.
--- Returns an index in the ROB to write the result of the instruction to, or
--- Nothing if the ROB is full.
-allocFetched :: State -> FInstr -> Maybe (ROBIdx, FInstr, State)
-allocFetched st instr = do
-    (idx, st') <- St.allocROB st
-    return (idx, instr, st')
+    case Mem.load (fromIntegral pc) (instrs st) of
+        Nothing -> return (Nothing, st)
+        Just    instr -> return (Just instr, st)
 
 -- Executes a branch by writing PC.
 branch :: Addr -> State -> Res WriteBack
@@ -219,11 +209,11 @@ incPc st = do
 -- are available via bypass.
 shouldStall :: Pipeline -> Bool
 shouldStall p = f || d where
-    f  = maybe False isBranch (fmap snd (fetched p))
+    f  = maybe False isBranch (fetched p)
     d  = maybe False isBranch (fmap snd (decoded p))
 
 -- Shifts instructions through pipeline.
-advancePipeline :: Maybe (ROBIdx, FInstr) -> State -> Pipeline -> Res (State, Pipeline)
+advancePipeline :: Maybe FInstr -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st1 p = do
     -- TODO: Subsitute this with exec that updates state when RS implemented.
     let executer = \i st -> fmap (\wb -> (wb, st)) (exec i st)

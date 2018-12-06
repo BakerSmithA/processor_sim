@@ -6,15 +6,15 @@ import Types
 
 -- 5 stage pipeline: fetch, decod, execute, commit, and write-back.
 data Pipeline = Pipeline {
-    fetched   :: Maybe (ROBIdx, FInstr)
+    fetched   :: Maybe FInstr
   , decoded   :: Maybe (ROBIdx, DInstr)
   , executed  :: Maybe (ROBIdx, WriteBack)
 } deriving (Show)
 
 -- FInstruction that was fetched, or Nothing if stalled at this stage.
-type Fetched a = (Maybe (ROBIdx, FInstr), a)
+type Fetched a = (Maybe FInstr, a)
 -- Decodes a fetched instruction, or Nothing if stalls at this stage.
-type Decoder m a = FInstr -> a -> m (DInstr, a)
+type Decoder m a = FInstr -> a -> m ((ROBIdx, DInstr), a)
 -- Executes a decoded instruction.
 type Executer m a = DInstr -> a -> m (WriteBack, a)
 -- Commits any executed instructions in ROB, and returns instructions that can be committed.
@@ -34,10 +34,10 @@ step f x = maybe (return (x, Nothing)) success where
         return (x', z)
 
 -- Steps a fetched instruction through the decode section of the pipeline.
-decodeStep :: (Monad m) => Decoder m a -> a -> Maybe (ROBIdx, FInstr) -> m (a, Maybe (ROBIdx, DInstr))
-decodeStep decode = step $ \x (idx, instr) -> do
+decodeStep :: (Monad m) => Decoder m a -> a -> Maybe FInstr -> m (a, Maybe (ROBIdx, DInstr))
+decodeStep decode = step $ \x instr -> do
     (decoded, x') <- decode instr x
-    return (x', Just (idx, decoded))
+    return (x', Just decoded)
 
 -- Steps a decoded instruction through the exectution step of the pipeline.
 execStep :: (Monad m) => Executer m a -> a -> Maybe (ROBIdx, DInstr) -> m (a, Maybe (ROBIdx, WriteBack))
