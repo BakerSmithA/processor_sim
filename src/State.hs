@@ -89,7 +89,7 @@ debugShow st =
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt 0 0 where
     maxPhyReg = 15
-    mem       = Mem.zeroed 127
+    mem       = Mem.zeroed 255
     regs      = Mem.zeroed maxPhyReg
     instrs'   = Mem.fromList instrs
     bypass    = BP.empty
