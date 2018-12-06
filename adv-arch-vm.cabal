@@ -50,6 +50,7 @@ test-suite spec
                      , bytestring
                      , containers
                      , transformers
+                     , mtl
   other-modules:       Instr
                      , Mem
                      , State

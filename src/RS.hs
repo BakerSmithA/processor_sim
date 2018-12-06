@@ -1,7 +1,6 @@
 module RS where
 
 import Instr
-import State as St
 
 -- Reservation station.
 type RS = [RSInstr]
@@ -21,19 +20,18 @@ add :: DInstr -> RS -> RS
 add = (:) . mapI id Left id
 
 -- Iterates through instructions in reservation station and tries to 'fill in'
--- missing operands.
-tryFill :: State -> RS -> Res RS
-tryFill st = mapM fill where
+-- missing operands. Given a function to get the value of register, or Nothing
+-- if the value is invalid.
+tryFill :: (Monad m) => (PhyReg -> m (Maybe Val)) -> RS -> m RS
+tryFill regVal = mapM fill where
     fill = mapIM return fillRSrc return
 
     -- Fills in the source register in an instruction with a value read from
     -- the state's registers, bypass, reorder-buffer, etc.
-    fillRSrc :: Either PhyReg Val -> Res (Either PhyReg Val)
     fillRSrc = either f (return . Right) where
-        f :: PhyReg -> Res (Either PhyReg Val)
         f phy = do
-            maybeVal <- St.regVal phy st
-            return $ case (Just maybeVal) of -- TODO: Get maybe from reg val instead of Just.
+            maybeVal <- regVal phy
+            return $ case maybeVal of 
                 Nothing  -> Left phy
                 Just val -> Right val
 
