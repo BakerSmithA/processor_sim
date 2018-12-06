@@ -7,7 +7,7 @@ import WriteBack
 import Types
 
 exec :: DInstr -> State -> Res WriteBack
-exec = undefined
+exec di st = undefined
 
 -- Load/Store Unit.
 lsu :: EInstr -> State -> Res WriteBack

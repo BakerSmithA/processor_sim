@@ -104,6 +104,12 @@ empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass 
 emptyDefault :: [FInstr] -> State
 emptyDefault = State.empty 11 12 13 14 15
 
+-- Adds PC address at time of crash.
+crash :: (InstrAddr -> Error) -> State -> Res a
+crash f st = do
+    pc <- pcVal st
+    Crash (f pc) st
+
 withBypass :: Bypass -> State -> State
 withBypass b st = st { bypass = b }
 
@@ -198,8 +204,10 @@ getPhyReg reg st =
         Nothing  -> crash (NoPhyRegAssigned reg) st
         Just phy -> return phy
 
--- Adds PC address at time of crash.
-crash :: (InstrAddr -> Error) -> State -> Res a
-crash f st = do
-    pc <- pcVal st
-    Crash (f pc) st
+-- Fills in operands in instructions waiting in the reservation station,
+-- and removes instructions with all operands filled.
+runRS :: State -> Res ([EInstrIdx], State)
+runRS st = do
+    let getRegVal phy = fmap Just (regVal phy st) -- TODO: Check reg val is ready.
+    (execIs, rs') <- RS.run getRegVal (const True) (rs st)
+    return (execIs, st { rs=rs' })

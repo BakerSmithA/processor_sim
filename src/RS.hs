@@ -20,6 +20,13 @@ fromList = id
 add :: DInstrIdx -> RS -> RS
 add = (:) . mapIIdx id Left id
 
+-- Tries to fill in missing operands using provided function, and promotes and
+-- instructions with all operands filled out of the RS.
+run :: (Monad m) => (PhyReg -> m (Maybe Val)) -> (EInstrIdx -> Bool) -> RS -> m ([EInstrIdx], RS)
+run regVal canPromote rs1 = do
+    rs2 <- tryFill regVal rs1
+    return (promote canPromote rs2)
+
 -- Iterates through instructions in reservation station and tries to 'fill in'
 -- missing operands. Given a function to get the value of register, or Nothing
 -- if the value is invalid.
@@ -39,11 +46,11 @@ tryFill regVal = mapM fill where
 -- Removes instructions that have had all operands 'fill in'.
 -- Performs additional check given, and only promotes if returns true.
 promote :: (EInstrIdx -> Bool) -> RS -> ([EInstrIdx], RS)
-promote cond = foldr checkDone ([], []) where
+promote canPromote = foldr checkDone ([], []) where
     checkDone rsInstr (execIs, rs) =
         case checkFilled rsInstr of
             Nothing        -> (execIs, rsInstr:rs)
-            Just execInstr -> if cond execInstr
+            Just execInstr -> if canPromote execInstr
                                   then (execInstr:execIs, rs)
                                   else (execIs, rsInstr:rs)
 

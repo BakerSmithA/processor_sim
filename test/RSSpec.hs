@@ -20,6 +20,21 @@ rsSpec = describe "reservation station" $ do
                 exp = RS.fromList [(LoadIdx 0 (Left 2) 10, 0)]
             rs `shouldBe` exp
 
+    context "run" $ do
+        it "fills in operands and promotes instructions that are filled" $ do
+            let regFile  = regVal [(0, 2), (1, 5), (4, 10)]
+                rsInstrs = [(Move 0 (Left 1), 0),
+                            (StoreBaseIdx (Left 0) (Left 3) (Left 5), 1),
+                            (AddI 3 (Left 5) 10, 2)]
+                out      = RS.run regFile (const True) (RS.fromList rsInstrs)
+
+                expExec  = [(Move 0 5, 0)]
+                expInstr = [(StoreBaseIdx (Right 2) (Left 3) (Left 5), 1), (AddI 3 (Left 5) 10, 2)]
+                expRs    = RS.fromList expInstr
+                expOut   = return (expExec, expRs)
+
+            out `shouldBe` expOut
+
     context "tryFill" $ do
         it "fills in operands for which values can be retrieved" $ do
             let regFile  = regVal [(0, 2), (1, 5), (4, 10)]
@@ -53,6 +68,6 @@ rsSpec = describe "reservation station" $ do
                                           (Mult 1 (Right 3) (Left 0), 1),
                                           (Print (Right 3), 2)]
                 (eis, rs') = RS.promote (const False) rs
-                
+
             eis `shouldBe` []
             rs' `shouldBe` rs
