@@ -10,6 +10,7 @@ import WriteBack
 import Decode
 import Types
 import ExecUnit
+import Debug.Trace
 
 -- Perform fetch state of pipeline by retreiving instruction.
 -- Or, return Nothing if the value of the pc is after the last instruction.
@@ -100,7 +101,7 @@ runPipeline st p = do
                 then Exec.cycle st p
                 else Exec.cycleStall st p
     (st', p') <- x
-    runPipeline (St.incCycles st') p'
+    trace (debugShow st ++ "\n" ++ show p ++ "\n=====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State

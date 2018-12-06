@@ -177,6 +177,14 @@ setRegVal i val st =
         Nothing   -> crash (RegOutOfRange i) st
         Just regs -> return st { regs = regs }
 
+-- Used to clear a register (make non-ready) after its mapping from an
+-- architectural register has been removed.
+clearFreedReg :: Maybe PhyReg -> State -> Res State
+clearFreedReg mPhy st =
+    case mPhy of
+        Nothing  -> return st
+        Just phy -> setRegVal phy Nothing st
+
 -- Set the value at a memory address, or Crash if invalid address.
 setMemVal :: Addr -> Val -> State -> Res State
 setMemVal i val st =
@@ -210,7 +218,7 @@ allocPhyReg :: RegIdx -> State -> Res (PhyReg, State)
 allocPhyReg reg st =
     case RRT.ins reg (rrt st) of
         Nothing -> crash NoFreePhyRegs st
-        Just (phy, rrt', freed) -> return (phy, st { rrt=rrt' })
+        Just (phy, rrt', free) -> return (phy, st { rrt=rrt' })
 
 -- Frees a physical register allocated to a register name.
 -- Crashes if there if no mapping to the physical register.
