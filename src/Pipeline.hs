@@ -8,7 +8,7 @@ import Types
 data Pipeline = Pipeline {
     fetched   :: Maybe FInstr
   , decoded   :: Maybe DInstrIdx
-  , executed  :: [(WriteBack, ROBIdx)]
+  , executed  :: [(WriteBack, ROBIdx, FreedReg)]
 } deriving (Show)
 
 -- FInstruction that was fetched, or Nothing if stalled at this stage.
@@ -16,9 +16,9 @@ type Fetched a = (Maybe FInstr, a)
 -- Decodes a fetched instruction, or Nothing if stalls at this stage.
 type Decoder m a = FInstr -> a -> m (DInstrIdx, a)
 -- Executes a decoded instruction.
-type Executer m a = DInstrIdx -> a -> m ([(WriteBack, ROBIdx)], a)
+type Executer m a = DInstrIdx -> a -> m ([(WriteBack, ROBIdx, FreedReg)], a)
 -- Commits any executed instructions in ROB, and returns instructions that can be committed.
-type Committer m a = [(WriteBack, ROBIdx)] -> a -> m a
+type Committer m a = [(WriteBack, ROBIdx, FreedReg)] -> a -> m a
 -- Writes instructions results to memory/registers.
 type Writer m a = a -> m a
 
@@ -40,13 +40,13 @@ decodeStep decode = step Nothing $ \x instr -> do
     return (x', Just decoded)
 
 -- Steps a decoded instruction through the exectution step of the pipeline.
-execStep :: (Monad m) => Executer m a -> a -> Maybe DInstrIdx -> m (a, [(WriteBack, ROBIdx)])
+execStep :: (Monad m) => Executer m a -> a -> Maybe DInstrIdx -> m (a, [(WriteBack, ROBIdx, FreedReg)])
 execStep exec = step [] $ \x instr -> do
     (wbs, x') <- exec instr x
     return (x', wbs)
 
 -- Steps an executed instruction through the commit stage of the pipeline.
-commitStep :: (Monad m) => Committer m a -> a -> [(WriteBack, ROBIdx)] -> m a
+commitStep :: (Monad m) => Committer m a -> a -> [(WriteBack, ROBIdx, FreedReg)] -> m a
 commitStep commit x wb = commit wb x
 
 -- Supplies new instruction into pipleine, and shifts in-flight instructions

@@ -22,7 +22,7 @@ fetch st = do
         Just    instr -> return (Just instr, st)
 
 -- Places executed results in reorder buffer.
-commit :: [(WriteBack, ROBIdx)] -> State -> Res State
+commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
 commit wbs st = return (St.addROB st wbs)
 
 -- Set the value stored in a register, or Crash if invalid index.
@@ -42,11 +42,11 @@ writeBack st1 = do
     let st4 = if is /= [] then St.incExec st3 else st3
     return st4
         where
-            writeBack' st (WriteReg r val) = Exec.setRegVal r val st
-            writeBack' st (WriteMem i val) = St.setMemVal i val st
-            writeBack' st (WritePrint s)   = addOutput s st
-            writeBack' st (NoOp)           = return st
-            writeBack' st (Terminate)      = Exit st
+            writeBack' st (WriteReg r val, _) = Exec.setRegVal r val st
+            writeBack' st (WriteMem i val, _) = St.setMemVal i val st
+            writeBack' st (WritePrint s, _)   = addOutput s st
+            writeBack' st (NoOp, _)           = return st
+            writeBack' st (Terminate, _)      = Exit st
 
 -- Increment PC by 1.
 incPc :: State -> Res State
@@ -77,7 +77,7 @@ advancePipeline fetched st1 p = do
 -- previous stages of the pipeline.
 bypassed :: State -> Pipeline -> State
 bypassed st p = St.withBypass b st where
-    b = BP.fromWbs (fmap fst (executed p))
+    b = BP.fromWbs (fmap (\(ei, _, _) -> ei) (executed p))
 
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)

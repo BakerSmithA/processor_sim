@@ -200,14 +200,14 @@ allocROB st = (idx, st { rob = rob' }) where
     (idx, rob') = ROB.alloc (rob st)
 
 -- Places writeback instructions in the reorder buffer.
-addROB :: State -> [(WriteBack, ROBIdx)] -> State
+addROB :: State -> [(WriteBack, ROBIdx, FreedReg)] -> State
 addROB st wbs =
-    let rob' = foldl (\rob (wb, idx) -> ROB.set idx wb rob) (rob st) wbs
+    let rob' = foldl (\rob (wb, idx, freed) -> ROB.set idx wb freed rob) (rob st) wbs
     in st { rob = rob' }
 
 -- Takes instruction that can be executed from ROB, to be passed to
 -- write back stage.
-commitROB :: State -> ([WriteBack], State)
+commitROB :: State -> ([(WriteBack, FreedReg)], State)
 commitROB st =
     let (out, rob') = ROB.commitable (rob st)
     in (out, st { rob = rob' })

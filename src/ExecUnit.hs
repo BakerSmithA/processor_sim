@@ -9,7 +9,7 @@ import Types
 
 -- Add decoded instruction to a reservation station, then promote any completed,
 -- instructions, and finally execute those and return the writeback instructions.
-exec :: DInstrIdx -> State -> Res ([(WriteBack, ROBIdx)], State)
+exec :: DInstrIdx -> State -> Res ([(WriteBack, ROBIdx, FreedReg)], State)
 exec di st1 = do
     let st2 = St.addRS di st1
     (execIs, st3) <- St.runRS st2
@@ -17,16 +17,16 @@ exec di st1 = do
     return (wbs, st3)
 
 -- Accumulate the writebacks of multiple executed instructions.
-combine :: State -> [(WriteBack, ROBIdx)] -> EInstrIdx -> Res [(WriteBack, ROBIdx)]
+combine :: State -> [(WriteBack, ROBIdx, FreedReg)] -> EInstrIdx -> Res [(WriteBack, ROBIdx, FreedReg)]
 combine st acc instr = do
     wb <- execWithROBIdx instr st
     return (wb:acc)
 
 -- Executes the instruction and passes the associate reorder buffer index through.
-execWithROBIdx :: EInstrIdx -> State -> Res (WriteBack, ROBIdx)
+execWithROBIdx :: EInstrIdx -> State -> Res (WriteBack, ROBIdx, FreedReg)
 execWithROBIdx (instr, idx, freed) st = do
     wb <- execI instr st
-    return (wb, idx)
+    return (wb, idx, freed)
 
 -- Execute an instruction by sending it to the appropriate unit, e.g. ALU.
 execI :: EInstr -> State -> Res WriteBack

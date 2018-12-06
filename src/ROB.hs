@@ -6,8 +6,9 @@ import WriteBack
 import Types
 
 -- Entry into the Reorder Buffer. Whether the instruction is present determines
--- whether the entry is ready to be committed.
-type Entry = Maybe WriteBack
+-- whether the entry is ready to be committed. Also stores the register to be
+-- invalidated once writeback of the instruction occurs.
+type Entry = Maybe (WriteBack, FreedReg)
 
 -- Reorder Buffer, used to store write-back instructions before they are committed.
 data ROB = ROB (Queue Entry)
@@ -26,7 +27,7 @@ alloc (ROB q) = (i, ROB q') where
 
 -- Return all instructions that can be committed, i.e. are ready and are at the
 -- start of the queue.
-commitable :: ROB -> ([WriteBack], ROB)
+commitable :: ROB -> ([(WriteBack, FreedReg)], ROB)
 commitable (ROB q) = (wbs, ROB q') where
     (wbs, q') = commitable' q
     commitable' q =
@@ -39,26 +40,26 @@ commitable (ROB q) = (wbs, ROB q') where
                         (wbs, q') = commitable' (Q.rem q Nothing)
 
 -- Set the writeback instruction computed by the execution step.
-set :: ROBIdx -> WriteBack -> ROB -> ROB
-set i wb (ROB q) = ROB q' where
-    q' = Q.set i (Just wb) q
+set :: ROBIdx -> WriteBack -> FreedReg -> ROB -> ROB
+set i wb freed (ROB q) = ROB q' where
+    q' = Q.set i (Just (wb, freed)) q
 
 -- Searches in the ROB for the most recent value of a register, or returns
 -- Nothing if an update to the register is not stored in the ROB.
 regVal :: PhyReg -> ROB -> Maybe Val
 regVal exp (ROB q) = do
-    Just (WriteReg _ val) <- Q.findNewest c q
+    Just (WriteReg _ val, _) <- Q.findNewest c q
     return val
         where
-            c (Just (WriteReg reg _)) = reg == exp
+            c (Just (WriteReg reg _, _)) = reg == exp
             c _ = False
 
 -- Searches in the ROB for the most recent value of a memory address, or
 -- returns Nothing if an update to the address is not stored in the ROB.
 memVal :: Addr -> ROB -> Maybe Val
 memVal exp (ROB q) = do
-    Just (WriteMem _ val) <- Q.findNewest c q
+    Just (WriteMem _ val, _) <- Q.findNewest c q
     return val
         where
-            c (Just (WriteMem addr _)) = addr == exp
+            c (Just (WriteMem addr _, _)) = addr == exp
             c _ = False
