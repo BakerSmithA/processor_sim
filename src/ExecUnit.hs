@@ -30,22 +30,20 @@ execWithROBIdx (instr, idx, freed) st = do
 
 -- Execute an instruction by sending it to the appropriate unit, e.g. ALU.
 execI :: EInstr -> State -> Res WriteBack
-execI instr st | isMem    instr = lsu instr st
-               | isAL     instr = alu instr
-               | isBranch instr = bu  instr st
-               | isOut    instr = ou  instr
-               | otherwise      = errUnsupported "" instr
+execI (Mem    i) st = lsu i st
+execI (AL     i) _  = alu i
+execI (Branch i) st = bu i st
+execI (Out    i) _  = ou i
 
 -- Load/Store Unit.
-lsu :: EInstr -> State -> Res WriteBack
+lsu :: EMemInstr -> State -> Res WriteBack
 lsu (LoadIdx      r b off) st = load  r b off st
 lsu (LoadBaseIdx  r b off) st = load  r b off st
 lsu (StoreIdx     r b off) _  = store r b off
 lsu (StoreBaseIdx r b off) _  = store r b off
-lsu i                      _  = errUnsupported "LSU" i
 
 -- Arithmetic/Logic Unit.
-alu :: EInstr -> Res WriteBack
+alu :: EALInstr -> Res WriteBack
 alu (MoveI r i)   = writeReg r i
 alu (Move  r x)   = writeReg r x
 alu (Add   r x y) = writeReg r (x + y)
@@ -59,25 +57,22 @@ alu (Lt    r x y) = writeReg r (x `ltVal` y)
 alu (Or    r x y) = writeReg r (x `orVal` y)
 alu (And   r x y) = writeReg r (x `andVal` y)
 alu (Not   r x)   = writeReg r (notVal x)
-alu i             = errUnsupported "ALU" i
 
 -- Branch Unit.
-bu :: EInstr -> State -> Res WriteBack
-bu (B addr)    st = branch addr st
+bu :: EBranchInstr -> State -> Res WriteBack
+bu (B    addr) st = branch addr st
 bu (BT r addr) st = branchCond (r==1) addr st
 bu (BF r addr) st = branchCond (r==0) addr st
 bu (SysCall)   _  = return Terminate
 bu (Ret)       st  = do
     addr <- namedRegVal lrIdx st
     branch (fromIntegral addr) st
-bu  i         _  = errUnsupported "BU" i
 
 -- Output Unit (for debugging).
-ou :: EInstr -> Res WriteBack
+ou :: EOutInstr -> Res WriteBack
 ou (Print r)  = writePrint (show r)
 ou (PrintC r) = writePrint ([chr (fromIntegral r)])
 ou (PrintLn)  = writePrint "\n"
-ou i          = errUnsupported "OU" i
 
 -- Convenience method for WriteReg in Res.
 writeReg :: PhyReg -> Val -> Res WriteBack

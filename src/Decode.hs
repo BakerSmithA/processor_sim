@@ -15,7 +15,7 @@ decode fi st = runStateT (decodeI fi) st
 
 decodeI :: FInstr -> StateT State Res DInstrIdx
 decodeI fi = do
-    di <- mapIM renameDst lookupSrc return fi
+    di <- mapIM renameDst lookupSrc fi
     let (di', freed) = MSt.runState (separateFreed di) Nothing
     robIdx <- allocROB
     return (di', robIdx, freed)
@@ -24,7 +24,7 @@ decodeI fi = do
 -- writes it out, creating a DInstr. This separates the destination register
 -- from the freed register.
 separateFreed :: Instr (PhyReg, FreedReg) PhyReg -> MSt.State FreedReg DInstr
-separateFreed = mapIM f return return where
+separateFreed = mapIM f return where
     f (phy, freed) = do
         MSt.put freed
         return phy
