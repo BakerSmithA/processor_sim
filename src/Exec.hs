@@ -37,16 +37,25 @@ addOutput s st = return st { output = (output st) ++ s }
 writeBack :: State -> Res State
 writeBack st1 = do
     let (is, st2) = St.commitROB st1
-    st3 <- foldM writeBack' st2 is
+    st3 <- foldM writeBackFreed st2 is
     -- Only increment the number of instructions executed if any were.
     let st4 = if is /= [] then St.incExec st3 else st3
     return st4
-        where
-            writeBack' st (WriteReg r val, _) = Exec.setRegVal r val st
-            writeBack' st (WriteMem i val, _) = St.setMemVal i val st
-            writeBack' st (WritePrint s, _)   = addOutput s st
-            writeBack' st (NoOp, _)           = return st
-            writeBack' st (Terminate, _)      = Exit st
+
+-- Writes the result of an instruction back to memory/register file, and
+-- invalidates the physical register previously mapped.
+writeBackFreed :: State -> (WriteBack, FreedReg) -> Res State
+writeBackFreed st1 (wb, freed) = do
+    st2 <- writeBackSingle wb st1
+    St.clearFreedReg freed st2
+
+-- Writes the result of an instruction back to memory/register file.
+writeBackSingle :: WriteBack -> State -> Res State
+writeBackSingle (WriteReg r val)  st = Exec.setRegVal r val st
+writeBackSingle (WriteMem i val)  st = St.setMemVal i val st
+writeBackSingle (WritePrint s)    st = addOutput s st
+writeBackSingle (NoOp)            st = return st
+writeBackSingle (Terminate)       st = Exit st
 
 -- Increment PC by 1.
 incPc :: State -> Res State
