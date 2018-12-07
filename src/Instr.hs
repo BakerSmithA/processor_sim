@@ -65,6 +65,12 @@ type EInstrIdx = (EInstr, ROBIdx, FreedReg)
 mapMem :: (d1 -> d2) -> (s1 -> s2) -> MemInstr d1 s1 -> MemInstr d2 s2
 mapMem fd fs = runIdentity . mapMemM (return . fd) (return . fs)
 
+mapAL :: (d1 -> d2) -> (s1 -> s2) -> ALInstr d1 s1 -> ALInstr d2 s2
+mapAL fd fs = runIdentity . mapALM (return . fd) (return . fs)
+
+mapB :: (s1 -> s2) -> BranchInstr s1 -> BranchInstr s2
+mapB fs = runIdentity . mapBM (return . fs)
+
 mapMemM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> MemInstr d1 s1 -> m (MemInstr d2 s2)
 mapMemM fd fs (LoadIdx r b off) = do
     r' <- fd r
@@ -117,3 +123,18 @@ mapDSI f dst src1 imm = do
     dst' <- dst
     src1' <- src1
     return (f dst' src1' imm)
+
+    -- data BranchInstr rSrc
+    --     = B  Addr      -- Unconditional branch to addr
+    --     | BT rSrc Addr -- Branch to addr if r == 1
+    --     | BF rSrc Addr -- Branch to addr if r == 0
+    --     | Ret          -- Branch to address in link register.
+    --     | SysCall      -- Terminates the program.
+    --     deriving (Eq, Show)
+
+mapBM :: (Monad m) => (s1 -> m s2) -> BranchInstr s1 -> m (BranchInstr s2)
+mapBM _  (B addr)    = return (B addr)
+mapBM fs (BT r addr) = fs r >>= \r' -> return (BT r' addr)
+mapBM fs (BF r addr) = fs r >>= \r' -> return (BF r' addr)
+mapBM _  (Ret)       = return Ret
+mapBM _  (SysCall)   = return SysCall
