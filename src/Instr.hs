@@ -64,6 +64,81 @@ type EALInstr     = ALInstr PhyReg Val
 type EBranchInstr = BranchInstr Val
 type EOutInstr    = OutInstr Val
 
+loadIdx :: d -> s -> Val -> Instr d s
+loadIdx r base off = Mem (LoadIdx r base off)
+
+loadBaseIdx :: d -> s -> s -> Instr d s
+loadBaseIdx r base off = Mem (LoadBaseIdx r base off)
+
+storeIdx :: s -> s -> Val -> Instr d s
+storeIdx r base off = Mem (StoreIdx r base off)
+
+storeBaseIdx :: s -> s -> s -> Instr d s
+storeBaseIdx r base off = Mem (StoreBaseIdx r base off)
+
+moveI :: d -> Val -> Instr d s
+moveI r i = AL (MoveI r i)
+
+move :: d -> s -> Instr d s
+move r x = AL (Move r x)
+
+add :: d -> s -> s -> Instr d s
+add r x y = AL (Add r x y)
+
+addI :: d -> s -> Val -> Instr d s
+addI r x i = AL (AddI r x i)
+
+sub :: d -> s -> s -> Instr d s
+sub r x y = AL (Sub r x y)
+
+subI :: d -> s -> Val -> Instr d s
+subI r x i = AL (SubI r x i)
+
+mult :: d -> s -> s -> Instr d s
+mult r x y = AL (Mult r x y)
+
+divI :: d -> s -> s -> Instr d s
+divI r x y = AL (Div r x y)
+
+eq :: d -> s -> s -> Instr d s
+eq r x y = AL (Eq r x y)
+
+lt :: d -> s -> s -> Instr d s
+lt r x y = AL (Lt r x y)
+
+orI :: d -> s -> s -> Instr d s
+orI r x y = AL (Or r x y)
+
+andI :: d -> s -> s -> Instr d s
+andI r x y = AL (And r x y)
+
+notI :: d -> s -> Instr d s
+notI r x = AL (Not r x)
+
+b :: Addr -> Instr d s
+b addr = Branch (B addr)
+
+bt :: s -> Addr -> Instr d s
+bt r addr = Branch (BT r addr)
+
+bf :: s -> Addr -> Instr d s
+bf r addr = Branch (BF r addr)
+
+ret :: Instr d s
+ret = Branch Ret
+
+sysCall :: Instr d s
+sysCall = Branch SysCall
+
+printI :: s -> Instr d s
+printI r = Out (Print r)
+
+printC :: s -> Instr d s
+printC r = Out (PrintC r)
+
+printLn :: Instr d s
+printLn = Out (PrintLn)
+
 isBranch :: Instr d s -> Bool
 isBranch (Branch _) = True
 isBranch _          = False
