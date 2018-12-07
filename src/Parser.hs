@@ -78,34 +78,34 @@ byte w = do
 instr :: Parser FInstr
 instr =
     -- Memory
-        MoveI        <$ byte 0  <*> word8 <*> int32
-    <|> Move         <$ byte 14 <*> word8 <*> word8
-    <|> LoadIdx      <$ byte 1  <*> word8 <*> word8 <*> int32
-    <|> LoadBaseIdx  <$ byte 2  <*> word8 <*> word8 <*> word8
-    <|> StoreIdx     <$ byte 3  <*> word8 <*> word8 <*> int32
-    <|> StoreBaseIdx <$ byte 4  <*> word8 <*> word8 <*> word8
+        moveI        <$ byte 0  <*> word8 <*> int32
+    <|> move         <$ byte 14 <*> word8 <*> word8
+    <|> loadIdx      <$ byte 1  <*> word8 <*> word8 <*> int32
+    <|> loadBaseIdx  <$ byte 2  <*> word8 <*> word8 <*> word8
+    <|> storeIdx     <$ byte 3  <*> word8 <*> word8 <*> int32
+    <|> storeBaseIdx <$ byte 4  <*> word8 <*> word8 <*> word8
     -- Arithmetic/Logic
-    <|> Add  <$ byte 5  <*> word8 <*> word8 <*> word8
-    <|> AddI <$ byte 16 <*> word8 <*> word8 <*> int32
-    <|> Sub  <$ byte 6  <*> word8 <*> word8 <*> word8
-    <|> SubI <$ byte 17 <*> word8 <*> word8 <*> int32
-    <|> Mult <$ byte 18 <*> word8 <*> word8 <*> word8
-    <|> Div  <$ byte 23 <*> word8 <*> word8 <*> word8
-    <|> Eq   <$ byte 7  <*> word8 <*> word8 <*> word8
-    <|> Lt   <$ byte 19 <*> word8 <*> word8 <*> word8
-    <|> Or   <$ byte 8  <*> word8 <*> word8 <*> word8
-    <|> And  <$ byte 9  <*> word8 <*> word8 <*> word8
-    <|> Not  <$ byte 15 <*> word8 <*> word8
+    <|> add  <$ byte 5  <*> word8 <*> word8 <*> word8
+    <|> addI <$ byte 16 <*> word8 <*> word8 <*> int32
+    <|> sub  <$ byte 6  <*> word8 <*> word8 <*> word8
+    <|> subI <$ byte 17 <*> word8 <*> word8 <*> int32
+    <|> mult <$ byte 18 <*> word8 <*> word8 <*> word8
+    <|> divI <$ byte 23 <*> word8 <*> word8 <*> word8
+    <|> eq   <$ byte 7  <*> word8 <*> word8 <*> word8
+    <|> lt   <$ byte 19 <*> word8 <*> word8 <*> word8
+    <|> orI   <$ byte 8  <*> word8 <*> word8 <*> word8
+    <|> andI <$ byte 9  <*> word8 <*> word8 <*> word8
+    <|> notI <$ byte 15 <*> word8 <*> word8
     -- Branching
-    <|> B       <$ byte 10 <*> word32
-    <|> BT      <$ byte 11 <*> word8 <*> word32
-    <|> BF      <$ byte 22 <*> word8 <*> word32
-    <|> Ret     <$ byte 12
-    <|> SysCall <$ byte 21
+    <|> b       <$ byte 10 <*> word32
+    <|> bt      <$ byte 11 <*> word8 <*> word32
+    <|> bf      <$ byte 22 <*> word8 <*> word32
+    <|> ret     <$ byte 12
+    <|> sysCall <$ byte 21
     -- Debugging
-    <|> Print   <$ byte 13 <*> word8
-    <|> PrintC  <$ byte 24 <*> word8
-    <|> PrintLn <$ byte 20
+    <|> printI  <$ byte 13 <*> word8
+    <|> printC  <$ byte 24 <*> word8
+    <|> printLn <$ byte 20
 
 instrs :: Parser [FInstr]
 instrs = many instr

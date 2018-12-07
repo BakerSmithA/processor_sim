@@ -15,9 +15,9 @@ runVm instrs = do
     putStrLn (show vm)
 
 newlines :: FInstr -> String
-newlines (Ret)     = "\n"
-newlines (SysCall) = "\n"
-newlines _         = ""
+newlines (Branch Ret)     = "\n"
+newlines (Branch SysCall) = "\n"
+newlines _                = ""
 
 runBytecode :: FilePath -> IO ()
 runBytecode path = do
