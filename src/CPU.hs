@@ -1,4 +1,4 @@
-module Exec where
+module CPU where
 
 import Control.Monad (foldM)
 import State as St
@@ -10,7 +10,6 @@ import WriteBack
 import Decode
 import Types
 import ExecUnit
-import Debug.Trace
 
 -- Perform fetch state of pipeline by retreiving instruction.
 -- Or, return Nothing if the value of the pc is after the last instruction.
@@ -51,7 +50,7 @@ writeBackFreed st1 (wb, freed) = do
 
 -- Writes the result of an instruction back to memory/register file.
 writeBackSingle :: WriteBack -> State -> Res State
-writeBackSingle (WriteReg r val)  st = Exec.setRegVal r val st
+writeBackSingle (WriteReg r val)  st = CPU.setRegVal r val st
 writeBackSingle (WriteMem i val)  st = St.setMemVal i val st
 writeBackSingle (WritePrint s)    st = addOutput s st
 writeBackSingle (NoOp)            st = return st
@@ -62,7 +61,7 @@ incPc :: State -> Res State
 incPc st = do
     pc <- pcVal st
     pcReg <- St.namedReg pcIdx st
-    Exec.setRegVal pcReg (pc+1) st
+    CPU.setRegVal pcReg (pc+1) st
 
 -- Return whether the pipeline should stall to wait for branch instructions
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
@@ -78,7 +77,7 @@ advancePipeline :: Maybe FInstr -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st1 p = do
     -- TODO: Subsitute this with exec that updates state when RS implemented.
     -- let executer = \(di, idx) st -> fmap (\wb -> ([(wb, idx)], st)) (exec di st)
-    (st2, p') <- P.advance (fetched, st1) decode exec Exec.commit writeBack p
+    (st2, p') <- P.advance (fetched, st1) decode exec CPU.commit writeBack p
     return (st2, p')
 
 -- Returns state which contains bypass value that was just written as part of
@@ -107,8 +106,8 @@ cycleStall st1 p = do
 runPipeline :: State -> Pipeline -> Res (State, Pipeline)
 runPipeline st p = do
     let x = if not (shouldStall p)
-                then Exec.cycle st p
-                else Exec.cycleStall st p
+                then CPU.cycle st p
+                else CPU.cycleStall st p
     (st', p') <- x
     runPipeline (St.incCycles st') p'
 

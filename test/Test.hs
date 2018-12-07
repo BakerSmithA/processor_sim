@@ -7,7 +7,7 @@ import QueueSpec
 import ROBSpec
 import RSSpec
 import BypassSpec
-import ExecSpec
+import CPUSpec
 
 main :: IO ()
 main = hspec specs where
@@ -18,4 +18,4 @@ main = hspec specs where
         robSpec
         rsSpec
         bypassSpec
-        execSpec
+        cpuSpec

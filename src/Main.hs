@@ -2,7 +2,7 @@ module Main where
 
 import Instr
 import State
-import Exec (run)
+import CPU (run)
 import qualified Parser as P
 import qualified Data.ByteString as B
 import System.Environment

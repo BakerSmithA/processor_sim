@@ -25,7 +25,7 @@ executable vm
                      , Error
                      , Pipeline
                      , Bypass
-                     , Exec
+                     , CPU
                      , Helper
                      , RRT
                      , Decode
@@ -59,9 +59,9 @@ test-suite spec
                      , ParserSpec
                      , Error
                      , Pipeline
-                     , ExecSpec
+                     , CPUSpec
                      , Bypass
-                     , Exec
+                     , CPU
                      , Helper
                      , RRT
                      , RRTSpec

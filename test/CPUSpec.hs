@@ -1,4 +1,4 @@
-module ExecSpec (execSpec) where
+module CPUSpec (cpuSpec) where
 
 import Test.Hspec
 import Data.Maybe (fromJust)
@@ -7,7 +7,7 @@ import State as St hiding (regVal)
 import qualified State as St (regVal)
 import qualified Mem as Mem
 import Data.Int (Int32)
-import Exec
+import CPU
 import Types
 
 regVal :: PhyReg -> State -> Res Val
@@ -18,8 +18,8 @@ runVm instrs memCnts = run state' where
     state' = state { mem = Mem.fromList memCnts }
     state = St.emptyDefault (instrs ++ [SysCall])
 
-execSpec :: Spec
-execSpec = describe "execution" $ do
+cpuSpec :: Spec
+cpuSpec = describe "execution" $ do
     context "normal execution" $ do
         context "memory" $ do
             it "interprets MoveI" $ do
