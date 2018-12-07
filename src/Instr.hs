@@ -57,11 +57,6 @@ type RSInstrIdx = (Instr PhyReg (Either PhyReg Val), ROBIdx, FreedReg)
 type EInstr = Instr PhyReg Val
 type EInstrIdx = (EInstr, ROBIdx, FreedReg)
 
--- = LoadIdx      { r    :: rDst, base :: rSrc, offset  :: Val }  -- r <- [[base] + offset]
--- | LoadBaseIdx  { r    :: rDst, base :: rSrc, rOffset :: rSrc } -- r <- [[base] + [R_offset]]
--- | StoreIdx     { rsrc :: rSrc, base :: rSrc, offset  :: Val }  -- r -> [[base] + offset]
--- | StoreBaseIdx { rsrc :: rSrc, base :: rSrc, rOffset :: rSrc } -- r -> [[base] + [R_offset]]
-
 mapMem :: (d1 -> d2) -> (s1 -> s2) -> MemInstr d1 s1 -> MemInstr d2 s2
 mapMem fd fs = runIdentity . mapMemM (return . fd) (return . fs)
 
@@ -70,6 +65,9 @@ mapAL fd fs = runIdentity . mapALM (return . fd) (return . fs)
 
 mapB :: (s1 -> s2) -> BranchInstr s1 -> BranchInstr s2
 mapB fs = runIdentity . mapBM (return . fs)
+
+mapOut :: (s1 -> s2) -> OutInstr s1 -> OutInstr s2
+mapOut fs = runIdentity . mapOutM (return . fs)
 
 mapMemM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> MemInstr d1 s1 -> m (MemInstr d2 s2)
 mapMemM fd fs (LoadIdx r b off) = do
@@ -124,17 +122,20 @@ mapDSI f dst src1 imm = do
     src1' <- src1
     return (f dst' src1' imm)
 
-    -- data BranchInstr rSrc
-    --     = B  Addr      -- Unconditional branch to addr
-    --     | BT rSrc Addr -- Branch to addr if r == 1
-    --     | BF rSrc Addr -- Branch to addr if r == 0
-    --     | Ret          -- Branch to address in link register.
-    --     | SysCall      -- Terminates the program.
-    --     deriving (Eq, Show)
-
 mapBM :: (Monad m) => (s1 -> m s2) -> BranchInstr s1 -> m (BranchInstr s2)
 mapBM _  (B addr)    = return (B addr)
 mapBM fs (BT r addr) = fs r >>= \r' -> return (BT r' addr)
 mapBM fs (BF r addr) = fs r >>= \r' -> return (BF r' addr)
 mapBM _  (Ret)       = return Ret
 mapBM _  (SysCall)   = return SysCall
+
+mapOutM :: (Monad m) => (s1 -> m s2) -> OutInstr s1 -> m (OutInstr s2)
+mapOutM fs (Print  r) = fs r >>= \r' -> return (Print r')
+mapOutM fs (PrintC r) = fs r >>= \r' -> return (PrintC r')
+mapOutM _  (PrintLn)  = return PrintLn
+
+mapIM :: (Monad m) => (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> Instr d1 s1 -> m (Instr d2 s2)
+mapIM fd fs (Mem    i) = mapMemM fd fs i >>= \i' -> return (Mem i')
+mapIM fd fs (AL     i) = mapALM  fd fs i >>= \i' -> return (AL i')
+mapIM _  fs (Branch i) = mapBM      fs i >>= \i' -> return (Branch i')
+mapIM _  fs (Out    i) = mapOutM    fs i >>= \i' -> return (Out i')
