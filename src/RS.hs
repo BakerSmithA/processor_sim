@@ -1,61 +1,50 @@
 module RS where
 
-import Types
 import Instr
+import Types
 
--- Reservation station.
-type RS = [RSInstrIdx]
+-- Reservation station containing instructions with possibly filled operands.
+type RS a = [a]
 
--- Empty reservation station with no entries.
-empty :: RS
-empty = []
-
--- Return RS contaning given entries.
-fromList :: [RSInstrIdx] -> RS
+fromList :: [a] -> RS a
 fromList = id
 
--- Add a decoded instruction to the reservation station.
--- Once all operands are available the instruction will be promoted from the RS.
--- When put in the RS, none of the operands are marked as 'filled in'.
-add :: DInstrIdx -> RS -> RS
-add = (:) . mapIIdx id id Left
+empty :: RS a
+empty = []
 
--- Tries to fill in missing operands using provided function, and promotes and
--- instructions with all operands filled out of the RS.
-run :: (Monad m) => (PhyReg -> m (Maybe Val)) -> (EInstrIdx -> Bool) -> RS -> m ([EInstrIdx], RS)
-run regVal canPromote rs1 = do
-    rs2 <- tryFill regVal rs1
-    return (promote canPromote rs2)
+add :: a -> RS a -> RS a
+add = (:)
 
--- Iterates through instructions in reservation station and tries to 'fill in'
--- missing operands. Given a function to get the value of register, or Nothing
--- if the value is invalid.
-tryFill :: (Monad m) => (PhyReg -> m (Maybe Val)) -> RS -> m RS
-tryFill regVal = mapM fill where
-    fill = mapIIdxM return return fillRSrc
+-- Tries to fill in operands of instructions in the reservation station.
+fill :: (Monad m) => (a -> m a) -> RS a -> m (RS a)
+fill fillOp = mapM fillOp
 
-    -- Fills in the source register in an instruction with a value read from
-    -- the state's registers, bypass, reorder-buffer, etc.
-    fillRSrc = either f (return . Right) where
-        f phy = do
-            maybeVal <- regVal phy
-            return $ case maybeVal of
-                Nothing  -> Left phy
-                Just val -> Right val
+-- Removes instruction that have had all their operands filled and are ready.
+promote :: (a -> Maybe b) -> RS a -> ([b], RS a)
+promote promoteInstr = foldr checkDone ([], []) where
+    checkDone instr (outs, rs) =
+        case promoteInstr instr of
+            Nothing  -> (outs, instr:rs)
+            Just out -> (out:outs, rs)
 
--- Removes instructions that have had all operands 'fill in'.
--- Performs additional check given, and only promotes if returns true.
-promote :: (EInstrIdx -> Bool) -> RS -> ([EInstrIdx], RS)
-promote canPromote = foldr checkDone ([], []) where
-    checkDone rsInstr (execIs, rs) =
-        case checkFilled rsInstr of
-            Nothing        -> (execIs, rsInstr:rs)
-            Just execInstr -> if canPromote execInstr
-                                  then (execInstr:execIs, rs)
-                                  else (execIs, rsInstr:rs)
+-- Fills in a source register in an operand by getting the value from a register,
+-- or does nothing if the value is not available.
+fillRegSrc :: (Monad m) => (PhyReg -> m (Maybe Val)) -> Either PhyReg Val -> m (Either PhyReg Val)
+fillRegSrc regVal = either f (return . Right) where
+    f phy = do
+        maybeVal <- regVal phy
+        return $ case maybeVal of
+            Nothing  -> Left phy
+            Just val -> Right val
 
--- Checks whether an entry in the reservation station has all operands filled,
--- and if so returns instruction containing filled values.
-checkFilled :: RSInstrIdx -> Maybe EInstrIdx
-checkFilled = mapIIdxM return return f where
-    f = either (const Nothing) Just
+-- Tries to fill in operands in an ALU instruction.
+fillAL :: (Monad m) => (PhyReg -> m (Maybe Val)) -> RS RSALInstr -> m (RS RSALInstr)
+fillAL regVal = fill $ \instr -> mapALM return (fillRegSrc regVal) instr
+
+-- Tries to fill in operands in a branch instruction.
+fillB :: (Monad m) => (PhyReg -> m (Maybe Val)) -> RS RSBranchInstr -> m (RS RSBranchInstr)
+fillB regVal = fill $ \instr -> mapBM (fillRegSrc regVal) instr
+
+-- Tries to fill in operands in an output instruction.
+fillOut :: (Monad m) => (PhyReg -> m (Maybe Val)) -> RS RSOutInstr -> m (RS RSOutInstr)
+fillOut regVal = fill $ \instr -> mapOutM (fillRegSrc regVal) instr

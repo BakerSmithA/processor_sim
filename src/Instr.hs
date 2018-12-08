@@ -54,7 +54,16 @@ type DInstr = Instr PhyReg PhyReg PhyReg
 type DInstrIdx = (DInstr, ROBIdx, FreedReg)
 -- Instruction stored in reservation station.
 -- Stores partially 'filled-in' instrucions.
-type RSInstrIdx = (Instr PhyReg PhyReg (Either PhyReg Val), ROBIdx, FreedReg)
+-- The destination register for load instructions contains both the value and
+-- physical register destination because loads are done in the RS instead of
+-- at execution.
+-- TODO: Make load dest (PhyReg, Maybe Val)
+type RSInstrIdx    = (Instr PhyReg PhyReg (Either PhyReg Val), ROBIdx, FreedReg)
+type RSMemInstr    = MemInstr (PhyReg, Maybe Val) (Either PhyReg Val)
+type RSALInstr     = ALInstr PhyReg (Either PhyReg Val)
+type RSBranchInstr = BranchInstr (Either PhyReg Val)
+type RSOutInstr    = OutInstr (Either PhyReg Val)
+
 -- Executed instruction with computed values filled in.
 type EInstr = Instr PhyReg PhyReg Val
 type EInstrIdx = (EInstr, ROBIdx, FreedReg)
