@@ -209,6 +209,10 @@ mapPipeIM fd fs (i, idx, freed) = do
 mapPipeI :: (d1 -> d2) -> (s1 -> s2) -> PipeData (SameInstr d1 s1) -> PipeData (SameInstr d2 s2)
 mapPipeI fd fs = runIdentity . mapPipeIM (return . fd) (return . fs)
 
+--------------------------------------------------------------------------------
+-- Convenience methods for constructing instructions.
+--------------------------------------------------------------------------------
+
 loadIdx :: d -> s -> Val -> Instr (MemInstr d s) al b out
 loadIdx r base off = Mem (LoadIdx r base off)
 
