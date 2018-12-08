@@ -40,23 +40,23 @@ data OutInstr rSrc
     | PrintLn     -- Print a newline.
     deriving (Eq, Show)
 
-data Instr rDst rSrc
-    = Mem (MemInstr rDst rSrc)
+data Instr rDst memRDst rSrc
+    = Mem (MemInstr memRDst rSrc)
     | AL (ALInstr rDst rSrc)
     | Branch (BranchInstr rSrc)
     | Out (OutInstr rSrc)
     deriving (Eq, Show)
 
 -- Fetched instruction.
-type FInstr = Instr RegIdx RegIdx
+type FInstr = Instr RegIdx RegIdx RegIdx
 -- Decoded instruction.
-type DInstr = Instr PhyReg PhyReg
+type DInstr = Instr PhyReg PhyReg PhyReg
 type DInstrIdx = (DInstr, ROBIdx, FreedReg)
 -- Instruction stored in reservation station.
 -- Stores partially 'filled-in' instrucions.
-type RSInstrIdx = (Instr PhyReg (Either PhyReg Val), ROBIdx, FreedReg)
+type RSInstrIdx = (Instr PhyReg PhyReg (Either PhyReg Val), ROBIdx, FreedReg)
 -- Executed instruction with computed values filled in.
-type EInstr = Instr PhyReg Val
+type EInstr = Instr PhyReg PhyReg Val
 type EInstrIdx = (EInstr, ROBIdx, FreedReg)
 
 type EMemInstr    = MemInstr PhyReg Val
@@ -64,82 +64,82 @@ type EALInstr     = ALInstr PhyReg Val
 type EBranchInstr = BranchInstr Val
 type EOutInstr    = OutInstr Val
 
-loadIdx :: d -> s -> Val -> Instr d s
+loadIdx :: l -> s -> Val -> Instr d l s
 loadIdx r base off = Mem (LoadIdx r base off)
 
-loadBaseIdx :: d -> s -> s -> Instr d s
+loadBaseIdx :: l -> s -> s -> Instr d l s
 loadBaseIdx r base off = Mem (LoadBaseIdx r base off)
 
-storeIdx :: s -> s -> Val -> Instr d s
+storeIdx :: s -> s -> Val -> Instr d l s
 storeIdx r base off = Mem (StoreIdx r base off)
 
-storeBaseIdx :: s -> s -> s -> Instr d s
+storeBaseIdx :: s -> s -> s -> Instr d l s
 storeBaseIdx r base off = Mem (StoreBaseIdx r base off)
 
-moveI :: d -> Val -> Instr d s
+moveI :: d -> Val -> Instr d l s
 moveI r i = AL (MoveI r i)
 
-move :: d -> s -> Instr d s
+move :: d -> s -> Instr d l s
 move r x = AL (Move r x)
 
-add :: d -> s -> s -> Instr d s
+add :: d -> s -> s -> Instr d l s
 add r x y = AL (Add r x y)
 
-addI :: d -> s -> Val -> Instr d s
+addI :: d -> s -> Val -> Instr d l s
 addI r x i = AL (AddI r x i)
 
-sub :: d -> s -> s -> Instr d s
+sub :: d -> s -> s -> Instr d l s
 sub r x y = AL (Sub r x y)
 
-subI :: d -> s -> Val -> Instr d s
+subI :: d -> s -> Val -> Instr d l s
 subI r x i = AL (SubI r x i)
 
-mult :: d -> s -> s -> Instr d s
+mult :: d -> s -> s -> Instr d l s
 mult r x y = AL (Mult r x y)
 
-divI :: d -> s -> s -> Instr d s
+divI :: d -> s -> s -> Instr d l s
 divI r x y = AL (Div r x y)
 
-eq :: d -> s -> s -> Instr d s
+eq :: d -> s -> s -> Instr d l s
 eq r x y = AL (Eq r x y)
 
-lt :: d -> s -> s -> Instr d s
+lt :: d -> s -> s -> Instr d l s
 lt r x y = AL (Lt r x y)
 
-orI :: d -> s -> s -> Instr d s
+orI :: d -> s -> s -> Instr d l s
 orI r x y = AL (Or r x y)
 
-andI :: d -> s -> s -> Instr d s
+andI :: d -> s -> s -> Instr d l s
 andI r x y = AL (And r x y)
 
-notI :: d -> s -> Instr d s
+notI :: d -> s -> Instr d l s
 notI r x = AL (Not r x)
 
-b :: Addr -> Instr d s
+b :: Addr -> Instr d l s
 b addr = Branch (B addr)
 
-bt :: s -> Addr -> Instr d s
+bt :: s -> Addr -> Instr d l s
 bt r addr = Branch (BT r addr)
 
-bf :: s -> Addr -> Instr d s
+bf :: s -> Addr -> Instr d l s
 bf r addr = Branch (BF r addr)
 
-ret :: Instr d s
+ret :: Instr d l s
 ret = Branch Ret
 
-sysCall :: Instr d s
+sysCall :: Instr d l s
 sysCall = Branch SysCall
 
-printI :: s -> Instr d s
+printI :: s -> Instr d l s
 printI r = Out (Print r)
 
-printC :: s -> Instr d s
+printC :: s -> Instr d l s
 printC r = Out (PrintC r)
 
-printLn :: Instr d s
+printLn :: Instr d l s
 printLn = Out (PrintLn)
 
-isBranch :: Instr d s -> Bool
+isBranch :: Instr d l s -> Bool
 isBranch (Branch _) = True
 isBranch _          = False
 
@@ -155,11 +155,11 @@ mapB fs = runIdentity . mapBM (return . fs)
 mapOut :: (s1 -> s2) -> OutInstr s1 -> OutInstr s2
 mapOut fs = runIdentity . mapOutM (return . fs)
 
-mapI :: (d1 -> d2) -> (s1 -> s2) -> Instr d1 s1 -> Instr d2 s2
-mapI fd fs = runIdentity . mapIM (return . fd) (return . fs)
+mapI :: (d1 -> d2) -> (l1 -> l2) -> (s1 -> s2) -> Instr d1 l1 s1 -> Instr d2 l2 s2
+mapI fd fl fs = runIdentity . mapIM (return . fd) (return . fl) (return . fs)
 
-mapIIdx :: (d1 -> d2) -> (s1 -> s2) -> (Instr d1 s1, ROBIdx, FreedReg) -> (Instr d2 s2, ROBIdx, FreedReg)
-mapIIdx fd fs = runIdentity . mapIIdxM (return . fd) (return . fs)
+mapIIdx :: (d1 -> d2) -> (l1 -> l2) -> (s1 -> s2) -> (Instr d1 l1 s1, ROBIdx, FreedReg) -> (Instr d2 l2 s2, ROBIdx, FreedReg)
+mapIIdx fd fl fs = runIdentity . mapIIdxM (return . fd) (return . fl) (return . fs)
 
 mapMemM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> MemInstr d1 s1 -> m (MemInstr d2 s2)
 mapMemM fd fs (LoadIdx r b off) = do
@@ -231,13 +231,13 @@ mapOutM fs (Print  r) = fs r >>= \r' -> return (Print r')
 mapOutM fs (PrintC r) = fs r >>= \r' -> return (PrintC r')
 mapOutM _  (PrintLn)  = return PrintLn
 
-mapIM :: (Monad m) => (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> Instr d1 s1 -> m (Instr d2 s2)
-mapIM fd fs (Mem    i) = mapMemM fd fs i >>= \i' -> return (Mem i')
-mapIM fd fs (AL     i) = mapALM  fd fs i >>= \i' -> return (AL i')
-mapIM _  fs (Branch i) = mapBM      fs i >>= \i' -> return (Branch i')
-mapIM _  fs (Out    i) = mapOutM    fs i >>= \i' -> return (Out i')
+mapIM :: (Monad m) => (Monad m) => (d1 -> m d2) -> (l1 -> m l2)-> (s1 -> m s2) -> Instr d1 l1 s1 -> m (Instr d2 l2 s2)
+mapIM _  fl fs (Mem    i) = mapMemM fl fs i >>= \i' -> return (Mem i')
+mapIM fd _  fs (AL     i) = mapALM  fd fs i >>= \i' -> return (AL i')
+mapIM _  _  fs (Branch i) = mapBM      fs i >>= \i' -> return (Branch i')
+mapIM _  _  fs (Out    i) = mapOutM    fs i >>= \i' -> return (Out i')
 
-mapIIdxM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> (Instr d1 s1, ROBIdx, FreedReg) -> m (Instr d2 s2, ROBIdx, FreedReg)
-mapIIdxM fd fs (instr, idx, freed) = do
-    instr' <- mapIM fd fs instr
+mapIIdxM :: (Monad m) => (d1 -> m d2) -> (l1 -> m l2) -> (s1 -> m s2) -> (Instr d1 l1 s1, ROBIdx, FreedReg) -> m (Instr d2 l2 s2, ROBIdx, FreedReg)
+mapIIdxM fd fl fs (instr, idx, freed) = do
+    instr' <- mapIM fd fl fs instr
     return (instr', idx, freed)

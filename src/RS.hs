@@ -18,7 +18,7 @@ fromList = id
 -- Once all operands are available the instruction will be promoted from the RS.
 -- When put in the RS, none of the operands are marked as 'filled in'.
 add :: DInstrIdx -> RS -> RS
-add = (:) . mapIIdx id Left
+add = (:) . mapIIdx id id Left
 
 -- Tries to fill in missing operands using provided function, and promotes and
 -- instructions with all operands filled out of the RS.
@@ -32,7 +32,7 @@ run regVal canPromote rs1 = do
 -- if the value is invalid.
 tryFill :: (Monad m) => (PhyReg -> m (Maybe Val)) -> RS -> m RS
 tryFill regVal = mapM fill where
-    fill = mapIIdxM return fillRSrc
+    fill = mapIIdxM return return fillRSrc
 
     -- Fills in the source register in an instruction with a value read from
     -- the state's registers, bypass, reorder-buffer, etc.
@@ -57,5 +57,5 @@ promote canPromote = foldr checkDone ([], []) where
 -- Checks whether an entry in the reservation station has all operands filled,
 -- and if so returns instruction containing filled values.
 checkFilled :: RSInstrIdx -> Maybe EInstrIdx
-checkFilled = mapIIdxM return f where
+checkFilled = mapIIdxM return return f where
     f = either (const Nothing) Just
