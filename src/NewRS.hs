@@ -36,6 +36,31 @@ fillMem regVal memVal = fill where
         off'  <- cachedRegVal regVal off
         return (StoreBaseIdx src' base' off')
 
+-- If a memory instruction has all its operands filled, and possibly fetched
+-- data from memory, then it is ready to be removed.
+promoteMem :: RSMemInstr -> Maybe EMemInstr
+promoteMem (LoadIdx (dst, val) base off) = do
+    val'  <- val
+    base' <- rightToMaybe base
+    return (ELoad dst val' (fromIntegral $ base' + off))
+promoteMem (LoadBaseIdx (dst, val) base off) = do
+    val'  <- val
+    base' <- rightToMaybe base
+    off'  <- rightToMaybe off
+    return (ELoad dst val' (fromIntegral $ base' + off'))
+promoteMem (StoreIdx src base off) = do
+    src'  <- rightToMaybe src
+    base' <- rightToMaybe base
+    return (EStore src' (fromIntegral $ base' + off))
+promoteMem (StoreBaseIdx src base off) = do
+    src'  <- rightToMaybe src
+    base' <- rightToMaybe base
+    off'  <- rightToMaybe off
+    return (EStore src' (fromIntegral $ base' + off'))
+
+rightToMaybe :: Either a b -> Maybe b
+rightToMaybe = either (const Nothing) Just
+
 -- If the value of an address has already been fetched, no action is performed.
 -- Otherwise, if the address can be calculated (because both operands have been
 -- filled in) then goes to memory to get the value.
