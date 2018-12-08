@@ -6,9 +6,27 @@ import Types
 type RegVal m = PhyReg -> m (Maybe Val)
 type MemVal m = Addr   -> m Val
 
+-- General pupose reservation station. Is specialised for different types of
+-- instructions.
 type RS a b = [Either a b]
 
-type MemRS = RS RSMemInstr EMemInstr
+run :: (Monad m) => (a -> m a) -> (a -> Maybe b) -> RS a b -> m ([b], RS a b)
+run fill promote rs1 = do
+    -- Do not modify any filled instructions that are still in the RS.
+    rs2 <- mapM (either (fmap Left . fill) (return . Right)) rs1
+    return (foldr checkDone ([], []) rs2) where
+        checkDone rsInstr (execIs, rs) = either _ _ rsInstr
+            -- case promote rsInstr of
+            --     Nothing        -> (execIs, rsInstr:rs)
+            --     Just execInstr -> (execInstr:execIs, rs)
+
+-- Load store queue.
+type LSQ = RS RSMemInstr EMemInstr
+
+-- Tries to fill in operands of instructions in LSQ, and remove instructions
+-- which can be run.
+runLSQ :: (Monad m) => RegVal m -> MemVal m -> LSQ -> m ([EMemInstr], LSQ)
+runLSQ regVal memVal = run (fillMem regVal memVal) promoteMem
 
 -- Fills in operands of a memory instruction.
 -- Goes to memory to load a value for load instructions.
@@ -57,6 +75,10 @@ promoteMem (StoreBaseIdx src base off) = do
     base' <- rightToMaybe base
     off'  <- rightToMaybe off
     return (EStore src' (fromIntegral $ base' + off'))
+
+type ArithLogicRS = RS RSALInstr EALInstr
+
+-- Helper functions.
 
 rightToMaybe :: Either a b -> Maybe b
 rightToMaybe = either (const Nothing) Just
