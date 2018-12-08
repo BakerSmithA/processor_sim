@@ -10,6 +10,21 @@ data MemInstr rDst rSrc
     | StoreBaseIdx rSrc rSrc rSrc -- r -> [[base] + [R_offset]]
     deriving (Eq, Show)
 
+-- Fetched memory instruction.
+type FMemInstr = MemInstr RegIdx RegIdx
+-- Decoded memory instruction.
+type DMemInstr = MemInstr PhyReg PhyReg
+-- Memory instruction with partly filled in operands in reservation station.
+type RSMemInstr = MemInstr (PhyReg, Maybe Val) (Either PhyReg Val)
+-- Memory instruction from RS that is ready to be executed.
+-- Stored with the address to access.
+data EMemInstr
+    = ELoadIdx      PhyReg Val Addr
+    | ELoadBaseIdx  PhyReg Val Addr
+    | EStoreIdx     Val    Addr
+    | EStoreBaseIdx Val    Addr
+    deriving (Eq, Show)
+
 data ALInstr rDst rSrc
     = MoveI rDst Val       -- r <- i
     | Move  rDst rSrc      -- r <- [x]
@@ -26,12 +41,36 @@ data ALInstr rDst rSrc
     | Not   rDst rSrc      -- r <- ![x]
     deriving (Eq, Show)
 
+-- Fetched AL instruction.
+type FALInstr = ALInstr RegIdx RegIdx
+-- Decoded AL instruction.
+type DALInstr = ALInstr PhyReg PhyReg
+-- AL instruction with partly filled in operands in reservation station.
+type RSALInstr = ALInstr PhyReg (Either PhyReg Val)
+-- AL instruction ready to be executed.
+type EALInstr = ALInstr PhyReg Val
+
 data BranchInstr rSrc
-    = B  Addr      -- Unconditional branch to addr
+    = B       Addr -- Unconditional branch to addr
     | BT rSrc Addr -- Branch to addr if r == 1
     | BF rSrc Addr -- Branch to addr if r == 0
     | Ret          -- Branch to address in link register.
     | SysCall      -- Terminates the program.
+    deriving (Eq, Show)
+
+-- Fetched branch instruction.
+type FBranchInstr = BranchInstr RegIdx
+-- Decoded branch instruction.
+type DBranchInstr = BranchInstr PhyReg
+-- Branch instruction with partly filled in operands in reservation station.
+type RSBranchInstr = BranchInstr (Either PhyReg Val)
+-- Branch instruction from RS that is ready for execution.
+data EBranchInstr
+    = EB  Addr
+    | EBT Val Addr
+    | EBF Val Addr
+    | ERet Addr -- Value of LR retrieved from memory.
+    | ESysCall
     deriving (Eq, Show)
 
 data OutInstr rSrc
@@ -40,213 +79,108 @@ data OutInstr rSrc
     | PrintLn     -- Print a newline.
     deriving (Eq, Show)
 
-data Instr rDst memRDst rSrc
-    = Mem (MemInstr memRDst rSrc)
-    | AL (ALInstr rDst rSrc)
-    | Branch (BranchInstr rSrc)
-    | Out (OutInstr rSrc)
+-- Fetched out instruction.
+type FOutInstr = OutInstr RegIdx
+-- Decoded out instruction.
+type DOutInstr = OutInstr PhyReg
+-- Out instruction with partly filled in operands in reservation station.
+type RSOutInstr = OutInstr (Either PhyReg Val)
+-- Out instruction that is ready to execute.
+type EOutInstr = OutInstr Val
+
+data Instr mem al b out
+    = Mem mem
+    | AL al
+    | Branch b
+    | Out out
     deriving (Eq, Show)
 
+type SameInstr r s = Instr (MemInstr r s) (ALInstr r s) (BranchInstr s) (OutInstr s)
+
 -- Fetched instruction.
-type FInstr = Instr RegIdx RegIdx RegIdx
+type FInstr = Instr FMemInstr FALInstr FBranchInstr FOutInstr
 -- Decoded instruction.
-type DInstr = Instr PhyReg PhyReg PhyReg
-type DInstrIdx = (DInstr, ROBIdx, FreedReg)
--- Instruction stored in reservation station.
--- Stores partially 'filled-in' instrucions.
--- The destination register for load instructions contains both the value and
--- physical register destination because loads are done in the RS instead of
--- at execution.
--- TODO: Make load dest (PhyReg, Maybe Val)
-type RSInstrIdx    = (Instr PhyReg PhyReg (Either PhyReg Val), ROBIdx, FreedReg)
-type RSMemInstr    = MemInstr (PhyReg, Maybe Val) (Either PhyReg Val)
-type RSALInstr     = ALInstr PhyReg (Either PhyReg Val)
-type RSBranchInstr = BranchInstr (Either PhyReg Val)
-type RSOutInstr    = OutInstr (Either PhyReg Val)
+type DInstr = Instr DMemInstr DALInstr DBranchInstr DOutInstr
+-- Instruction in reservation station.
+type RSInstr = Instr RSMemInstr RSALInstr RSBranchInstr RSOutInstr
+-- Instruction to execute.
+type EInstr = Instr EMemInstr EALInstr EBranchInstr EOutInstr
 
--- Executed instruction with computed values filled in.
-type EInstr = Instr PhyReg PhyReg Val
-type EInstrIdx = (EInstr, ROBIdx, FreedReg)
-
-type EMemInstr    = MemInstr PhyReg Val
-type EALInstr     = ALInstr PhyReg Val
-type EBranchInstr = BranchInstr Val
-type EOutInstr    = OutInstr Val
-
-loadIdx :: l -> s -> Val -> Instr d l s
+loadIdx :: d -> s -> Val -> Instr (MemInstr d s) al b out
 loadIdx r base off = Mem (LoadIdx r base off)
 
-loadBaseIdx :: l -> s -> s -> Instr d l s
+loadBaseIdx :: d -> s -> s -> Instr (MemInstr d s) al b out
 loadBaseIdx r base off = Mem (LoadBaseIdx r base off)
 
-storeIdx :: s -> s -> Val -> Instr d l s
+storeIdx :: s -> s -> Val -> Instr (MemInstr d s) al b out
 storeIdx r base off = Mem (StoreIdx r base off)
 
-storeBaseIdx :: s -> s -> s -> Instr d l s
+storeBaseIdx :: s -> s -> s -> Instr (MemInstr d s) al b out
 storeBaseIdx r base off = Mem (StoreBaseIdx r base off)
 
-moveI :: d -> Val -> Instr d l s
+moveI :: d -> Val -> Instr mem (ALInstr d s) b out
 moveI r i = AL (MoveI r i)
 
-move :: d -> s -> Instr d l s
+move :: d -> s -> Instr mem (ALInstr d s) b out
 move r x = AL (Move r x)
 
-add :: d -> s -> s -> Instr d l s
+add :: d -> s -> s -> Instr mem (ALInstr d s) b out
 add r x y = AL (Add r x y)
 
-addI :: d -> s -> Val -> Instr d l s
+addI :: d -> s -> Val -> Instr mem (ALInstr d s) b out
 addI r x i = AL (AddI r x i)
 
-sub :: d -> s -> s -> Instr d l s
+sub :: d -> s -> s -> Instr mem (ALInstr d s) b out
 sub r x y = AL (Sub r x y)
 
-subI :: d -> s -> Val -> Instr d l s
+subI :: d -> s -> Val -> Instr mem (ALInstr d s) b out
 subI r x i = AL (SubI r x i)
 
-mult :: d -> s -> s -> Instr d l s
+mult :: d -> s -> s -> Instr mem (ALInstr d s) b out
 mult r x y = AL (Mult r x y)
 
-divI :: d -> s -> s -> Instr d l s
+divI :: d -> s -> s -> Instr mem (ALInstr d s) b out
 divI r x y = AL (Div r x y)
 
-eq :: d -> s -> s -> Instr d l s
+eq :: d -> s -> s -> Instr mem (ALInstr d s) b out
 eq r x y = AL (Eq r x y)
 
-lt :: d -> s -> s -> Instr d l s
+lt :: d -> s -> s -> Instr mem (ALInstr d s) b out
 lt r x y = AL (Lt r x y)
 
-orI :: d -> s -> s -> Instr d l s
+orI :: d -> s -> s -> Instr mem (ALInstr d s) b out
 orI r x y = AL (Or r x y)
 
-andI :: d -> s -> s -> Instr d l s
+andI :: d -> s -> s -> Instr mem (ALInstr d s) b out
 andI r x y = AL (And r x y)
 
-notI :: d -> s -> Instr d l s
+notI :: d -> s -> Instr mem (ALInstr d s) b out
 notI r x = AL (Not r x)
 
-b :: Addr -> Instr d l s
+b :: Addr -> Instr mem al (BranchInstr s) out
 b addr = Branch (B addr)
 
-bt :: s -> Addr -> Instr d l s
+bt :: s -> Addr -> Instr mem al (BranchInstr s) out
 bt r addr = Branch (BT r addr)
 
-bf :: s -> Addr -> Instr d l s
+bf :: s -> Addr -> Instr mem al (BranchInstr s) out
 bf r addr = Branch (BF r addr)
 
-ret :: Instr d l s
+ret :: Instr mem al (BranchInstr s) out
 ret = Branch Ret
 
-sysCall :: Instr d l s
+sysCall :: Instr mem al (BranchInstr s) out
 sysCall = Branch SysCall
 
-printI :: s -> Instr d l s
+printI :: s -> Instr mem al b (OutInstr s)
 printI r = Out (Print r)
 
-printC :: s -> Instr d l s
+printC :: s -> Instr mem al b (OutInstr s)
 printC r = Out (PrintC r)
 
-printLn :: Instr d l s
+printLn :: Instr mem al b (OutInstr s)
 printLn = Out (PrintLn)
 
-isBranch :: Instr d l s -> Bool
+isBranch :: Instr mem al b out -> Bool
 isBranch (Branch _) = True
 isBranch _          = False
-
-mapMem :: (d1 -> d2) -> (s1 -> s2) -> MemInstr d1 s1 -> MemInstr d2 s2
-mapMem fd fs = runIdentity . mapMemM (return . fd) (return . fs)
-
-mapAL :: (d1 -> d2) -> (s1 -> s2) -> ALInstr d1 s1 -> ALInstr d2 s2
-mapAL fd fs = runIdentity . mapALM (return . fd) (return . fs)
-
-mapB :: (s1 -> s2) -> BranchInstr s1 -> BranchInstr s2
-mapB fs = runIdentity . mapBM (return . fs)
-
-mapOut :: (s1 -> s2) -> OutInstr s1 -> OutInstr s2
-mapOut fs = runIdentity . mapOutM (return . fs)
-
-mapI :: (d1 -> d2) -> (l1 -> l2) -> (s1 -> s2) -> Instr d1 l1 s1 -> Instr d2 l2 s2
-mapI fd fl fs = runIdentity . mapIM (return . fd) (return . fl) (return . fs)
-
-mapIIdx :: (d1 -> d2) -> (l1 -> l2) -> (s1 -> s2) -> (Instr d1 l1 s1, ROBIdx, FreedReg) -> (Instr d2 l2 s2, ROBIdx, FreedReg)
-mapIIdx fd fl fs = runIdentity . mapIIdxM (return . fd) (return . fl) (return . fs)
-
-mapMemM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> MemInstr d1 s1 -> m (MemInstr d2 s2)
-mapMemM fd fs (LoadIdx r b off) = do
-    b' <- fs b
-    r' <- fd r
-    return (LoadIdx r' b' off)
-mapMemM fd fs (LoadBaseIdx r b off) = do
-    b' <- fs b
-    o' <- fs off
-    r' <- fd r
-    return (LoadBaseIdx r' b' o')
-mapMemM _ fs (StoreIdx r b off) = do
-    b' <- fs b
-    r' <- fs r
-    return (StoreIdx r' b' off)
-mapMemM _ fs (StoreBaseIdx r b off) = do
-    b' <- fs b
-    o' <- fs off
-    r' <- fs r
-    return (StoreBaseIdx r' b' o')
-
-mapALM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> ALInstr d1 s1 -> m (ALInstr d2 s2)
-mapALM fd _  (MoveI r i)   = fd r >>= \r' -> return (MoveI r' i)
-mapALM fd fs (Move  r x)   = do
-    x' <- fs x
-    r' <- fd r
-    return (Move r' x')
-mapALM fd fs (Add   r x y) = mapDSS Add  (fd r) (fs x) (fs y)
-mapALM fd fs (AddI  r x i) = mapDSI AddI (fd r) (fs x) i
-mapALM fd fs (Sub   r x y) = mapDSS Sub  (fd r) (fs x) (fs y)
-mapALM fd fs (SubI  r x i) = mapDSI SubI (fd r) (fs x) i
-mapALM fd fs (Mult  r x y) = mapDSS Mult (fd r) (fs x) (fs y)
-mapALM fd fs (Div   r x y) = mapDSS Div  (fd r) (fs x) (fs y)
-mapALM fd fs (Eq    r x y) = mapDSS Eq   (fd r) (fs x) (fs y)
-mapALM fd fs (Lt    r x y) = mapDSS Lt   (fd r) (fs x) (fs y)
-mapALM fd fs (Or    r x y) = mapDSS Or   (fd r) (fs x) (fs y)
-mapALM fd fs (And   r x y) = mapDSS And  (fd r) (fs x) (fs y)
-mapALM fd fs (Not   r x)   = do
-    x' <- fs x
-    r' <- fd r
-    return (Not r' x')
-
-mapDSS :: (Monad m) => (d2 -> s2 -> s2 -> ALInstr d2 s2)
-                    -> m d2 -> m s2 -> m s2
-                    -> m (ALInstr d2 s2)
-mapDSS f dst src1 src2 = do
-    src1' <- src1
-    src2' <- src2
-    dst' <- dst
-    return (f dst' src1' src2')
-
-mapDSI :: (Monad m) => (d2 -> s2 -> Val -> ALInstr d2 s2)
-                    -> m d2 -> m s2 -> Val
-                    -> m (ALInstr d2 s2)
-mapDSI f dst src1 imm = do
-    src1' <- src1
-    dst' <- dst
-    return (f dst' src1' imm)
-
-mapBM :: (Monad m) => (s1 -> m s2) -> BranchInstr s1 -> m (BranchInstr s2)
-mapBM _  (B addr)    = return (B addr)
-mapBM fs (BT r addr) = fs r >>= \r' -> return (BT r' addr)
-mapBM fs (BF r addr) = fs r >>= \r' -> return (BF r' addr)
-mapBM _  (Ret)       = return Ret
-mapBM _  (SysCall)   = return SysCall
-
-mapOutM :: (Monad m) => (s1 -> m s2) -> OutInstr s1 -> m (OutInstr s2)
-mapOutM fs (Print  r) = fs r >>= \r' -> return (Print r')
-mapOutM fs (PrintC r) = fs r >>= \r' -> return (PrintC r')
-mapOutM _  (PrintLn)  = return PrintLn
-
-mapIM :: (Monad m) => (Monad m) => (d1 -> m d2) -> (l1 -> m l2)-> (s1 -> m s2) -> Instr d1 l1 s1 -> m (Instr d2 l2 s2)
-mapIM _  fl fs (Mem    i) = mapMemM fl fs i >>= \i' -> return (Mem i')
-mapIM fd _  fs (AL     i) = mapALM  fd fs i >>= \i' -> return (AL i')
-mapIM _  _  fs (Branch i) = mapBM      fs i >>= \i' -> return (Branch i')
-mapIM _  _  fs (Out    i) = mapOutM    fs i >>= \i' -> return (Out i')
-
-mapIIdxM :: (Monad m) => (d1 -> m d2) -> (l1 -> m l2) -> (s1 -> m s2) -> (Instr d1 l1 s1, ROBIdx, FreedReg) -> m (Instr d2 l2 s2, ROBIdx, FreedReg)
-mapIIdxM fd fl fs (instr, idx, freed) = do
-    instr' <- mapIM fd fl fs instr
-    return (instr', idx, freed)
