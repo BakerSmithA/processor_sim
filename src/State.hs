@@ -235,14 +235,14 @@ getPhyReg reg st =
         Just phy -> return phy
 
 -- Adds an instruction to the reservation station.
-addRS :: DInstrIdx -> State -> State
+addRS :: DPipeInstr -> State -> State
 addRS di st =
     let rs' = RS.add di (rs st)
     in st { rs=rs' }
 
 -- Fills in operands in instructions waiting in the reservation station,
 -- and removes instructions with all operands filled.
-runRS :: State -> Res ([EInstrIdx], State)
+runRS :: State -> Res ([EPipeInstr], State)
 runRS st = do
     let getRegVal phy = regVal phy st
     (execIs, rs') <- RS.run getRegVal (const True) (rs st)

@@ -15,15 +15,22 @@ type FMemInstr = MemInstr RegIdx RegIdx
 -- Decoded memory instruction.
 type DMemInstr = MemInstr PhyReg PhyReg
 -- Memory instruction with partly filled in operands in reservation station.
-type RSMemInstr = MemInstr (PhyReg, Maybe Val) (Either PhyReg Val)
+type RSMemInstr = MemInstr PhyReg (Either PhyReg Val)
+
+-- TODO: Uncomment
+-- type RSMemInstr = MemInstr (PhyReg, Maybe Val) (Either PhyReg Val)
+
 -- Memory instruction from RS that is ready to be executed.
+type EMemInstr = MemInstr PhyReg Val
+
+-- TODO: Uncomment
 -- Stored with the address to access.
-data EMemInstr
-    = ELoadIdx      PhyReg Val Addr
-    | ELoadBaseIdx  PhyReg Val Addr
-    | EStoreIdx     Val    Addr
-    | EStoreBaseIdx Val    Addr
-    deriving (Eq, Show)
+-- data EMemInstr
+--     = ELoadIdx      PhyReg Val Addr
+--     | ELoadBaseIdx  PhyReg Val Addr
+--     | EStoreIdx     Val    Addr
+--     | EStoreBaseIdx Val    Addr
+--     deriving (Eq, Show)
 
 mapMemM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> MemInstr d1 s1 -> m (MemInstr d2 s2)
 mapMemM fd fs (LoadIdx r b off) = do
@@ -139,13 +146,15 @@ type DBranchInstr = BranchInstr PhyReg
 -- Branch instruction with partly filled in operands in reservation station.
 type RSBranchInstr = BranchInstr (Either PhyReg Val)
 -- Branch instruction from RS that is ready for execution.
-data EBranchInstr
-    = EB  Addr
-    | EBT Val Addr
-    | EBF Val Addr
-    | ERet Addr -- Value of LR retrieved from memory.
-    | ESysCall
-    deriving (Eq, Show)
+type EBranchInstr = BranchInstr Val
+
+-- data EBranchInstr
+--     = EB  Addr
+--     | EBT Val Addr
+--     | EBF Val Addr
+--     | ERet Addr -- Value of LR retrieved from memory.
+--     | ESysCall
+--     deriving (Eq, Show)
 
 data OutInstr rSrc
     = Print  rSrc -- Print value in a register.
@@ -200,6 +209,11 @@ mapI fd fs = runIdentity . mapIM (return . fd) (return . fs)
 -- Used to store instructions with accompanying data as they pass through the
 -- pipeline.
 type PipeData i = (i, ROBIdx, FreedReg)
+
+type FPipeInstr  = PipeData FInstr
+type DPipeInstr  = PipeData DInstr
+type RSPipeInstr = PipeData RSInstr
+type EPipeInstr  = PipeData EInstr
 
 mapPipeIM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> PipeData (SameInstr d1 s1) -> m (PipeData (SameInstr d2 s2))
 mapPipeIM fd fs (i, idx, freed) = do

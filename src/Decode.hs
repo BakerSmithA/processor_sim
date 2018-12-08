@@ -10,12 +10,12 @@ import Types
 -- Because instruction are already parsed into struct, no need to decode.
 -- However, register renaming will be performed at this step and allocting
 -- the instruction a space in the reorder buffer.
-decode :: FInstr -> State -> Res (DInstrIdx, State)
+decode :: FInstr -> State -> Res (DPipeInstr, State)
 decode fi st = runStateT (decodeI fi) st
 
-decodeI :: FInstr -> StateT State Res DInstrIdx
+decodeI :: FInstr -> StateT State Res DPipeInstr
 decodeI fi = do
-    di <- mapIM renameDst renameDst lookupSrc fi
+    di <- mapIM renameDst lookupSrc fi
     let (di', freed) = MSt.runState (separateFreed di) Nothing
     robIdx <- allocROB
     return (di', robIdx, freed)
@@ -23,8 +23,8 @@ decodeI fi = do
 -- Takes freed register stored with destination register in instruction, and
 -- writes it out, creating a DInstr. This separates the destination register
 -- from the freed register.
-separateFreed :: Instr (PhyReg, FreedReg) (PhyReg, FreedReg) PhyReg -> MSt.State FreedReg DInstr
-separateFreed = mapIM f f return where
+separateFreed :: SameInstr (PhyReg, FreedReg) PhyReg -> MSt.State FreedReg DInstr
+separateFreed = mapIM f return where
     f (phy, freed) = do
         MSt.put freed
         return phy

@@ -15,7 +15,7 @@ rsSpec :: Spec
 rsSpec = describe "reservation station" $ do
     context "add" $ do
         it "adds a decoded instr and fills in no operands" $ do
-            let di  = (loadIdx 0 2 10, 0, Nothing) :: DInstrIdx
+            let di  = (loadIdx 0 2 10, 0, Nothing) :: DPipeInstr
                 rs  = RS.add di RS.empty
                 exp = RS.fromList [(loadIdx 0 (Left 2) 10, 0, Nothing)]
             rs `shouldBe` exp
@@ -58,7 +58,7 @@ rsSpec = describe "reservation station" $ do
                                           (printI (Right 3), 2, Nothing)]
                 (eis, rs') = RS.promote (const True) rs
 
-                expExec    = [(move 0 5, 0, Nothing), (printI 3, 2, Nothing)] :: [EInstrIdx]
+                expExec    = [(move 0 5, 0, Nothing), (printI 3, 2, Nothing)] :: [EPipeInstr]
                 expRs      = RS.fromList [(mult 1 (Right 3) (Left 0), 1, Nothing)]
 
             eis `shouldBe` expExec
