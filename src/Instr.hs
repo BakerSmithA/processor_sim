@@ -189,10 +189,10 @@ type RSInstr = Instr RSMemInstr RSALInstr RSBranchInstr RSOutInstr
 type EInstr = Instr EMemInstr EALInstr EBranchInstr EOutInstr
 
 mapIM :: (Monad m) => (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> SameInstr d1 s1 -> m (SameInstr d2 s2)
-mapIM fd  fs (Mem    i) = mapMemM fd fs i >>= \i' -> return (Mem i')
-mapIM fd fs (AL     i)  = mapALM  fd fs i >>= \i' -> return (AL i')
-mapIM _  fs (Branch i)  = mapBM      fs i >>= \i' -> return (Branch i')
-mapIM _  fs (Out    i)  = mapOutM    fs i >>= \i' -> return (Out i')
+mapIM fd fs (Mem    i) = mapMemM fd fs i >>= \i' -> return (Mem i')
+mapIM fd fs (AL     i) = mapALM  fd fs i >>= \i' -> return (AL i')
+mapIM _  fs (Branch i) = mapBM      fs i >>= \i' -> return (Branch i')
+mapIM _  fs (Out    i) = mapOutM    fs i >>= \i' -> return (Out i')
 
 mapI :: (d1 -> d2) -> (s1 -> s2) -> SameInstr d1 s1 -> SameInstr d2 s2
 mapI fd fs = runIdentity . mapIM (return . fd) (return . fs)
