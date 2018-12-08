@@ -16,9 +16,9 @@ type Fetched a = (Maybe FInstr, a)
 -- Decodes a fetched instruction, or Nothing if stalls at this stage.
 type Decoder m a = FInstr -> a -> m (DPipeInstr, a)
 -- Executes a decoded instruction.
-type Executer m a = DPipeInstr -> a -> m ([(WriteBack, ROBIdx, FreedReg)], a)
+type Executer m a = DPipeInstr -> a -> m ([PipeData WriteBack], a)
 -- Commits any executed instructions in ROB, and returns instructions that can be committed.
-type Committer m a = [(WriteBack, ROBIdx, FreedReg)] -> a -> m a
+type Committer m a = [PipeData WriteBack] -> a -> m a
 -- Writes instructions results to memory/registers.
 type Writer m a = a -> m a
 
@@ -40,13 +40,13 @@ decodeStep decode = step Nothing $ \x instr -> do
     return (x', Just decoded)
 
 -- Steps a decoded instruction through the exectution step of the pipeline.
-execStep :: (Monad m) => Executer m a -> a -> Maybe DPipeInstr -> m (a, [(WriteBack, ROBIdx, FreedReg)])
+execStep :: (Monad m) => Executer m a -> a -> Maybe DPipeInstr -> m (a, [PipeData WriteBack])
 execStep exec = step [] $ \x instr -> do
     (wbs, x') <- exec instr x
     return (x', wbs)
 
 -- Steps an executed instruction through the commit stage of the pipeline.
-commitStep :: (Monad m) => Committer m a -> a -> [(WriteBack, ROBIdx, FreedReg)] -> m a
+commitStep :: (Monad m) => Committer m a -> a -> [PipeData WriteBack] -> m a
 commitStep commit x wb = commit wb x
 
 -- Supplies new instruction into pipleine, and shifts in-flight instructions
