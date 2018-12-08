@@ -57,7 +57,6 @@ fillMem :: (Monad m) => (PhyReg -> m (Maybe Val)) -> (Val -> m Val) -> RS RSMemI
 fillMem regVal memVal = fill $ \instr -> mapMemM (fillRegDst instr) (fillRegSrc regVal) instr where
     -- Fills in destination register with loaded value from memory, and physical
     -- register to store the value in.
-    -- fillRegDst :: (PhyReg, Maybe Val) -> m (PhyReg, Maybe Val)
     fillRegDst instr (phy, maybeVal) =
         case maybeVal of
             -- No need to fetch the value if it's already been retrieved.
@@ -67,8 +66,8 @@ fillMem regVal memVal = fill $ \instr -> mapMemM (fillRegDst instr) (fillRegSrc 
                 case addrLoad instr of
                     -- Address is not ready yet, i.e. base and offset operands
                     -- are not filled in.
-                    Nothing   -> undefined --return (phy, Nothing)
-                    Just addr -> undefined --memVal addr >>= \val -> return (phy, Just val)
+                    Nothing   -> return (phy, Nothing)
+                    Just addr -> memVal addr >>= \val -> return (phy, Just val)
 
 -- Tries to fill in operands in an ALU instruction.
 fillAL :: (Monad m) => (PhyReg -> m (Maybe Val)) -> RS RSALInstr -> m (RS RSALInstr)
