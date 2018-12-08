@@ -15,22 +15,15 @@ type FMemInstr = MemInstr RegIdx RegIdx
 -- Decoded memory instruction.
 type DMemInstr = MemInstr PhyReg PhyReg
 -- Memory instruction with partly filled in operands in reservation station.
-type RSMemInstr = MemInstr PhyReg (Either PhyReg Val)
-
--- TODO: Uncomment
--- type RSMemInstr = MemInstr (PhyReg, Maybe Val) (Either PhyReg Val)
-
+type RSMemInstr = MemInstr (PhyReg, Maybe Val) (Either PhyReg Val)
 -- Memory instruction from RS that is ready to be executed.
-type EMemInstr = MemInstr PhyReg Val
-
--- TODO: Uncomment
 -- Stored with the address to access.
--- data EMemInstr
---     = ELoadIdx      PhyReg Val Addr
---     | ELoadBaseIdx  PhyReg Val Addr
---     | EStoreIdx     Val    Addr
---     | EStoreBaseIdx Val    Addr
---     deriving (Eq, Show)
+data EMemInstr
+    = ELoadIdx      PhyReg Val Addr
+    | ELoadBaseIdx  PhyReg Val Addr
+    | EStoreIdx     Val    Addr
+    | EStoreBaseIdx Val    Addr
+    deriving (Eq, Show)
 
 mapMemM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> MemInstr d1 s1 -> m (MemInstr d2 s2)
 mapMemM fd fs (LoadIdx r b off) = do
