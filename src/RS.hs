@@ -37,6 +37,39 @@ fillRegSrc regVal = either f (return . Right) where
             Nothing  -> Left phy
             Just val -> Right val
 
+rightToMaybe :: Either a b -> Maybe b
+rightToMaybe = either (const Nothing) Just
+
+-- Returns the memory address that a load instruction will access.
+addrLoad :: MemInstr d (Either PhyReg Val) -> Maybe Val
+addrLoad (LoadIdx     _ b off) = do
+    b' <- rightToMaybe b
+    return (b' + fromIntegral off)
+addrLoad (LoadBaseIdx _ b off) = do
+    b' <- rightToMaybe b
+    off' <- rightToMaybe off
+    return (b' + off')
+addrLoad _ = error "Tried to get address of non-load"
+
+-- Tries to fill in operands of store instruction, or goes to memory to retrieve
+-- load the value at an address for a load instruction.
+fillMem :: (Monad m) => (PhyReg -> m (Maybe Val)) -> (Val -> m Val) -> RS RSMemInstr -> m (RS RSMemInstr)
+fillMem regVal memVal = fill $ \instr -> mapMemM (fillRegDst instr) (fillRegSrc regVal) instr where
+    -- Fills in destination register with loaded value from memory, and physical
+    -- register to store the value in.
+    -- fillRegDst :: (PhyReg, Maybe Val) -> m (PhyReg, Maybe Val)
+    fillRegDst instr (phy, maybeVal) =
+        case maybeVal of
+            -- No need to fetch the value if it's already been retrieved.
+            Just val -> return (phy, Just val)
+            -- Fetch the value from memory if it has not been retrieved.
+            Nothing ->
+                case addrLoad instr of
+                    -- Address is not ready yet, i.e. base and offset operands
+                    -- are not filled in.
+                    Nothing   -> undefined --return (phy, Nothing)
+                    Just addr -> undefined --memVal addr >>= \val -> return (phy, Just val)
+
 -- Tries to fill in operands in an ALU instruction.
 fillAL :: (Monad m) => (PhyReg -> m (Maybe Val)) -> RS RSALInstr -> m (RS RSALInstr)
 fillAL regVal = fill $ \instr -> mapALM return (fillRegSrc regVal) instr
