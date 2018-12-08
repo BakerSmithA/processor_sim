@@ -25,6 +25,29 @@ data EMemInstr
     | EStoreBaseIdx Val    Addr
     deriving (Eq, Show)
 
+mapMemM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> MemInstr d1 s1 -> m (MemInstr d2 s2)
+mapMemM fd fs (LoadIdx r b off) = do
+    b' <- fs b
+    r' <- fd r
+    return (LoadIdx r' b' off)
+mapMemM fd fs (LoadBaseIdx r b off) = do
+    b' <- fs b
+    o' <- fs off
+    r' <- fd r
+    return (LoadBaseIdx r' b' o')
+mapMemM _ fs (StoreIdx r b off) = do
+    b' <- fs b
+    r' <- fs r
+    return (StoreIdx r' b' off)
+mapMemM _ fs (StoreBaseIdx r b off) = do
+    b' <- fs b
+    o' <- fs off
+    r' <- fs r
+    return (StoreBaseIdx r' b' o')
+
+mapMem :: (d1 -> d2) -> (s1 -> s2) -> MemInstr d1 s1 -> MemInstr d2 s2
+mapMem fd fs = runIdentity . mapMemM (return . fd) (return . fs)
+
 data ALInstr rDst rSrc
     = MoveI rDst Val       -- r <- i
     | Move  rDst rSrc      -- r <- [x]
@@ -50,6 +73,47 @@ type RSALInstr = ALInstr PhyReg (Either PhyReg Val)
 -- AL instruction ready to be executed.
 type EALInstr = ALInstr PhyReg Val
 
+mapALM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> ALInstr d1 s1 -> m (ALInstr d2 s2)
+mapALM fd _  (MoveI r i)   = fd r >>= \r' -> return (MoveI r' i)
+mapALM fd fs (Move  r x)   = do
+    x' <- fs x
+    r' <- fd r
+    return (Move r' x')
+mapALM fd fs (Add   r x y) = mapDSS Add  (fd r) (fs x) (fs y)
+mapALM fd fs (AddI  r x i) = mapDSI AddI (fd r) (fs x) i
+mapALM fd fs (Sub   r x y) = mapDSS Sub  (fd r) (fs x) (fs y)
+mapALM fd fs (SubI  r x i) = mapDSI SubI (fd r) (fs x) i
+mapALM fd fs (Mult  r x y) = mapDSS Mult (fd r) (fs x) (fs y)
+mapALM fd fs (Div   r x y) = mapDSS Div  (fd r) (fs x) (fs y)
+mapALM fd fs (Eq    r x y) = mapDSS Eq   (fd r) (fs x) (fs y)
+mapALM fd fs (Lt    r x y) = mapDSS Lt   (fd r) (fs x) (fs y)
+mapALM fd fs (Or    r x y) = mapDSS Or   (fd r) (fs x) (fs y)
+mapALM fd fs (And   r x y) = mapDSS And  (fd r) (fs x) (fs y)
+mapALM fd fs (Not   r x)   = do
+    x' <- fs x
+    r' <- fd r
+    return (Not r' x')
+
+mapDSS :: (Monad m) => (d2 -> s2 -> s2 -> ALInstr d2 s2)
+                -> m d2 -> m s2 -> m s2
+                -> m (ALInstr d2 s2)
+mapDSS f dst src1 src2 = do
+    src1' <- src1
+    src2' <- src2
+    dst'  <- dst
+    return (f dst' src1' src2')
+
+mapDSI :: (Monad m) => (d2 -> s2 -> Val -> ALInstr d2 s2)
+                    -> m d2 -> m s2 -> Val
+                    -> m (ALInstr d2 s2)
+mapDSI f dst src1 imm = do
+    src1' <- src1
+    dst' <- dst
+    return (f dst' src1' imm)
+
+mapAL :: (d1 -> d2) -> (s1 -> s2) -> ALInstr d1 s1 -> ALInstr d2 s2
+mapAL fd fs = runIdentity . mapALM (return . fd) (return . fs)
+
 data BranchInstr rSrc
     = B       Addr -- Unconditional branch to addr
     | BT rSrc Addr -- Branch to addr if r == 1
@@ -57,6 +121,16 @@ data BranchInstr rSrc
     | Ret          -- Branch to address in link register.
     | SysCall      -- Terminates the program.
     deriving (Eq, Show)
+
+mapBM :: (Monad m) => (s1 -> m s2) -> BranchInstr s1 -> m (BranchInstr s2)
+mapBM _  (B addr)    = return (B addr)
+mapBM fs (BT r addr) = fs r >>= \r' -> return (BT r' addr)
+mapBM fs (BF r addr) = fs r >>= \r' -> return (BF r' addr)
+mapBM _  (Ret)       = return Ret
+mapBM _  (SysCall)   = return SysCall
+
+mapB :: (s1 -> s2) -> BranchInstr s1 -> BranchInstr s2
+mapB fs = runIdentity . mapBM (return . fs)
 
 -- Fetched branch instruction.
 type FBranchInstr = BranchInstr RegIdx
@@ -78,6 +152,14 @@ data OutInstr rSrc
     | PrintC rSrc -- Prints the value in a register as an ASCII character.
     | PrintLn     -- Print a newline.
     deriving (Eq, Show)
+
+mapOutM :: (Monad m) => (s1 -> m s2) -> OutInstr s1 -> m (OutInstr s2)
+mapOutM fs (Print  r) = fs r >>= \r' -> return (Print r')
+mapOutM fs (PrintC r) = fs r >>= \r' -> return (PrintC r')
+mapOutM _  (PrintLn)  = return PrintLn
+
+mapOut :: (s1 -> s2) -> OutInstr s1 -> OutInstr s2
+mapOut fs = runIdentity . mapOutM (return . fs)
 
 -- Fetched out instruction.
 type FOutInstr = OutInstr RegIdx
@@ -105,6 +187,27 @@ type DInstr = Instr DMemInstr DALInstr DBranchInstr DOutInstr
 type RSInstr = Instr RSMemInstr RSALInstr RSBranchInstr RSOutInstr
 -- Instruction to execute.
 type EInstr = Instr EMemInstr EALInstr EBranchInstr EOutInstr
+
+mapIM :: (Monad m) => (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> SameInstr d1 s1 -> m (SameInstr d2 s2)
+mapIM fd  fs (Mem    i) = mapMemM fd fs i >>= \i' -> return (Mem i')
+mapIM fd fs (AL     i)  = mapALM  fd fs i >>= \i' -> return (AL i')
+mapIM _  fs (Branch i)  = mapBM      fs i >>= \i' -> return (Branch i')
+mapIM _  fs (Out    i)  = mapOutM    fs i >>= \i' -> return (Out i')
+
+mapI :: (d1 -> d2) -> (s1 -> s2) -> SameInstr d1 s1 -> SameInstr d2 s2
+mapI fd fs = runIdentity . mapIM (return . fd) (return . fs)
+
+-- Used to store instructions with accompanying data as they pass through the
+-- pipeline.
+type PipeData i = (i, ROBIdx, FreedReg)
+
+mapPipeIM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> PipeData (SameInstr d1 s1) -> m (PipeData (SameInstr d2 s2))
+mapPipeIM fd fs (i, idx, freed) = do
+    i' <- mapIM fd fs i
+    return (i', idx, freed)
+
+mapPipeI :: (d1 -> d2) -> (s1 -> s2) -> PipeData (SameInstr d1 s1) -> PipeData (SameInstr d2 s2)
+mapPipeI fd fs = runIdentity . mapPipeIM (return . fd) (return . fs)
 
 loadIdx :: d -> s -> Val -> Instr (MemInstr d s) al b out
 loadIdx r base off = Mem (LoadIdx r base off)
