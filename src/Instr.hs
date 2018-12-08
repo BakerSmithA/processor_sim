@@ -163,29 +163,29 @@ mapIIdx fd fs = runIdentity . mapIIdxM (return . fd) (return . fs)
 
 mapMemM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> MemInstr d1 s1 -> m (MemInstr d2 s2)
 mapMemM fd fs (LoadIdx r b off) = do
-    r' <- fd r
     b' <- fs b
+    r' <- fd r
     return (LoadIdx r' b' off)
 mapMemM fd fs (LoadBaseIdx r b off) = do
-    r' <- fd r
     b' <- fs b
     o' <- fs off
+    r' <- fd r
     return (LoadBaseIdx r' b' o')
 mapMemM _ fs (StoreIdx r b off) = do
-    r' <- fs r
     b' <- fs b
+    r' <- fs r
     return (StoreIdx r' b' off)
 mapMemM _ fs (StoreBaseIdx r b off) = do
-    r' <- fs r
     b' <- fs b
     o' <- fs off
+    r' <- fs r
     return (StoreBaseIdx r' b' o')
 
 mapALM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> ALInstr d1 s1 -> m (ALInstr d2 s2)
 mapALM fd _  (MoveI r i)   = fd r >>= \r' -> return (MoveI r' i)
 mapALM fd fs (Move  r x)   = do
-    r' <- fd r
     x' <- fs x
+    r' <- fd r
     return (Move r' x')
 mapALM fd fs (Add   r x y) = mapDSS Add  (fd r) (fs x) (fs y)
 mapALM fd fs (AddI  r x i) = mapDSI AddI (fd r) (fs x) i
@@ -198,25 +198,25 @@ mapALM fd fs (Lt    r x y) = mapDSS Lt   (fd r) (fs x) (fs y)
 mapALM fd fs (Or    r x y) = mapDSS Or   (fd r) (fs x) (fs y)
 mapALM fd fs (And   r x y) = mapDSS And  (fd r) (fs x) (fs y)
 mapALM fd fs (Not   r x)   = do
-    r' <- fd r
     x' <- fs x
+    r' <- fd r
     return (Not r' x')
 
 mapDSS :: (Monad m) => (d2 -> s2 -> s2 -> ALInstr d2 s2)
                     -> m d2 -> m s2 -> m s2
                     -> m (ALInstr d2 s2)
 mapDSS f dst src1 src2 = do
-    dst' <- dst
     src1' <- src1
     src2' <- src2
+    dst' <- dst
     return (f dst' src1' src2')
 
 mapDSI :: (Monad m) => (d2 -> s2 -> Val -> ALInstr d2 s2)
                     -> m d2 -> m s2 -> Val
                     -> m (ALInstr d2 s2)
 mapDSI f dst src1 imm = do
-    dst' <- dst
     src1' <- src1
+    dst' <- dst
     return (f dst' src1' imm)
 
 mapBM :: (Monad m) => (s1 -> m s2) -> BranchInstr s1 -> m (BranchInstr s2)
