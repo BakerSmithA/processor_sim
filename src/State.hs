@@ -258,6 +258,7 @@ runRS :: State -> Res ([PipeData EMemInstr], [PipeData EALInstr], [PipeData EBra
 runRS st = do
     let rv phy  = regVal phy st
         mv addr = memVal addr st
+
     (memExecs, lsq)   <- RS.runLSQ rv mv (lsq   st)
     (alExecs,  alRS)  <- RS.runAL  rv    (alRS  st)
     (bExecs,   bRS)   <- RS.runB   rv    (bRS   st)
