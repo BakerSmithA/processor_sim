@@ -81,6 +81,11 @@ promoteMem (StoreBaseIdx src base off) = do
 
 type ArithLogicRS = RS RSALInstr EALInstr
 
+-- Tries to fill in operands of instructions in RS, and remove instructions
+-- which can be run.
+runAL :: (Monad m) => RegVal m -> ArithLogicRS -> m ([EALInstr], ArithLogicRS)
+runAL regVal = run (fillAL regVal) promoteAL
+
 -- Fills in operands of an AL instruction.
 fillAL :: (Monad m) => RegVal m -> RSALInstr -> m RSALInstr
 fillAL = mapALM return . fillRSrc
@@ -92,6 +97,11 @@ promoteAL = mapALM return f where
     f = either (const Nothing) Just
 
 type BranchRS = RS RSBranchInstr EBranchInstr
+
+-- Tries to fill in operands of instructions in RS, and remove instructions
+-- which can be run.
+runB :: (Monad m) => RegVal m -> BranchRS -> m ([EBranchInstr], BranchRS)
+runB regVal = run (fillB regVal) promoteB
 
 -- Fills in operands of a branch instruction. For return instructions,
 -- takes return address from link register.
@@ -105,6 +115,11 @@ promoteB = mapBM f f where
     f = either (const Nothing) Just
 
 type OutRS = RS RSOutInstr EOutInstr
+
+-- Tries to fill in operands of instructions in RS, and remove instructions
+-- which can be run.
+runOut :: (Monad m) => RegVal m -> OutRS -> m ([EOutInstr], OutRS)
+runOut regVal = run (fillOut regVal) promoteOut
 
 -- Fills in operands of an output instruction.
 fillOut :: (Monad m) => RegVal m -> RSOutInstr -> m RSOutInstr
