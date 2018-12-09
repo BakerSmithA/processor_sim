@@ -252,10 +252,16 @@ addRS (AL     di, idx, freed) st = st { alRS  = RS.add (RS.rsALInstr  di, idx, f
 addRS (Branch di, idx, freed) st = st { bRS   = RS.add (RS.rsBInstr   di, idx, freed) (bRS   st)}
 addRS (Out    di, idx, freed) st = st { outRS = RS.add (RS.rsOutInstr di, idx, freed) (outRS st)}
 
--- -- Fills in operands in instructions waiting in the reservation station,
--- -- and removes instructions with all operands filled.
--- runRS :: State -> Res ([EPipeInstr], State)
--- runRS st = do
---     let getRegVal phy = regVal phy st
---     (execIs, rs') <- RS.run getRegVal (const True) (rs st)
---     return (execIs, st { rs=rs' })
+-- Returns instructions which have had all operands filled in and are ready
+-- to execute.
+runRS :: State -> Res ([PipeData EMemInstr], [PipeData EALInstr], [PipeData EBranchInstr], [PipeData EOutInstr], State)
+runRS st = do
+    let rv phy  = regVal phy st
+        mv addr = memVal addr st
+    (memExecs, lsq)   <- RS.runLSQ rv mv (lsq   st)
+    (alExecs,  alRS)  <- RS.runAL  rv    (alRS  st)
+    (bExecs,   bRS)   <- RS.runB   rv    (bRS   st)
+    (outExecs, outRS) <- RS.runOut rv    (outRS st)
+
+    let st' = st { lsq=lsq, alRS=alRS, bRS=bRS, outRS=outRS}
+    return (memExecs, alExecs, bExecs, outExecs, st')
