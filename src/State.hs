@@ -252,10 +252,6 @@ addRS (AL     di, idx, freed) st = st { alRS  = RS.add (RS.rsALInstr  di, idx, f
 addRS (Branch di, idx, freed) st = st { bRS   = RS.add (RS.rsBInstr   di, idx, freed) (bRS   st)}
 addRS (Out    di, idx, freed) st = st { outRS = RS.add (RS.rsOutInstr di, idx, freed) (outRS st)}
 
--- addRS di st =
---     let rs' = RS.add di (rs st)
---     in st { rs=rs' }
-
 -- -- Fills in operands in instructions waiting in the reservation station,
 -- -- and removes instructions with all operands filled.
 -- runRS :: State -> Res ([EPipeInstr], State)
