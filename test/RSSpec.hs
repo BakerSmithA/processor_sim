@@ -54,6 +54,17 @@ rsSpec = describe "reservation station" $ do
             rs'   `shouldBe` RS.fromList [(Div 1 (Right 6) (Left 3), 1, Nothing)]
             execs `shouldBe` [(AddI 0 10 6, 0, Just 3)]
 
+    context "BranchRS" $ do
+        it "runs" $ do
+            let rv  = regVal [(0, 5), (14, 5)]
+                ins = [(BT  (Left 0) 10, 0, Nothing)
+                     , (Ret (Left 14),   1, Nothing)]
+                rs = RS.fromList ins
+                (execs, rs') = runIdentity (RS.runB rv rs)
+
+            rs'   `shouldBe` []
+            execs `shouldBe` [(BT 5 10, 0, Nothing), (Ret 5, 1, Nothing)]
+
 -- data MemInstr rDst rSrc
 --     = LoadIdx      rDst rSrc Val  -- r <- [[base] + offset]
 --     | LoadBaseIdx  rDst rSrc rSrc -- r <- [[base] + [R_offset]]
