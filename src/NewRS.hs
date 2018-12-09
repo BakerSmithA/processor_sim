@@ -85,6 +85,12 @@ type ArithLogicRS = RS RSALInstr EALInstr
 fillAL :: (Monad m) => RegVal m -> RSALInstr -> m RSALInstr
 fillAL = mapALM return . fillRSrc
 
+-- If the AL instruction has all operands filled in, then returns an executable
+-- instruction.
+promoteAL :: RSALInstr -> Maybe EALInstr
+promoteAL = mapALM return f where
+    f = either (const Nothing) Just
+
 -- Helper functions.
 
 -- If an operand register already has it value fetched, no action is taken.
