@@ -35,6 +35,10 @@ run fill promote rs1 = do
 -- Load store queue.
 type LSQ = RS RSMemInstr EMemInstr
 
+-- Prepare a decoded instruction to be placed in the LSQ.
+rsMemInstr :: DMemInstr -> RSMemInstr
+rsMemInstr = mapMem (\r -> (r, Nothing)) Left
+
 -- Tries to fill in operands of instructions in LSQ, and remove instructions
 -- which can be run.
 runLSQ :: (Monad m) => RegVal m -> MemVal m -> LSQ -> m ([PipeData EMemInstr], LSQ)
@@ -90,6 +94,10 @@ promoteMem (StoreBaseIdx src base off) = do
 
 type ArithLogicRS = RS RSALInstr EALInstr
 
+-- Prepare a decoded instruction to be placed in the RS.
+rsALInstr :: DALInstr -> RSALInstr
+rsALInstr = mapAL id Left
+
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.
 runAL :: (Monad m) => RegVal m -> ArithLogicRS -> m ([PipeData EALInstr], ArithLogicRS)
@@ -106,6 +114,10 @@ promoteAL = mapALM return f where
     f = either (const Nothing) Just
 
 type BranchRS = RS RSBranchInstr EBranchInstr
+
+-- Prepare a decoded instruction to be placed in the RS.
+rsBInstr :: DBranchInstr -> RSBranchInstr
+rsBInstr = mapB Left Left
 
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.
@@ -124,6 +136,10 @@ promoteB = mapBM f f where
     f = either (const Nothing) Just
 
 type OutRS = RS RSOutInstr EOutInstr
+
+-- Prepare a decoded instruction to be placed in the RS.
+rsOutInstr :: DOutInstr -> RSOutInstr
+rsOutInstr = mapOut Left
 
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.

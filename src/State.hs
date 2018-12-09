@@ -11,7 +11,7 @@ import qualified ROB as ROB
 import Error
 import WriteBack
 import RRT
-import RS (RS)
+import RS (LSQ, ArithLogicRS, BranchRS, OutRS)
 import qualified RS as RS
 import Types
 
@@ -36,11 +36,15 @@ data State = State {
     -- Output
   , output :: String
 
-   -- Pipeline
+   -- Superscalar
   , bypass :: Bypass
   , rob    :: ROB
   , rrt    :: RRT
-  , rs     :: RS
+   -- Load/Store Queue
+  , lsq    :: LSQ
+  , alRS   :: ArithLogicRS
+  , bRS    :: BranchRS
+  , outRS  :: OutRS
 
    -- Stats
   , cycles :: Int
@@ -88,13 +92,16 @@ debugShow st =
         "\nBypass : "  ++ show (bypass st)
      ++ "\nRRT    : "  ++ show (rrt st)
      ++ "\nROB    : "  ++ show (rob st)
-     ++ "\nRS     : "  ++ show (rs st)
+     ++ "\nLSQ    : "  ++ show (lsq st)
+     ++ "\nAL  RS : "  ++ show (alRS st)
+     ++ "\nB   RS : "  ++ show (bRS st)
+     ++ "\nOut RS : "  ++ show (outRS st)
      ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
      ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
-empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt rs 0 0 where
+empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt lsq alRS bRS outRS 0 0 where
     maxPhyReg = 15
     mem       = Mem.zeroed 255
     regs      = Mem.fromList (replicate (maxPhyReg+1) (Just 0))
@@ -102,7 +109,10 @@ empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass 
     bypass    = BP.empty
     rob       = ROB.empty 5
     rrt       = RRT.fromConstRegs [pc, sp, lr, bp, ret] maxPhyReg
-    rs        = RS.empty
+    lsq       = RS.empty
+    alRS      = RS.empty
+    bRS       = RS.empty
+    outRS     = RS.empty
 
 -- Create default Res with 32 ints of memory, and 16 registers.
 emptyDefault :: [FInstr] -> State
@@ -234,16 +244,22 @@ getPhyReg reg st =
         Nothing  -> crash (NoPhyRegAssigned reg) st
         Just phy -> return phy
 
--- Adds an instruction to the reservation station.
+-- Adds an instruction to its corresponding reservation station, e.g. branch
+-- instruction goes to branch RS.
 addRS :: DPipeInstr -> State -> State
-addRS di st =
-    let rs' = RS.add di (rs st)
-    in st { rs=rs' }
+addRS (Mem    di, idx, freed) st = st { lsq   = RS.add (RS.rsMemInstr di, idx, freed) (lsq   st)}
+addRS (AL     di, idx, freed) st = st { alRS  = RS.add (RS.rsALInstr  di, idx, freed) (alRS  st)}
+addRS (Branch di, idx, freed) st = st { bRS   = RS.add (RS.rsBInstr   di, idx, freed) (bRS   st)}
+addRS (Out    di, idx, freed) st = st { outRS = RS.add (RS.rsOutInstr di, idx, freed) (outRS st)}
 
--- Fills in operands in instructions waiting in the reservation station,
--- and removes instructions with all operands filled.
-runRS :: State -> Res ([EPipeInstr], State)
-runRS st = do
-    let getRegVal phy = regVal phy st
-    (execIs, rs') <- RS.run getRegVal (const True) (rs st)
-    return (execIs, st { rs=rs' })
+-- addRS di st =
+--     let rs' = RS.add di (rs st)
+--     in st { rs=rs' }
+
+-- -- Fills in operands in instructions waiting in the reservation station,
+-- -- and removes instructions with all operands filled.
+-- runRS :: State -> Res ([EPipeInstr], State)
+-- runRS st = do
+--     let getRegVal phy = regVal phy st
+--     (execIs, rs') <- RS.run getRegVal (const True) (rs st)
+--     return (execIs, st { rs=rs' })
