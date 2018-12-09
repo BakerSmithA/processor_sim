@@ -162,9 +162,14 @@ tryCachedMemVal :: (Monad m) => MemVal m -> Maybe Val -> Either PhyReg Val -> Ei
 tryCachedMemVal memVal val base off =
     case val of
         Just v  -> return (Just v)
-        Nothing -> either hasBase (return . Just) base where
-            hasBase base      = either (hasOff base) (return . Just) off
-            hasOff base' off' = fmap Just (memVal (fromIntegral $ base' + off'))
+        Nothing ->
+            case base of
+                Left phy    -> return Nothing
+                Right base' ->
+                    case off of
+                        Left phy   -> return Nothing
+                        Right off' -> fmap Just (memVal addr) where
+                            addr = fromIntegral $ base' + off'
 
 -- If the value to be loaded from memory has not yet been loaded, goes to memory.
 -- Otherwise, no action is taken.
