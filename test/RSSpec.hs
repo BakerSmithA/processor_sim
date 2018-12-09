@@ -2,6 +2,7 @@ module RSSpec where
 
 import Test.Hspec
 import qualified Data.Map as Map
+import Data.Maybe (fromJust)
 import Control.Monad.Identity
 import Types
 import Instr
@@ -11,11 +12,22 @@ import RS as RS
 regVal :: [(PhyReg, Val)] -> PhyReg -> Identity (Maybe Val)
 regVal vs p = return $ Map.lookup p (Map.fromList vs)
 
+memVal :: [(Addr, Val)] -> Addr -> Identity Val
+memVal vs a = return $ fromJust $ Map.lookup a (Map.fromList vs)
+
 rsSpec :: Spec
 rsSpec = describe "reservation station" $ do
     context "load store queue" $ do
-        it "runs" $ do
-            undefined
+        it "runs with store instructions" $ do
+            let rv  = regVal [(0, 5), (1, 10), (3, 20)]
+                mv  = memVal []
+                ins = [(StoreBaseIdx (Left 0) (Right 3) (Left 5), 0, Nothing)
+                     , (StoreBaseIdx (Left 0) (Left 1) (Left 3), 1, Just 3)]
+                rs  = RS.fromList ins
+                (execs, rs') = runIdentity (RS.runLSQ rv mv rs)
+
+            execs `shouldBe` [(EStore 5 30, 1, Just 3)] -- 30 from 10+20 stored in registers.
+            rs'   `shouldBe` RS.fromList [(StoreBaseIdx (Right 5) (Right 3) (Left 5), 0, Nothing)]
 
 -- data MemInstr rDst rSrc
 --     = LoadIdx      rDst rSrc Val  -- r <- [[base] + offset]
