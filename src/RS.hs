@@ -19,8 +19,8 @@ fromList = map Left
 add :: PipeData a -> RS a b -> RS a b
 add x rs = (Left x):rs
 
-run :: (Monad m) => (a -> m a) -> (a -> Maybe b) -> RS a b -> m ([PipeData b], RS a b)
-run fill promote rs1 = do
+run :: (Monad m) => (a -> m a) -> (a -> Maybe b) -> (b -> Bool) -> RS a b -> m ([PipeData b], RS a b)
+run fill promote shouldPromote rs1 = do
     -- Do not modify any filled instructions that are still in the RS.
     rs2 <- mapM (either (fmap Left . (mapPipeDataM fill)) (return . Right)) rs1
     return (foldr checkDone ([], []) rs2) where
@@ -30,7 +30,10 @@ run fill promote rs1 = do
                 Left  rsInstr   ->
                     case mapPipeDataM promote rsInstr of
                         Nothing        -> (execIs, i:rs)
-                        Just execInstr -> (execInstr:execIs, rs)
+                        Just (i, idx, freed) ->
+                            if shouldPromote i
+                                then ((i, idx, freed):execIs, rs)
+                                else (execIs, (Right (i, idx, freed)):rs)
 
 -- Load store queue.
 type LSQ = RS RSMemInstr EMemInstr
@@ -42,7 +45,7 @@ rsMemInstr = mapMem (\r -> (r, Nothing)) Left
 -- Tries to fill in operands of instructions in LSQ, and remove instructions
 -- which can be run.
 runLSQ :: (Monad m) => RegVal m -> MemVal m -> LSQ -> m ([PipeData EMemInstr], LSQ)
-runLSQ regVal memVal = run (fillMem regVal memVal) promoteMem
+runLSQ regVal memVal = run (fillMem regVal memVal) promoteMem (const True)
 
 -- Fills in operands of a memory instruction.
 -- Goes to memory to load a value for load instructions.
@@ -101,7 +104,7 @@ rsALInstr = mapAL id Left
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.
 runAL :: (Monad m) => RegVal m -> ArithLogicRS -> m ([PipeData EALInstr], ArithLogicRS)
-runAL regVal = run (fillAL regVal) promoteAL
+runAL regVal = run (fillAL regVal) promoteAL (const True)
 
 -- Fills in operands of an AL instruction.
 fillAL :: (Monad m) => RegVal m -> RSALInstr -> m RSALInstr
@@ -122,7 +125,7 @@ rsBInstr = mapB Left Left
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.
 runB :: (Monad m) => RegVal m -> BranchRS -> m ([PipeData EBranchInstr], BranchRS)
-runB regVal = run (fillB regVal) promoteB
+runB regVal = run (fillB regVal) promoteB (const True)
 
 -- Fills in operands of a branch instruction. For return instructions,
 -- takes return address from link register.
@@ -144,7 +147,7 @@ rsOutInstr = mapOut Left
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.
 runOut :: (Monad m) => RegVal m -> OutRS -> m ([PipeData EOutInstr], OutRS)
-runOut regVal = run (fillOut regVal) promoteOut
+runOut regVal = run (fillOut regVal) promoteOut (const True)
 
 -- Fills in operands of an output instruction.
 fillOut :: (Monad m) => RegVal m -> RSOutInstr -> m RSOutInstr
