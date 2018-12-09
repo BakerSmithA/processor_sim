@@ -112,20 +112,20 @@ mapDSI f dst src1 imm = do
 mapAL :: (d1 -> d2) -> (s1 -> s2) -> ALInstr d1 s1 -> ALInstr d2 s2
 mapAL fd fs = runIdentity . mapALM (return . fd) (return . fs)
 
-data BranchInstr rSrc
-    = B       Addr -- Unconditional branch to addr
-    | BT rSrc Addr -- Branch to addr if r == 1
-    | BF rSrc Addr -- Branch to addr if r == 0
-    | Ret          -- Branch to address in link register.
-    | SysCall      -- Terminates the program.
+data BranchInstr rSrc retSrc
+    = B          Addr -- Unconditional branch to addr
+    | BT  rSrc   Addr -- Branch to addr if r == 1
+    | BF  rSrc   Addr -- Branch to addr if r == 0
+    | Ret retSrc      -- Branch to address in link register.
+    | SysCall         -- Terminates the program.
     deriving (Eq, Show)
 
 -- Fetched branch instruction.
-type FBranchInstr = BranchInstr RegIdx
+type FBranchInstr = BranchInstr RegIdx ()
 -- Decoded branch instruction.
-type DBranchInstr = BranchInstr PhyReg
+type DBranchInstr = BranchInstr PhyReg PhyReg
 -- Branch instruction with partly filled in operands in reservation station.
-type RSBranchInstr = BranchInstr (Either PhyReg Val)
+type RSBranchInstr = BranchInstr (Either PhyReg Val) (Either PhyReg Val)
 -- Branch instruction from RS that is ready for execution.
 data EBranchInstr
     = EB       Addr
@@ -135,15 +135,15 @@ data EBranchInstr
     | ESysCall
     deriving (Eq, Show)
 
-mapBM :: (Monad m) => (s1 -> m s2) -> BranchInstr s1 -> m (BranchInstr s2)
-mapBM _  (B addr)    = return (B addr)
-mapBM fs (BT r addr) = fs r >>= \r' -> return (BT r' addr)
-mapBM fs (BF r addr) = fs r >>= \r' -> return (BF r' addr)
-mapBM _  (Ret)       = return Ret
-mapBM _  (SysCall)   = return SysCall
+mapBM :: (Monad m) => (s1 -> m s2) -> (retS1 -> m retS2) -> BranchInstr s1 retS1 -> m (BranchInstr s2 retS2)
+mapBM _  _    (B addr)    = return (B addr)
+mapBM fs _    (BT r addr) = fs r   >>= \r' -> return (BT r' addr)
+mapBM fs _    (BF r addr) = fs r   >>= \r' -> return (BF r' addr)
+mapBM _  fret (Ret r)     = fret r >>= \r' -> return (Ret r')
+mapBM _  _    (SysCall)   = return SysCall
 
-mapB :: (s1 -> s2) -> BranchInstr s1 -> BranchInstr s2
-mapB fs = runIdentity . mapBM (return . fs)
+mapB :: (s1 -> s2) -> (retS1 -> retS2) -> BranchInstr s1 retS1 -> BranchInstr s2 retS2
+mapB fs fret = runIdentity . mapBM (return . fs) (return . fret)
 
 data OutInstr rSrc
     = Print  rSrc -- Print value in a register.
@@ -175,7 +175,7 @@ data Instr mem al b out
     | Out out
     deriving (Eq, Show)
 
-type SameInstr r s = Instr (MemInstr r s) (ALInstr r s) (BranchInstr s) (OutInstr s)
+type SameInstr d s retS = Instr (MemInstr d s) (ALInstr d s) (BranchInstr s retS) (OutInstr s)
 
 -- Fetched instruction.
 type FInstr = Instr FMemInstr FALInstr FBranchInstr FOutInstr
@@ -186,14 +186,14 @@ type RSInstr = Instr RSMemInstr RSALInstr RSBranchInstr RSOutInstr
 -- Instruction to execute.
 type EInstr = Instr EMemInstr EALInstr EBranchInstr EOutInstr
 
-mapIM :: (Monad m) => (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> SameInstr d1 s1 -> m (SameInstr d2 s2)
-mapIM fd fs (Mem    i) = mapMemM fd fs i >>= \i' -> return (Mem i')
-mapIM fd fs (AL     i) = mapALM  fd fs i >>= \i' -> return (AL i')
-mapIM _  fs (Branch i) = mapBM      fs i >>= \i' -> return (Branch i')
-mapIM _  fs (Out    i) = mapOutM    fs i >>= \i' -> return (Out i')
+mapIM :: (Monad m) => (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> (retS1 -> m retS2) -> SameInstr d1 s1 retS1 -> m (SameInstr d2 s2 retS2)
+mapIM fd fs _    (Mem    i) = mapMemM fd fs      i >>= \i' -> return (Mem i')
+mapIM fd fs _    (AL     i) = mapALM  fd fs      i >>= \i' -> return (AL i')
+mapIM _  fs fret (Branch i) = mapBM      fs fret i >>= \i' -> return (Branch i')
+mapIM _  fs _    (Out    i) = mapOutM    fs      i >>= \i' -> return (Out i')
 
-mapI :: (d1 -> d2) -> (s1 -> s2) -> SameInstr d1 s1 -> SameInstr d2 s2
-mapI fd fs = runIdentity . mapIM (return . fd) (return . fs)
+mapI :: (d1 -> d2) -> (s1 -> s2) -> (retS1 -> retS2) -> SameInstr d1 s1 retS1 -> SameInstr d2 s2 retS2
+mapI fd fs fret = runIdentity . mapIM (return . fd) (return . fs) (return . fret)
 
 -- Used to store instructions with accompanying data as they pass through the
 -- pipeline.
@@ -204,13 +204,13 @@ type DPipeInstr  = PipeData DInstr
 type RSPipeInstr = PipeData RSInstr
 type EPipeInstr  = PipeData EInstr
 
-mapPipeIM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> PipeData (SameInstr d1 s1) -> m (PipeData (SameInstr d2 s2))
-mapPipeIM fd fs (i, idx, freed) = do
-    i' <- mapIM fd fs i
+mapPipeIM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> (retS1 -> m retS2) -> PipeData (SameInstr d1 s1 retS1) -> m (PipeData (SameInstr d2 s2 retS2))
+mapPipeIM fd fs fret (i, idx, freed) = do
+    i' <- mapIM fd fs fret i
     return (i', idx, freed)
 
-mapPipeI :: (d1 -> d2) -> (s1 -> s2) -> PipeData (SameInstr d1 s1) -> PipeData (SameInstr d2 s2)
-mapPipeI fd fs = runIdentity . mapPipeIM (return . fd) (return . fs)
+mapPipeI :: (d1 -> d2) -> (s1 -> s2) -> (retS1 -> retS2) -> PipeData (SameInstr d1 s1 retS1) -> PipeData (SameInstr d2 s2 retS2)
+mapPipeI fd fs fret = runIdentity . mapPipeIM (return . fd) (return . fs) (return . fret)
 
 --------------------------------------------------------------------------------
 -- Convenience methods for constructing instructions.
@@ -267,19 +267,19 @@ andI r x y = AL (And r x y)
 notI :: d -> s -> Instr mem (ALInstr d s) b out
 notI r x = AL (Not r x)
 
-b :: Addr -> Instr mem al (BranchInstr s) out
+b :: Addr -> Instr mem al (BranchInstr s retS) out
 b addr = Branch (B addr)
 
-bt :: s -> Addr -> Instr mem al (BranchInstr s) out
+bt :: s -> Addr -> Instr mem al (BranchInstr s retS) out
 bt r addr = Branch (BT r addr)
 
-bf :: s -> Addr -> Instr mem al (BranchInstr s) out
+bf :: s -> Addr -> Instr mem al (BranchInstr s retS) out
 bf r addr = Branch (BF r addr)
 
-ret :: Instr mem al (BranchInstr s) out
-ret = Branch Ret
+ret :: retS -> Instr mem al (BranchInstr s retS) out
+ret = Branch . Ret
 
-sysCall :: Instr mem al (BranchInstr s) out
+sysCall :: Instr mem al (BranchInstr s retS) out
 sysCall = Branch SysCall
 
 printI :: s -> Instr mem al b (OutInstr s)

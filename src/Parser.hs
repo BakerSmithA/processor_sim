@@ -100,7 +100,7 @@ instr =
     <|> b       <$ byte 10 <*> word32
     <|> bt      <$ byte 11 <*> word8 <*> word32
     <|> bf      <$ byte 22 <*> word8 <*> word32
-    <|> ret     <$ byte 12
+    <|> ret ()  <$ byte 12
     <|> sysCall <$ byte 21
     -- Debugging
     <|> printI  <$ byte 13 <*> word8
