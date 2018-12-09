@@ -43,6 +43,17 @@ rsSpec = describe "reservation station" $ do
             execs `shouldBe` [(ELoad 5 2 200, 0, Nothing)
                             , (ELoad 6 1 100, 1, Nothing)]
 
+    context "ArithLogicRS" $ do
+        it "runs" $ do
+            let rv  = regVal [(0, 5), (1, 10), (2, 20)]
+                ins = [(AddI 0 (Left 1)  6,        0, Just 3)
+                     , (Div  1 (Right 6) (Left 3), 1, Nothing)]
+                rs = RS.fromList ins
+                (execs, rs') = runIdentity (RS.runAL rv rs)
+
+            rs'   `shouldBe` RS.fromList [(Div 1 (Right 6) (Left 3), 1, Nothing)]
+            execs `shouldBe` [(AddI 0 10 6, 0, Just 3)]
+
 -- data MemInstr rDst rSrc
 --     = LoadIdx      rDst rSrc Val  -- r <- [[base] + offset]
 --     | LoadBaseIdx  rDst rSrc rSrc -- r <- [[base] + [R_offset]]
