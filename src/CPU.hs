@@ -75,8 +75,6 @@ shouldStall p = f || d where
 -- Shifts instructions through pipeline.
 advancePipeline :: Maybe FInstr -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st1 p = do
-    -- TODO: Subsitute this with exec that updates state when RS implemented.
-    -- let executer = \(di, idx) st -> fmap (\wb -> ([(wb, idx)], st)) (exec di st)
     (st2, p') <- P.advance (fetched, st1) decode exec CPU.commit writeBack p
     return (st2, p')
 
