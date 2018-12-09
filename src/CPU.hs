@@ -17,8 +17,8 @@ fetch :: State -> Res (Maybe FInstr, State)
 fetch st = do
     pc <- St.pcVal st
     case Mem.load (fromIntegral pc) (instrs st) of
-        Nothing -> return (Nothing, st)
-        Just    instr -> return (Just instr, st)
+        Nothing    -> return (Nothing, st)
+        Just instr -> return (Just instr, st)
 
 -- Places executed results in reorder buffer.
 commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
@@ -100,7 +100,7 @@ cycleStall st1 p = do
     (st2, p') <- advancePipeline Nothing st1 p
     return (bypassed st2 p', p')
 
--- Run Res to completion, i.e. until exit system call occurs.
+-- Run processor to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> Res (State, Pipeline)
 runPipeline st p = do
     let x = if not (shouldStall p)
