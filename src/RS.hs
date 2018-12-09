@@ -33,7 +33,7 @@ run :: (Monad m)
     -> RS a b
     -- Returns any instructions ready to be executed, and the new state of the RS.
     -> m ([PipeData b], RS a b)
-    
+
 run fill promote shouldPromote rs1 = do
     -- Do not modify any filled instructions that are still in the RS.
     rs2 <- mapM (either (fmap Left . (mapPipeDataM fill)) (return . Right)) rs1
@@ -59,7 +59,10 @@ rsMemInstr = mapMem (\r -> (r, Nothing)) Left
 -- Tries to fill in operands of instructions in LSQ, and remove instructions
 -- which can be run.
 runLSQ :: (Monad m) => RegVal m -> MemVal m -> LSQ -> m ([PipeData EMemInstr], LSQ)
-runLSQ regVal memVal = run (fillMem regVal memVal) promoteMem (const True)
+runLSQ regVal memVal lsq = run (fillMem regVal memVal) promoteMem (canPromoteMem lsq) lsq
+
+canPromoteMem :: LSQ -> EMemInstr -> Bool
+canPromoteMem lsq i = True
 
 -- Fills in operands of a memory instruction.
 -- Goes to memory to load a value for load instructions.
