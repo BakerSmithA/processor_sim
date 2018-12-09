@@ -180,10 +180,10 @@ tryCachedMemVal memVal val base off =
         Just v  -> return (Just v)
         Nothing ->
             case base of
-                Left phy    -> return Nothing
+                Left _      -> return Nothing
                 Right base' ->
                     case off of
-                        Left phy   -> return Nothing
+                        Left _     -> return Nothing
                         Right off' -> fmap Just (memVal addr) where
                             addr = fromIntegral $ base' + off'
 
