@@ -15,10 +15,13 @@ run fill promote rs1 = do
     -- Do not modify any filled instructions that are still in the RS.
     rs2 <- mapM (either (fmap Left . fill) (return . Right)) rs1
     return (foldr checkDone ([], []) rs2) where
-        checkDone rsInstr (execIs, rs) = either _ _ rsInstr
-            -- case promote rsInstr of
-            --     Nothing        -> (execIs, rsInstr:rs)
-            --     Just execInstr -> (execInstr:execIs, rs)
+        checkDone i (execIs, rs) =
+            case i of
+                Right execInstr -> (execInstr:execIs, rs)
+                Left  rsInstr   ->
+                    case promote rsInstr of
+                        Nothing        -> (execIs, i:rs)
+                        Just execInstr -> (execInstr:execIs, rs)
 
 -- Load store queue.
 type LSQ = RS RSMemInstr EMemInstr
