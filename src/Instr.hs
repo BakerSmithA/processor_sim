@@ -120,6 +120,21 @@ data BranchInstr rSrc
     | SysCall      -- Terminates the program.
     deriving (Eq, Show)
 
+-- Fetched branch instruction.
+type FBranchInstr = BranchInstr RegIdx
+-- Decoded branch instruction.
+type DBranchInstr = BranchInstr PhyReg
+-- Branch instruction with partly filled in operands in reservation station.
+type RSBranchInstr = BranchInstr (Either PhyReg Val)
+-- Branch instruction from RS that is ready for execution.
+data EBranchInstr
+    = EB       Addr
+    | EBT  Val Addr
+    | EBF  Val Addr
+    | ERet     Addr -- Value of LR retrieved from memory.
+    | ESysCall
+    deriving (Eq, Show)
+
 mapBM :: (Monad m) => (s1 -> m s2) -> BranchInstr s1 -> m (BranchInstr s2)
 mapBM _  (B addr)    = return (B addr)
 mapBM fs (BT r addr) = fs r >>= \r' -> return (BT r' addr)
@@ -129,23 +144,6 @@ mapBM _  (SysCall)   = return SysCall
 
 mapB :: (s1 -> s2) -> BranchInstr s1 -> BranchInstr s2
 mapB fs = runIdentity . mapBM (return . fs)
-
--- Fetched branch instruction.
-type FBranchInstr = BranchInstr RegIdx
--- Decoded branch instruction.
-type DBranchInstr = BranchInstr PhyReg
--- Branch instruction with partly filled in operands in reservation station.
-type RSBranchInstr = BranchInstr (Either PhyReg Val)
--- Branch instruction from RS that is ready for execution.
-type EBranchInstr = BranchInstr Val
-
--- data EBranchInstr
---     = EB  Addr
---     | EBT Val Addr
---     | EBF Val Addr
---     | ERet Addr -- Value of LR retrieved from memory.
---     | ESysCall
---     deriving (Eq, Show)
 
 data OutInstr rSrc
     = Print  rSrc -- Print value in a register.

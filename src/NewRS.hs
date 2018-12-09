@@ -91,6 +91,20 @@ promoteAL :: RSALInstr -> Maybe EALInstr
 promoteAL = mapALM return f where
     f = either (const Nothing) Just
 
+type BranchRS = RS RSBranchInstr EBranchInstr
+
+-- Fills in operands of a branch instruction. For return instructions,
+-- takes return address from link register.
+fillB :: (Monad m) => PhyReg -> RegVal m -> RSBranchInstr -> m RSBranchInstr
+fillB _ _ (B addr) = return (B addr)
+fillB _ regVal (BT src addr) = do
+    src' <- cachedRegVal regVal src
+    return (BT src' addr)
+fillB _ regVal (BF src addr) = do
+    src' <- cachedRegVal regVal src
+    return (BF src' addr)
+fillB lrIdx regVal (Ret) = undefined
+
 -- Helper functions.
 
 -- If an operand register already has it value fetched, no action is taken.
