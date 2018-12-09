@@ -19,7 +19,21 @@ fromList = map Left
 add :: PipeData a -> RS a b -> RS a b
 add x rs = (Left x):rs
 
-run :: (Monad m) => (a -> m a) -> (a -> Maybe b) -> (b -> Bool) -> RS a b -> m ([PipeData b], RS a b)
+run :: (Monad m)
+    -- Fills in operands in an instruction.
+    => (a -> m a)
+    -- Checks whether an instruction has all operands filled, and returns an
+    -- executable version of the instruction if so.
+    -> (a -> Maybe b)
+    -- Returns whether an executable instruction should be removed from the RS.
+    -- Useful for the load/store queue, where extra checks need to occur to
+    -- ensure memory accesses occur in the correct order.
+    -> (b -> Bool)
+    -- Reservation station to operate over.
+    -> RS a b
+    -- Returns any instructions ready to be executed, and the new state of the RS.
+    -> m ([PipeData b], RS a b)
+    
 run fill promote shouldPromote rs1 = do
     -- Do not modify any filled instructions that are still in the RS.
     rs2 <- mapM (either (fmap Left . (mapPipeDataM fill)) (return . Right)) rs1
