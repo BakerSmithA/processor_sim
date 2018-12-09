@@ -95,8 +95,14 @@ type BranchRS = RS RSBranchInstr EBranchInstr
 
 -- Fills in operands of a branch instruction. For return instructions,
 -- takes return address from link register.
-fillB :: (Monad m) => PhyReg -> RegVal m -> RSBranchInstr -> m RSBranchInstr
-fillB = undefined
+fillB :: (Monad m) => RegVal m -> RSBranchInstr -> m RSBranchInstr
+fillB regVal = mapBM (fillRSrc regVal) (fillRSrc regVal)
+
+type OutRS = RS RSOutInstr EOutInstr
+
+-- Fills in operands of an output instruction.
+fillOut :: (Monad m) => RegVal m -> RSOutInstr -> m RSOutInstr
+fillOut = mapOutM . fillRSrc
 
 -- Helper functions.
 
