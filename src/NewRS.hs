@@ -81,7 +81,21 @@ promoteMem (StoreBaseIdx src base off) = do
 
 type ArithLogicRS = RS RSALInstr EALInstr
 
+-- Fills in operands of an AL instruction.
+fillAL :: (Monad m) => RegVal m -> RSALInstr -> m RSALInstr
+fillAL = mapALM return . fillRSrc
+
 -- Helper functions.
+
+-- If an operand register already has it value fetched, no action is taken.
+-- Otherwise, the register file is queried.
+fillRSrc :: (Monad m) => RegVal m -> Either PhyReg Val -> m (Either PhyReg Val)
+fillRSrc regVal = either f (return . Right) where
+    f phy = do
+        maybeVal <- regVal phy
+        return $ case maybeVal of
+            Nothing  -> Left phy
+            Just val -> Right val
 
 rightToMaybe :: Either a b -> Maybe b
 rightToMaybe = either (const Nothing) Just
