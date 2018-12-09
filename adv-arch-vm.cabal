@@ -62,9 +62,9 @@ test-suite spec
                      , ParserSpec
                      , Error
                      , Pipeline
-                     -- , CPUSpec
+                     , CPUSpec
                      , Bypass
-                     -- , CPU
+                     , CPU
                      , Helper
                      , RRT
                      , RRTSpec
@@ -75,7 +75,7 @@ test-suite spec
                      , WriteBack
                      , Decode
                      , RS
-                     -- , ExecUnit
+                     , ExecUnit
                      , RSSpec
                      , Types
                      , BypassSpec

@@ -15,7 +15,7 @@ runVm instrs = do
     putStrLn (show vm)
 
 newlines :: FInstr -> String
-newlines (Branch Ret)     = "\n"
+newlines (Branch (Ret _)) = "\n"
 newlines (Branch SysCall) = "\n"
 newlines _                = ""
 

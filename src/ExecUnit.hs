@@ -1,7 +1,6 @@
 module ExecUnit where
 
 import Data.Char (chr)
-import Control.Monad (foldM)
 import State as St
 import Instr
 import WriteBack
@@ -13,9 +12,13 @@ exec :: DPipeInstr -> State -> Res ([(PipeData WriteBack)], State)
 exec di st1 = do
     let st2 = St.addRS di st1
     (mems, als, bs, outs, st2) <- St.runRS st2
-    undefined
 
+    memWbs <- mapM (mapPipeDataM lsu)      mems
+    alWbs  <- mapM (mapPipeDataM alu)      als
+    bWbs   <- mapM (mapPipeDataM (bu st2)) bs
+    outWbs <- mapM (mapPipeDataM ou)       outs
 
+    return (memWbs ++ alWbs ++ bWbs ++ outWbs, st2)
 
 -- Load/Store Unit.
 lsu :: EMemInstr -> Res WriteBack
@@ -39,12 +42,12 @@ alu (And   r x y) = writeReg r (x `andVal` y)
 alu (Not   r x)   = writeReg r (notVal x)
 
 -- Branch Unit.
-bu :: EBranchInstr -> State -> Res WriteBack
-bu (B    addr) st = branch addr st
-bu (BT r addr) st = branchCond (r==1) addr st
-bu (BF r addr) st = branchCond (r==0) addr st
-bu (SysCall)   _  = return Terminate
-bu (Ret addr)  st = branch (fromIntegral addr) st
+bu :: State -> EBranchInstr -> Res WriteBack
+bu st (B    addr) = branch addr st
+bu st (BT r addr) = branchCond (r==1) addr st
+bu st (BF r addr) = branchCond (r==0) addr st
+bu _  (SysCall)   = return Terminate
+bu st (Ret addr)  = branch (fromIntegral addr) st
 
 -- Output Unit (for debugging).
 ou :: EOutInstr -> Res WriteBack
