@@ -101,7 +101,8 @@ fillB regVal = mapBM (fillRSrc regVal) (fillRSrc regVal)
 -- If the branch instruction has all operands filled in, then returns an
 -- executable instruction.
 promoteB :: RSBranchInstr -> Maybe EBranchInstr
-promoteB = undefined
+promoteB = mapBM f f where
+    f = either (const Nothing) Just
 
 type OutRS = RS RSOutInstr EOutInstr
 
@@ -112,7 +113,8 @@ fillOut = mapOutM . fillRSrc
 -- If an output instruction has all operands filled in, then returns an
 -- executable instruction.
 promoteOut :: RSOutInstr -> Maybe EOutInstr
-promoteOut = undefined
+promoteOut = mapOutM f where
+    f = either (const Nothing) Just
 
 -- Helper functions.
 

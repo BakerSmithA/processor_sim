@@ -127,13 +127,7 @@ type DBranchInstr = BranchInstr PhyReg PhyReg
 -- Branch instruction with partly filled in operands in reservation station.
 type RSBranchInstr = BranchInstr (Either PhyReg Val) (Either PhyReg Val)
 -- Branch instruction from RS that is ready for execution.
-data EBranchInstr
-    = EB       Addr
-    | EBT  Val Addr
-    | EBF  Val Addr
-    | ERet     Addr -- Value of LR retrieved from memory.
-    | ESysCall
-    deriving (Eq, Show)
+type EBranchInstr = BranchInstr Val Val
 
 mapBM :: (Monad m) => (s1 -> m s2) -> (retS1 -> m retS2) -> BranchInstr s1 retS1 -> m (BranchInstr s2 retS2)
 mapBM _  _    (B addr)    = return (B addr)
