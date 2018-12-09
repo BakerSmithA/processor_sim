@@ -59,11 +59,22 @@ rsSpec = describe "reservation station" $ do
             let rv  = regVal [(0, 5), (14, 5)]
                 ins = [(BT  (Left 0) 10, 0, Nothing)
                      , (Ret (Left 14),   1, Nothing)]
-                rs = RS.fromList ins
+                rs  = RS.fromList ins
                 (execs, rs') = runIdentity (RS.runB rv rs)
 
             rs'   `shouldBe` []
             execs `shouldBe` [(BT 5 10, 0, Nothing), (Ret 5, 1, Nothing)]
+
+    context "OutRS" $ do
+        it "runs" $ do
+            let rv  = regVal [(0, 5)]
+                ins = [(Print (Left 0), 0, Nothing)
+                     , (PrintLn,        1, Nothing)]
+                rs  = RS.fromList ins
+                (execs, rs') = runIdentity (RS.runOut rv rs)
+
+            rs'   `shouldBe` []
+            execs `shouldBe` [(Print 5, 0, Nothing), (PrintLn, 1, Nothing)]
 
 -- data MemInstr rDst rSrc
 --     = LoadIdx      rDst rSrc Val  -- r <- [[base] + offset]
