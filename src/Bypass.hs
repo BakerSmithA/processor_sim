@@ -2,6 +2,7 @@ module Bypass where
 
 import Types
 import WriteBack
+import Helper (tryPick)
 
 -- Data in the write-back stage that may be required for execution stage, e.g.
 -- data dependencies:
@@ -42,21 +43,12 @@ fromWriteback _                   = Nothing
 
 -- Return value of register written if matches given physical index.
 regVal :: PhyReg -> Bypass -> Maybe Val
-regVal = search . entryRegVal
+regVal = tryPick . entryRegVal
 
 -- Return value of address written if matches given address, and bypass contains
 -- memory write.
 memVal :: Addr -> Bypass -> Maybe Val
-memVal = search . entryMemVal
-
--- Searches through bypass to find first entry that produces non-Nothing value.
--- Or, returns Nothing if none return Just.
-search :: (BypassEntry -> Maybe Val) -> Bypass -> Maybe Val
-search _ []     = Nothing
-search f (e:es) =
-    case f e of
-        Nothing  -> search f es
-        Just val -> Just val
+memVal = tryPick . entryMemVal
 
 -- Return value of register written if matches given physical index.
 entryRegVal :: PhyReg -> BypassEntry -> Maybe Val

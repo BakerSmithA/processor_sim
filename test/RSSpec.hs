@@ -6,7 +6,7 @@ import Data.Maybe (fromJust)
 import Control.Monad.Identity
 import Types
 import Instr
-import RS as RS
+import qualified RS as RS
 
 -- Used to construct a test method for supplying register values.
 regVal :: [(PhyReg, Val)] -> PhyReg -> Identity (Maybe Val)
@@ -42,6 +42,24 @@ rsSpec = describe "reservation station" $ do
             rs' `shouldBe` RS.fromList [(LoadIdx (0, Nothing) (Left 10) 5, 2, Nothing)]
             execs `shouldBe` [(ELoad 5 2 200, 0, Nothing)
                             , (ELoad 6 1 100, 1, Nothing)]
+
+        it "retrieves most recent executed store" $ do
+            let ins = [Left  (StoreIdx (Right 3) (Left 0) 0, 1, Nothing)
+                     , Right (EStore 10 5,                   2, Nothing)
+                     , Right (EStore 20 5,                   3, Nothing)]
+                rs = RS.fromList' ins
+                found = RS.memVal 5 rs
+
+            found `shouldBe` Just 10
+
+        it "retrieves Nothing if no stores match address" $ do
+            let ins = [Left  (StoreIdx (Right 3) (Left 0) 0, 1, Nothing)
+                     , Right (EStore 10 5,                   2, Nothing)
+                     , Right (EStore 20 5,                   3, Nothing)]
+                rs = RS.fromList' ins
+                found = RS.memVal 100 rs
+
+            found `shouldBe` Nothing
 
     context "ArithLogicRS" $ do
         it "runs" $ do

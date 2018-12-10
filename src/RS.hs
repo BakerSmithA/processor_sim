@@ -2,9 +2,10 @@ module RS where
 
 import Instr
 import Types
+import Helper (tryPick)
 
 type RegVal m = PhyReg -> m (Maybe Val)
-type MemVal m = Addr   -> m Val
+type MemVal m = Addr -> m Val
 
 -- General pupose reservation station. Is specialised for different types of
 -- instructions.
@@ -15,6 +16,9 @@ empty = []
 
 fromList :: [PipeData a] -> RS a b
 fromList = map Left
+
+fromList' :: [Either (PipeData a) (PipeData b)] -> RS a b
+fromList' = id
 
 add :: PipeData a -> RS a b -> RS a b
 add x rs = (Left x):rs
@@ -51,6 +55,15 @@ run fill promote shouldPromote rs1 = do
 
 -- Load store queue.
 type LSQ = RS RSMemInstr EMemInstr
+
+-- Searches through load store queue, from newest to oldest, for stores to
+-- memory that match the given address.
+memVal :: Addr -> LSQ -> Maybe Val
+memVal chkAddr = tryPick chkDone where
+    chkDone = either (const Nothing) chkStore
+
+    chkStore (EStore val addr, _, _) = if addr == chkAddr then Just val else Nothing
+    chkStore _                       = Nothing
 
 -- Prepare a decoded instruction to be placed in the LSQ.
 rsMemInstr :: DMemInstr -> RSMemInstr
