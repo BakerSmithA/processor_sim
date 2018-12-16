@@ -105,7 +105,7 @@ empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS alRS bRS outRS 0 0 where
     maxPhyReg = 15
     mem       = Mem.zeroed 255
-    regs      = Mem.fromList (replicate (maxPhyReg+1) (Just 0))
+    regs      = Mem.fromList (replicate (maxPhyReg+1) Nothing)
     instrs'   = Mem.fromList instrs
     bypass    = BP.empty
     rob       = ROB.empty 5
@@ -178,7 +178,7 @@ namedRegVal getReg st = do
     phy <- namedReg getReg st
     val <- newestRegVal phy st
     case val of
-        Nothing  -> error "Named reg contained no value"
+        Nothing  -> return 0
         Just val -> return val
 
 -- Returns the value stored in the PC register.

@@ -6,7 +6,6 @@ import State as St
 import Instr
 import WriteBack
 import Types
-import Debug.Trace
 
 -- Add all decoded instruction to a reservation station, then promote any completed,
 -- instructions, and finally execute those and return the writeback instructions.
@@ -28,7 +27,7 @@ execI di st1 = do
     bWbs   <- mapM (mapPipeDataM (bu st3)) bs
     outWbs <- mapM (mapPipeDataM ou)       outs
 
-    trace (debugShow st2) $ return (memWbs ++ alWbs ++ bWbs ++ outWbs, st3)
+    return (memWbs ++ alWbs ++ bWbs ++ outWbs, st3)
 
 -- Load/Store Unit.
 lsu :: EMemInstr -> Res WriteBack
