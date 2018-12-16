@@ -48,67 +48,67 @@ queueSpec = describe "queue" $ do
     context "find newest to oldest" $ do
         it "returns newest element that matches predicate 1" $ do
             let q0        = Q.fromList [0, 0, 0, 0]
-                (_,   q1) = Q.enq 5  q0
-                (i10, q2) = Q.enq 10 q1
-                (_,   q3) = Q.enq 15 q2
-                x         = Q.findQ Q.NewToOld (>1) q3
+                (_, q1) = Q.enq 5  q0
+                (_, q2) = Q.enq 10 q1
+                (_, q3) = Q.enq 15 q2
+                x         = Q.find Q.NewToOld (>1) q3
             x `shouldBe` Just 15
 
         it "returns newest element that matches predicate 1" $ do
             let q0        = Q.fromList [0, 0, 0, 0]
-                (_,   q1) = Q.enq 5  q0
-                (i10, q2) = Q.enq 10 q1
-                (_,   q3) = Q.enq 15 q2
-                x         = Q.findQ Q.NewToOld (<14) q3
+                (_, q1) = Q.enq 5  q0
+                (_, q2) = Q.enq 10 q1
+                (_, q3) = Q.enq 15 q2
+                x         = Q.find Q.NewToOld (<14) q3
             x `shouldBe` Just 10
 
         it "returns newest element that matches predicate 1" $ do
             let q0        = Q.fromList [0, 0, 0, 0]
-                (_,   q1) = Q.enq 5  q0
-                (i10, q2) = Q.enq 10 q1
-                (_,   q3) = Q.enq 15 q2
-                x         = Q.findQ Q.NewToOld (<9) q3
+                (_, q1) = Q.enq 5  q0
+                (_, q2) = Q.enq 10 q1
+                (_, q3) = Q.enq 15 q2
+                x         = Q.find Q.NewToOld (<9) q3
             x `shouldBe` Just 5
 
         it "returns nothing if no element matches" $ do
             let q0       = Q.fromList [0, 0, 0, 0]
-                (i5, q1) = Q.enq 5  q0
-                (_,  q2) = Q.enq 10 q1
-                (_,  q3) = Q.enq 15 q2
-                x        = Q.findQ Q.NewToOld (>100) q3
+                (_, q1) = Q.enq 5  q0
+                (_, q2) = Q.enq 10 q1
+                (_, q3) = Q.enq 15 q2
+                x        = Q.find Q.NewToOld (>100) q3
             x `shouldBe` Nothing
 
     context "find oldest to newest" $ do
         it "returns oldest element that matches predicate 1" $ do
             let q0        = Q.fromList [0, 0, 0, 0]
-                (_,   q1) = Q.enq 5  q0
-                (i10, q2) = Q.enq 10 q1
-                (_,   q3) = Q.enq 15 q2
-                x         = Q.findQ Q.OldToNew (>1) q3
+                (_, q1) = Q.enq 5  q0
+                (_, q2) = Q.enq 10 q1
+                (_, q3) = Q.enq 15 q2
+                x         = Q.find Q.OldToNew (>1) q3
             x `shouldBe` Just 5
 
         it "returns oldest element that matches predicate 1" $ do
             let q0        = Q.fromList [0, 0, 0, 0]
-                (_,   q1) = Q.enq 5  q0
-                (i10, q2) = Q.enq 10 q1
-                (_,   q3) = Q.enq 15 q2
-                x         = Q.findQ Q.OldToNew (>7) q3
+                (_, q1) = Q.enq 5  q0
+                (_, q2) = Q.enq 10 q1
+                (_, q3) = Q.enq 15 q2
+                x         = Q.find Q.OldToNew (>7) q3
             x `shouldBe` Just 10
 
         it "returns oldest element that matches predicate 1" $ do
             let q0        = Q.fromList [0, 0, 0, 0]
-                (_,   q1) = Q.enq 5  q0
-                (i10, q2) = Q.enq 10 q1
-                (_,   q3) = Q.enq 15 q2
-                x         = Q.findQ Q.OldToNew (>11) q3
+                (_, q1) = Q.enq 5  q0
+                (_, q2) = Q.enq 10 q1
+                (_, q3) = Q.enq 15 q2
+                x         = Q.find Q.OldToNew (>11) q3
             x `shouldBe` Just 15
 
         it "returns oldest if no element matches" $ do
             let q0       = Q.fromList [0, 0, 0, 0]
-                (i5, q1) = Q.enq 5  q0
-                (_,  q2) = Q.enq 10 q1
-                (_,  q3) = Q.enq 15 q2
-                x        = Q.findQ Q.OldToNew (>100) q3
+                (_, q1) = Q.enq 5  q0
+                (_, q2) = Q.enq 10 q1
+                (_, q3) = Q.enq 15 q2
+                x        = Q.find Q.OldToNew (>100) q3
             x `shouldBe` Nothing
 
     context "find sub newest to oldest" $ do
@@ -117,7 +117,7 @@ queueSpec = describe "queue" $ do
                 (_,   q1) = Q.enq 5  q0
                 (i10, q2) = Q.enq 10 q1
                 (_,   q3) = Q.enq 15 q2
-                x         = Q.findQ (Q.SubNewToOld i10) (>1) q3
+                x         = Q.find (Q.SubNewToOld i10) (>1) q3
             x `shouldBe` Just 5
 
         it "returns newest element that matches predicate 2" $ do
@@ -125,7 +125,7 @@ queueSpec = describe "queue" $ do
                 (i5, q1) = Q.enq 5  q0
                 (_,  q2) = Q.enq 10 q1
                 (_,  q3) = Q.enq 15 q2
-                x        = Q.findQ (Q.SubNewToOld i5) (>1) q3
+                x        = Q.find (Q.SubNewToOld i5) (>1) q3
             x `shouldBe` Nothing
 
         it "returns newest element that matches predicate 3" $ do
@@ -133,7 +133,7 @@ queueSpec = describe "queue" $ do
                 (_,   q1) = Q.enq 5  q0
                 (_,   q2) = Q.enq 10 q1
                 (i15, q3) = Q.enq 15 q2
-                x        = Q.findQ (Q.SubNewToOld i15) (>1) q3
+                x        = Q.find (Q.SubNewToOld i15) (>1) q3
             x `shouldBe` Just 10
 
         it "returns nothing if no element matches" $ do
@@ -141,5 +141,5 @@ queueSpec = describe "queue" $ do
                 (i5, q1) = Q.enq 5  q0
                 (_,  q2) = Q.enq 10 q1
                 (_,  q3) = Q.enq 15 q2
-                x        = Q.findQ (Q.SubNewToOld i5) (>100) q3
+                x        = Q.find (Q.SubNewToOld i5) (>100) q3
             x `shouldBe` Nothing

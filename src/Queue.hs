@@ -2,7 +2,7 @@ module Queue where
 
 import Data.Array (Array, (//), (!))
 import qualified Data.Array as Arr
-import Data.List (find)
+import Data.List as List (find)
 
 type Start = Int
 type End   = Int
@@ -129,7 +129,7 @@ data Search
 
 -- Searches for the first element logically newer than the element at the given
 -- index, which also satisfies the predicate.
-findQ :: (Show a) => Search -> (a -> Bool) -> Queue a -> Maybe a
-findQ (NewToOld)      cond q = find cond (elemsNewOld q)
-findQ (OldToNew)      cond q = find cond (reverse $ elemsNewOld q)
-findQ (SubNewToOld s) cond q = find cond (elemsRange (newStart s (range q)) q)
+find :: (Show a) => Search -> (a -> Bool) -> Queue a -> Maybe a
+find (NewToOld)      cond q = List.find cond (elemsNewOld q)
+find (OldToNew)      cond q = List.find cond (reverse $ elemsNewOld q)
+find (SubNewToOld s) cond q = List.find cond (elemsRange (newStart s (range q)) q)
