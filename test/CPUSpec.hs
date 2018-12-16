@@ -3,15 +3,15 @@ module CPUSpec (cpuSpec) where
 import Test.Hspec
 import Data.Maybe (fromJust)
 import Instr
-import State as St hiding (regVal)
-import qualified State as St (regVal)
+import State as St hiding (newestRegVal)
+import qualified State as St (newestRegVal)
 import qualified Mem as Mem
 import Data.Int (Int32)
 import CPU
 import Types
 
 regVal :: PhyReg -> State -> Res Val
-regVal p st = fmap fromJust (St.regVal p st)
+regVal p st = fmap fromJust (St.newestRegVal p st)
 
 runVm :: [FInstr] -> [Int32] -> State
 runVm instrs memCnts = run state' where

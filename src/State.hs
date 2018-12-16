@@ -6,6 +6,7 @@ import qualified Mem as Reg
 import Instr
 import Bypass (Bypass)
 import qualified Bypass as BP
+import Queue as Q
 import ROB (ROB)
 import qualified ROB as ROB
 import Error
@@ -135,32 +136,13 @@ incCycles st = st { cycles = (cycles st) + 1 }
 incExec :: State -> State
 incExec st = st { instrsExec = (instrsExec st) + 1 }
 
--- Returns the index of the physical register mapped to the named register.
-namedReg :: (State -> RegIdx) -> State -> Res PhyReg
-namedReg getReg st = do
-    let reg = getReg st
-    getPhyReg reg st
-
--- Returns value of a named register, e.g. pc
-namedRegVal :: (State -> RegIdx) -> State -> Res Val
-namedRegVal getReg st = do
-    phy <- namedReg getReg st
-    val <- regVal phy st
-    case val of
-        Nothing  -> error "Named reg contained no value"
-        Just val -> return val
-
--- Returns the value stored in the PC register.
-pcVal :: State -> Res Val
-pcVal = namedRegVal pcIdx
-
--- Return value of a register, from bypass or register. Crash if invalid index.
-regVal :: PhyReg -> State -> Res (Maybe Val)
-regVal i st =
+-- Return value of a register with matching index. Crash if invalid index.
+findRegVal :: Q.Search -> PhyReg -> State -> Res (Maybe Val)
+findRegVal robSearch i st =
     case BP.regVal i (bypass st) of
         Just val -> return (Just val)
         Nothing ->
-            case ROB.regVal i (rob st) of
+            case ROB.regVal robSearch i (rob st) of
                 Just val -> return (Just val)
                 Nothing ->
                     case Reg.load i (regs st) of
@@ -168,17 +150,40 @@ regVal i st =
                         Just val -> return val
 
 -- Returns value of an address from bypass or memory. Crash if invalid address.
-memVal :: Addr -> State -> Res Val
-memVal i st =
+findMemVal :: Q.Search -> Addr -> State -> Res Val
+findMemVal robSearch i st =
     case BP.memVal i (bypass st) of
         Just val -> return val
         Nothing ->
-            case ROB.memVal i (rob st) of
+            case ROB.memVal robSearch i (rob st) of
                 Just val -> return val
                 Nothing ->
                     case Mem.load i (mem st) of
                         Nothing  -> crash (MemOutOfRange i) st
                         Just val -> return val
+
+-- Return the value a register was most recently updated to.
+newestRegVal :: PhyReg -> State -> Res (Maybe Val)
+newestRegVal = findRegVal Q.NewToOld
+
+-- Returns the index of the physical register mapped to the named register.
+namedReg :: (State -> RegIdx) -> State -> Res PhyReg
+namedReg getReg st = do
+    let reg = getReg st
+    getPhyReg reg st
+
+-- Return the most recent value of a named register, e.g. PC
+namedRegVal :: (State -> RegIdx) -> State -> Res Val
+namedRegVal getReg st = do
+    phy <- namedReg getReg st
+    val <- newestRegVal phy st
+    case val of
+        Nothing  -> error "Named reg contained no value"
+        Just val -> return val
+
+-- Returns the value stored in the PC register.
+pcVal :: State -> Res Val
+pcVal = namedRegVal pcIdx
 
 -- Sets the value of a register in the physical register file.
 setRegVal :: PhyReg -> Maybe Val -> State -> Res State
@@ -247,7 +252,7 @@ getPhyReg reg st =
 -- Adds an instruction to its corresponding reservation station, e.g. branch
 -- instruction goes to branch RS.
 addRS :: DPipeInstr -> State -> State
-addRS (Mem    di, idx, freed) st = st { memRS   = RS.add (RS.rsMemInstr di, idx, freed) (memRS   st)}
+addRS (Mem    di, idx, freed) st = st { memRS = RS.add (RS.rsMemInstr di, idx, freed) (memRS st)}
 addRS (AL     di, idx, freed) st = st { alRS  = RS.add (RS.rsALInstr  di, idx, freed) (alRS  st)}
 addRS (Branch di, idx, freed) st = st { bRS   = RS.add (RS.rsBInstr   di, idx, freed) (bRS   st)}
 addRS (Out    di, idx, freed) st = st { outRS = RS.add (RS.rsOutInstr di, idx, freed) (outRS st)}
@@ -256,13 +261,13 @@ addRS (Out    di, idx, freed) st = st { outRS = RS.add (RS.rsOutInstr di, idx, f
 -- to execute.
 runRS :: State -> Res ([PipeData EMemInstr], [PipeData EALInstr], [PipeData EBranchInstr], [PipeData EOutInstr], State)
 runRS st = do
-    let rv phy  = regVal phy st
-        mv addr = memVal addr st
+    let rv robIdx phy  = findRegVal (Q.SubNewToOld robIdx) phy st
+        mv robIdx addr = findMemVal (Q.SubNewToOld robIdx) addr st
 
-    (memExecs, memRS)   <- RS.runMemRS rv mv (memRS   st)
-    (alExecs,  alRS)  <- RS.runAL  rv    (alRS  st)
-    (bExecs,   bRS)   <- RS.runB   rv    (bRS   st)
-    (outExecs, outRS) <- RS.runOut rv    (outRS st)
+    (memExecs, memRS) <- RS.runMemRS rv mv (memRS st)
+    (alExecs,  alRS)  <- RS.runAL    rv    (alRS  st)
+    (bExecs,   bRS)   <- RS.runB     rv    (bRS   st)
+    (outExecs, outRS) <- RS.runOut   rv    (outRS st)
 
     let st' = st { memRS=memRS, alRS=alRS, bRS=bRS, outRS=outRS}
     return (memExecs, alExecs, bExecs, outExecs, st')

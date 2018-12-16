@@ -9,11 +9,11 @@ import Instr
 import qualified RS as RS
 
 -- Used to construct a test method for supplying register values.
-regVal :: [(PhyReg, Val)] -> PhyReg -> Identity (Maybe Val)
-regVal vs p = return $ Map.lookup p (Map.fromList vs)
+regVal :: [(PhyReg, Val)] -> ROBIdx -> PhyReg -> Identity (Maybe Val)
+regVal vs _ p = return $ Map.lookup p (Map.fromList vs)
 
-memVal :: [(Addr, Val)] -> Addr -> Identity Val
-memVal vs a = return $ fromJust $ Map.lookup a (Map.fromList vs)
+memVal :: [(Addr, Val)] -> ROBIdx -> Addr -> Identity Val
+memVal vs _ a = return $ fromJust $ Map.lookup a (Map.fromList vs)
 
 rsSpec :: Spec
 rsSpec = describe "reservation station" $ do
