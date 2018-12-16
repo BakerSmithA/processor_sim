@@ -2,6 +2,7 @@ module RS where
 
 import Instr
 import Types
+import Debug.Trace
 
 -- Need to supply ROB index so the logically most recent update to a value
 -- can be retrieved.

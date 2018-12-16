@@ -29,10 +29,17 @@ fetchN n start st = stopAtBranch $ Mem.take n start (instrs st)
 fetch :: State -> Res ([FInstr], State)
 fetch st1 = do
      pc <- St.pcVal st1
-     let fis = fetchN 2 (fromIntegral pc) st1
+     let fis = fetchN 1 (fromIntegral pc) st1
          n   = fromIntegral $ length fis
      st2 <- St.incPC n st1
      return (fis, st2)
+
+-- Add decoded instructions to RS, and remove instructions from RS which have
+-- all operands filled.
+issue :: [DPipeInstr] -> State -> Res ([EPipeInstr], State)
+issue dis st1 = do
+    let st2 = foldr St.addRS st1 dis
+    St.runRS st2
 
 -- Places executed results in reorder buffer.
 commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
@@ -82,7 +89,7 @@ shouldStall p = f || d where
 -- Shifts instructions through pipeline.
 advancePipeline :: [FInstr] -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st1 p = do
-    (st2, p') <- P.advance (fetched, st1) decode exec CPU.commit writeBack p
+    (st2, p') <- P.advance (fetched, st1) decode issue exec CPU.commit writeBack p
     return (st2, p')
 
 -- Returns state which contains bypass value that was just written as part of
@@ -113,13 +120,13 @@ runPipeline st p = do
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
-    -- runPipeline (St.incCycles st') p'
-    trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    runPipeline (St.incCycles st') p'
+    --trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State
 run st =
     case runPipeline st P.empty of
-        Exit st    -> st
+        Exit st    -> trace (debugShow st) $ st
         Crash e st -> error (show e ++ "\n" ++ debugShow st)
         Res x      -> error ("Did not terminate:" ++ show x)

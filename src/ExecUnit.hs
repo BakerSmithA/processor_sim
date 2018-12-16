@@ -9,25 +9,23 @@ import Types
 
 -- Add all decoded instruction to a reservation station, then promote any completed,
 -- instructions, and finally execute those and return the writeback instructions.
-exec :: [DPipeInstr] -> State -> Res ([(PipeData WriteBack)], State)
-exec dis st1 = foldM f ([], st1) dis where
-    f (allWbs, st) di = do
-        (wbs, st') <- execI di st
-        return (wbs ++ allWbs, st')
+exec :: [EPipeInstr] -> State -> Res ([(PipeData WriteBack)], State)
+exec eis st = do
+    wbs <- foldM f [] eis
+    return (wbs, st)
+        where
+            f allWbs ei = do
+                wbs <- execI ei st
+                return (wbs:allWbs)
 
 -- Add decoded instruction to a reservation station, then promote any completed,
 -- instructions, and finally execute those and return the writeback instructions.
-execI :: DPipeInstr -> State -> Res ([(PipeData WriteBack)], State)
-execI di st1 = do
-    let st2 = St.addRS di st1
-    (mems, als, bs, outs, st3) <- St.runRS st2
-
-    memWbs <- mapM (mapPipeDataM lsu)      mems
-    alWbs  <- mapM (mapPipeDataM alu)      als
-    bWbs   <- mapM (mapPipeDataM (bu st3)) bs
-    outWbs <- mapM (mapPipeDataM ou)       outs
-
-    return (memWbs ++ alWbs ++ bWbs ++ outWbs, st3)
+execI :: EPipeInstr -> State -> Res (PipeData WriteBack)
+execI ei st = mapPipeDataM f ei where
+    f (Mem    i) = lsu   i
+    f (AL     i) = alu   i
+    f (Branch i) = bu st i
+    f (Out    i) = ou    i
 
 -- Load/Store Unit.
 lsu :: EMemInstr -> Res WriteBack

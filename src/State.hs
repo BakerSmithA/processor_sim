@@ -15,6 +15,7 @@ import RRT
 import RS (MemRS, ArithLogicRS, BranchRS, OutRS)
 import qualified RS as RS
 import Types
+import Debug.Trace
 
 -- Stores current state of CPU at a point in time.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -266,7 +267,7 @@ addRS (Out    di, idx, freed) st = st { outRS = RS.add (RS.rsOutInstr di, idx, f
 
 -- Returns instructions which have had all operands filled in and are ready
 -- to execute.
-runRS :: State -> Res ([PipeData EMemInstr], [PipeData EALInstr], [PipeData EBranchInstr], [PipeData EOutInstr], State)
+runRS :: State -> Res ([EPipeInstr], State)
 runRS st = do
     let rv robIdx phy  = findRegVal (Q.SubNewToOld robIdx) phy st
         mv robIdx addr = findMemVal (Q.SubNewToOld robIdx) addr st
@@ -276,5 +277,10 @@ runRS st = do
     (bExecs,   bRS)   <- RS.runB     rv    (bRS   st)
     (outExecs, outRS) <- RS.runOut   rv    (outRS st)
 
-    let st' = st { memRS=memRS, alRS=alRS, bRS=bRS, outRS=outRS}
-    return (memExecs, alExecs, bExecs, outExecs, st')
+    let st'       = st { memRS=memRS, alRS=alRS, bRS=bRS, outRS=outRS}
+        memExecs' = fmap (mapPipeData Mem)    memExecs
+        alExecs'  = fmap (mapPipeData AL)     alExecs
+        bExecs'   = fmap (mapPipeData Branch) bExecs
+        outExecs' = fmap (mapPipeData Out)    outExecs
+
+    return (memExecs' ++ alExecs' ++ bExecs' ++ outExecs', st')
