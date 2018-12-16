@@ -92,7 +92,7 @@ instance Show State where
 debugShow :: State -> String
 debugShow st =
         "\nBypass : "  ++ show (bypass st)
-     -- ++ "\nRRT    : "  ++ show (rrt st)
+     ++ "\nRRT    : "  ++ show (rrt st)
      ++ "\nROB    : "  ++ show (rob st)
      ++ "\nMemRS  : "  ++ show (memRS st)
      ++ "\nAL  RS : "  ++ show (alRS st)

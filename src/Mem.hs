@@ -9,10 +9,11 @@ data Mem k v = Mem { arr :: Array k v, maxAddr :: k }
            deriving (Eq, Show)
 
 -- Return string where each memory address is numbered.
-showNumbered :: (Show k, Show v, Ix k) => Mem k v -> String
+showNumbered :: (Show k, Show v, Ix k) => Mem k (Maybe v) -> String
 showNumbered (Empty) = "Empty"
 showNumbered (Mem arr _) = intercalate ", " numbered where
-    numbered = fmap (\(i, x) -> show (i :: Integer) ++ ":" ++ show x) (zip [0..] (elems arr))
+    numbered = fmap (\(i, x) -> show (i :: Integer) ++ ":" ++ s x) (zip [0..] (elems arr))
+    s = maybe "_" show
 
 -- Return string where memory is displayed in blocks.
 showBlocks :: (Show v) => Int -> Mem k v -> String
