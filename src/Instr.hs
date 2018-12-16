@@ -198,6 +198,9 @@ type DPipeInstr  = PipeData DInstr
 type RSPipeInstr = PipeData RSInstr
 type EPipeInstr  = PipeData EInstr
 
+pipeInstr :: PipeData i -> i
+pipeInstr (x, _, _) = x
+
 mapPipeDataM' :: (Monad m) => (ROBIdx -> i1 -> m i2) -> PipeData i1 -> m (PipeData i2)
 mapPipeDataM' f (x, idx, freed) = f idx x >>= \x' -> return (x', idx, freed)
 

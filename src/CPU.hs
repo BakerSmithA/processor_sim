@@ -10,6 +10,7 @@ import WriteBack
 import Decode
 import Types
 import ExecUnit
+import qualified RS as RS
 import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
@@ -81,10 +82,12 @@ writeBackSingle (Terminate)       st = Exit st
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
 -- stages. Do not need to check for execute stage because write-back results
 -- are available via bypass.
-shouldStall :: Pipeline -> Bool
-shouldStall p = f || d where
+shouldStall :: State -> Pipeline -> Bool
+shouldStall st p = f || d || i || rs where
     f  = any isBranch (fetched p)
-    d  = any isBranch (fmap (\(di, _, _) -> di) (decoded p))
+    d  = any isBranch (fmap pipeInstr (decoded p))
+    i  = any isBranch (fmap pipeInstr (issued p))
+    rs = not (RS.isEmpty (bRS st))
 
 -- Shifts instructions through pipeline.
 advancePipeline :: [FInstr] -> State -> Pipeline -> Res (State, Pipeline)
@@ -97,7 +100,7 @@ advancePipeline fetched st1 p = do
 -- previous stages of the pipeline.
 bypassed :: State -> Pipeline -> State
 bypassed st p = St.withBypass b st where
-    b = BP.fromWbs (fmap (\(ei, _, _) -> ei) (executed p))
+    b = BP.fromWbs (fmap pipeInstr (executed p))
 
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)
@@ -116,7 +119,7 @@ cycleStall st1 p = do
 -- Run processor to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> Res (State, Pipeline)
 runPipeline st p = do
-    let x = if not (shouldStall p)
+    let x = if not (shouldStall st p)
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x

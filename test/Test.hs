@@ -13,11 +13,11 @@ import CPUSpec
 main :: IO ()
 main = hspec specs where
     specs = do
-        parserSpec
-        memSpec
-        rrtSpec
-        queueSpec
-        robSpec
-        rsSpec
-        bypassSpec
+        -- parserSpec
+        -- memSpec
+        -- rrtSpec
+        -- queueSpec
+        -- robSpec
+        -- rsSpec
+        -- bypassSpec
         cpuSpec
