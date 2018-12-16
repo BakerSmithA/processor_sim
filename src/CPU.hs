@@ -12,6 +12,7 @@ import Types
 import ExecUnit
 
 -- Fetches a single instruction pointed to by the program counter.
+-- Returns Nothing if PC is past
 takeInstr :: State -> Res (Maybe FInstr, State)
 takeInstr st1 = do
     pc <- St.pcVal st1
@@ -19,6 +20,12 @@ takeInstr st1 = do
     case Mem.load (fromIntegral pc) (instrs st1) of
         Nothing    -> return (Nothing, st2)
         Just instr -> return (Just instr, st2)
+
+-- Fetches the number of instructions specified, stopping at the end of
+-- instructions, or if a branch is encountered (the branch will be included in
+-- returned instrs).
+fetchN :: Int -> State -> Res [FInstr]
+fetchN = undefined
 
 -- Fetches a number of instructions, starting at the instruction pointed to by
 -- the program counter.
@@ -28,12 +35,6 @@ fetch st1 = do
     case maybeFi of
         Nothing -> return ([], st2)
         Just fi -> return ([fi], st2)
-
--- fetch st = do
---     pc <- St.pcVal st
---     case Mem.load (fromIntegral pc) (instrs st) of
---         Nothing    -> return ([], st)
---         Just instr -> return ([instr], st)
 
 -- Places executed results in reorder buffer.
 commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
