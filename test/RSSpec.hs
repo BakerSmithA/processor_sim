@@ -25,7 +25,7 @@ rsSpec = describe "reservation station" $ do
                      , (StoreBaseIdx (Left 0) (Right 3) (Left 5), 0, Nothing)
                      , (StoreBaseIdx (Left 0) (Left 1)  (Left 3), 1, Just 3)]
                 rs  = RS.fromList ins
-                (execs, rs') = runIdentity (RS.runLSQ rv mv rs)
+                (execs, rs') = runIdentity (RS.runMemRS rv mv rs)
 
             execs `shouldBe` [(EStore 5 15, 2, Nothing), (EStore 5 30, 1, Just 3)] -- 30 from 10+20 stored in registers.
             rs'   `shouldBe` RS.fromList [(StoreBaseIdx (Right 5) (Right 3) (Left 5), 0, Nothing)]
@@ -37,7 +37,7 @@ rsSpec = describe "reservation station" $ do
                      , (LoadBaseIdx (6, Nothing) (Left 1)    (Left 3), 1, Nothing)
                      , (LoadIdx     (0, Nothing) (Left 10)   5,        2, Nothing)]
                 rs = RS.fromList ins
-                (execs, rs') = runIdentity (RS.runLSQ rv mv rs)
+                (execs, rs') = runIdentity (RS.runMemRS rv mv rs)
 
             rs' `shouldBe` RS.fromList [(LoadIdx (0, Nothing) (Left 10) 5, 2, Nothing)]
             execs `shouldBe` [(ELoad 5 2 200, 0, Nothing)

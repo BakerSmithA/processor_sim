@@ -11,7 +11,7 @@ import qualified ROB as ROB
 import Error
 import WriteBack
 import RRT
-import RS (LSQ, ArithLogicRS, BranchRS, OutRS)
+import RS (MemRS, ArithLogicRS, BranchRS, OutRS)
 import qualified RS as RS
 import Types
 
@@ -41,7 +41,7 @@ data State = State {
   , rob    :: ROB
   , rrt    :: RRT
    -- Load/Store Queue
-  , lsq    :: LSQ
+  , memRS  :: MemRS
   , alRS   :: ArithLogicRS
   , bRS    :: BranchRS
   , outRS  :: OutRS
@@ -92,7 +92,7 @@ debugShow st =
         "\nBypass : "  ++ show (bypass st)
      ++ "\nRRT    : "  ++ show (rrt st)
      ++ "\nROB    : "  ++ show (rob st)
-     ++ "\nLSQ    : "  ++ show (lsq st)
+     ++ "\nMemRS    : "  ++ show (memRS st)
      ++ "\nAL  RS : "  ++ show (alRS st)
      ++ "\nB   RS : "  ++ show (bRS st)
      ++ "\nOut RS : "  ++ show (outRS st)
@@ -101,7 +101,7 @@ debugShow st =
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
-empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt lsq alRS bRS outRS 0 0 where
+empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS alRS bRS outRS 0 0 where
     maxPhyReg = 15
     mem       = Mem.zeroed 255
     regs      = Mem.fromList (replicate (maxPhyReg+1) (Just 0))
@@ -109,7 +109,7 @@ empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass 
     bypass    = BP.empty
     rob       = ROB.empty 5
     rrt       = RRT.fromConstRegs [pc, sp, lr, bp, ret] maxPhyReg
-    lsq       = RS.empty
+    memRS       = RS.empty
     alRS      = RS.empty
     bRS       = RS.empty
     outRS     = RS.empty
@@ -247,7 +247,7 @@ getPhyReg reg st =
 -- Adds an instruction to its corresponding reservation station, e.g. branch
 -- instruction goes to branch RS.
 addRS :: DPipeInstr -> State -> State
-addRS (Mem    di, idx, freed) st = st { lsq   = RS.add (RS.rsMemInstr di, idx, freed) (lsq   st)}
+addRS (Mem    di, idx, freed) st = st { memRS   = RS.add (RS.rsMemInstr di, idx, freed) (memRS   st)}
 addRS (AL     di, idx, freed) st = st { alRS  = RS.add (RS.rsALInstr  di, idx, freed) (alRS  st)}
 addRS (Branch di, idx, freed) st = st { bRS   = RS.add (RS.rsBInstr   di, idx, freed) (bRS   st)}
 addRS (Out    di, idx, freed) st = st { outRS = RS.add (RS.rsOutInstr di, idx, freed) (outRS st)}
@@ -259,10 +259,10 @@ runRS st = do
     let rv phy  = regVal phy st
         mv addr = memVal addr st
 
-    (memExecs, lsq)   <- RS.runLSQ rv mv (lsq   st)
+    (memExecs, memRS)   <- RS.runMemRS rv mv (memRS   st)
     (alExecs,  alRS)  <- RS.runAL  rv    (alRS  st)
     (bExecs,   bRS)   <- RS.runB   rv    (bRS   st)
     (outExecs, outRS) <- RS.runOut rv    (outRS st)
 
-    let st' = st { lsq=lsq, alRS=alRS, bRS=bRS, outRS=outRS}
+    let st' = st { memRS=memRS, alRS=alRS, bRS=bRS, outRS=outRS}
     return (memExecs, alExecs, bExecs, outExecs, st')

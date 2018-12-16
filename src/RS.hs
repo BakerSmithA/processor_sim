@@ -46,16 +46,16 @@ run fill promote rs1 = do
                         Just i  -> (i:execIs, rs)
 
 -- Load store queue.
-type LSQ = RS RSMemInstr EMemInstr
+type MemRS = RS RSMemInstr EMemInstr
 
--- Prepare a decoded instruction to be placed in the LSQ.
+-- Prepare a decoded instruction to be placed in the MemRS.
 rsMemInstr :: DMemInstr -> RSMemInstr
 rsMemInstr = mapMem (\r -> (r, Nothing)) Left
 
--- Tries to fill in operands of instructions in LSQ, and remove instructions
+-- Tries to fill in operands of instructions in MemRS, and remove instructions
 -- which can be run.
-runLSQ :: (Monad m) => RegVal m -> MemVal m -> LSQ -> m ([PipeData EMemInstr], LSQ)
-runLSQ regVal memVal lsq = run (fillMem regVal memVal) promoteMem lsq
+runMemRS :: (Monad m) => RegVal m -> MemVal m -> MemRS -> m ([PipeData EMemInstr], MemRS)
+runMemRS regVal memVal memRS = run (fillMem regVal memVal) promoteMem memRS
 
 -- Fills in operands of a memory instruction.
 -- Goes to memory to load a value for load instructions.
