@@ -11,14 +11,29 @@ import Decode
 import Types
 import ExecUnit
 
--- Perform fetch state of pipeline by retreiving instruction.
--- Or, return Nothing if the value of the pc is after the last instruction.
+-- Fetches a single instruction pointed to by the program counter.
+takeInstr :: State -> Res (Maybe FInstr, State)
+takeInstr st1 = do
+    pc <- St.pcVal st1
+    st2 <- incPc st1
+    case Mem.load (fromIntegral pc) (instrs st1) of
+        Nothing    -> return (Nothing, st2)
+        Just instr -> return (Just instr, st2)
+
+-- Fetches a number of instructions, starting at the instruction pointed to by
+-- the program counter.
 fetch :: State -> Res ([FInstr], State)
-fetch st = do
-    pc <- St.pcVal st
-    case Mem.load (fromIntegral pc) (instrs st) of
-        Nothing    -> return ([], st)
-        Just instr -> return ([instr], st)
+fetch st1 = do
+    (maybeFi, st2) <- takeInstr st1
+    case maybeFi of
+        Nothing -> return ([], st2)
+        Just fi -> return ([fi], st2)
+
+-- fetch st = do
+--     pc <- St.pcVal st
+--     case Mem.load (fromIntegral pc) (instrs st) of
+--         Nothing    -> return ([], st)
+--         Just instr -> return ([instr], st)
 
 -- Places executed results in reorder buffer.
 commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
@@ -90,8 +105,7 @@ cycle :: State -> Pipeline -> Res (State, Pipeline)
 cycle st1 p = do
     (fetched, st2) <- fetch st1
     (st3, p') <- advancePipeline fetched st2 p
-    st4 <- incPc st3
-    return (bypassed st4 p', p')
+    return (bypassed st3 p', p')
 
 -- Shift instructions through pipeline without fetching a new instruction.
 -- PC is also NOT updated.
