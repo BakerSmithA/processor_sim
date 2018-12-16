@@ -10,13 +10,13 @@ import WriteBack
 import Decode
 import Types
 import ExecUnit
+import Debug.Trace
+
 -- Removes any instructions that occur after a branch.
 stopAtBranch :: [FInstr] -> [FInstr]
-stopAtBranch = fst . (foldl f ([], True)) where
-    -- Stop taking elements if branch is encountered.
-    -- Only take elements if cond is True.
-    f (fis, True)  i = (i:fis, isBranch i)
-    f (fis, False) _ = (fis, False)
+stopAtBranch [] = []
+stopAtBranch (i:is) | isBranch i = [i]
+                    | otherwise  = i:(stopAtBranch is)
 
 -- Fetches the number of instructions specified, stopping at the end of
 -- instructions, or if a branch is encountered (the branch will be included in
@@ -29,7 +29,7 @@ fetchN n start st = stopAtBranch $ Mem.take n start (instrs st)
 fetch :: State -> Res ([FInstr], State)
 fetch st1 = do
      pc <- St.pcVal st1
-     let fis = fetchN 1 (fromIntegral pc) st1
+     let fis = fetchN 2 (fromIntegral pc) st1
          n   = fromIntegral $ length fis
      st2 <- St.incPC n st1
      return (fis, st2)
@@ -114,6 +114,7 @@ runPipeline st p = do
                 else CPU.cycleStall st p
     (st', p') <- x
     runPipeline (St.incCycles st') p'
+    -- trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State

@@ -6,6 +6,7 @@ import State as St
 import Instr
 import WriteBack
 import Types
+import Debug.Trace
 
 -- Add all decoded instruction to a reservation station, then promote any completed,
 -- instructions, and finally execute those and return the writeback instructions.
@@ -20,14 +21,14 @@ exec dis st1 = foldM f ([], st1) dis where
 execI :: DPipeInstr -> State -> Res ([(PipeData WriteBack)], State)
 execI di st1 = do
     let st2 = St.addRS di st1
-    (mems, als, bs, outs, st2) <- St.runRS st2
+    (mems, als, bs, outs, st3) <- St.runRS st2
 
     memWbs <- mapM (mapPipeDataM lsu)      mems
     alWbs  <- mapM (mapPipeDataM alu)      als
-    bWbs   <- mapM (mapPipeDataM (bu st2)) bs
+    bWbs   <- mapM (mapPipeDataM (bu st3)) bs
     outWbs <- mapM (mapPipeDataM ou)       outs
 
-    return (memWbs ++ alWbs ++ bWbs ++ outWbs, st2)
+    trace (debugShow st2) $ return (memWbs ++ alWbs ++ bWbs ++ outWbs, st3)
 
 -- Load/Store Unit.
 lsu :: EMemInstr -> Res WriteBack
