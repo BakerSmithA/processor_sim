@@ -10,19 +10,16 @@ type MemVal m = ROBIdx -> Addr -> m Val
 
 -- General pupose reservation station. Is specialised for different types of
 -- instructions.
-type RS a b = [Either (PipeData a) (PipeData b)]
+type RS a = [PipeData a]
 
-empty :: RS a b
+empty :: RS a
 empty = []
 
-fromList :: [PipeData a] -> RS a b
-fromList = map Left
+fromList :: [PipeData a] -> RS a
+fromList = id
 
-fromList' :: [Either (PipeData a) (PipeData b)] -> RS a b
-fromList' = id
-
-add :: PipeData a -> RS a b -> RS a b
-add x rs = (Left x):rs
+add :: PipeData a -> RS a -> RS a
+add = (:)
 
 run :: (Monad m)
     -- Fills in operands in an instruction.
@@ -31,24 +28,23 @@ run :: (Monad m)
     -- executable version of the instruction if so.
     -> (a -> Maybe b)
     -- Reservation station to operate over.
-    -> RS a b
+    -> RS a
     -- Returns any instructions ready to be executed, and the new state of the RS.
-    -> m ([PipeData b], RS a b)
+    -> m ([PipeData b], RS a)
 
 run fill promote rs1 = do
     -- Do not modify any filled instructions that are still in the RS.
-    rs2 <- mapM (either (fmap Left . (mapPipeDataM' fill)) (return . Right)) rs1
+    rs2 <- mapM (mapPipeDataM' fill) rs1
     return (foldr checkDone ([], []) rs2) where
         checkDone i (execIs, rs) =
-            case i of
-                Right execInstr -> (execInstr:execIs, rs)
-                Left  rsInstr   ->
-                    case mapPipeDataM promote rsInstr of
-                        Nothing -> (execIs, i:rs)
-                        Just i  -> (i:execIs, rs)
+            case mapPipeDataM promote i of
+                -- The instruction did not have all operands filled in.
+                Nothing -> (execIs, i:rs)
+                -- The instruction has all operands filled in.
+                Just ei -> (ei:execIs, rs)
 
 -- Load store queue.
-type MemRS = RS RSMemInstr EMemInstr
+type MemRS = RS RSMemInstr
 
 -- Prepare a decoded instruction to be placed in the MemRS.
 rsMemInstr :: DMemInstr -> RSMemInstr
@@ -107,7 +103,7 @@ promoteMem (StoreBaseIdx src base off) = do
     off'  <- rightToMaybe off
     return (EStore src' (fromIntegral $ base' + off'))
 
-type ArithLogicRS = RS RSALInstr EALInstr
+type ArithLogicRS = RS RSALInstr
 
 -- Prepare a decoded instruction to be placed in the RS.
 rsALInstr :: DALInstr -> RSALInstr
@@ -128,7 +124,7 @@ promoteAL :: RSALInstr -> Maybe EALInstr
 promoteAL = mapALM return f where
     f = either (const Nothing) Just
 
-type BranchRS = RS RSBranchInstr EBranchInstr
+type BranchRS = RS RSBranchInstr
 
 -- Prepare a decoded instruction to be placed in the RS.
 rsBInstr :: DBranchInstr -> RSBranchInstr
@@ -150,7 +146,7 @@ promoteB :: RSBranchInstr -> Maybe EBranchInstr
 promoteB = mapBM f f where
     f = either (const Nothing) Just
 
-type OutRS = RS RSOutInstr EOutInstr
+type OutRS = RS RSOutInstr
 
 -- Prepare a decoded instruction to be placed in the RS.
 rsOutInstr :: DOutInstr -> RSOutInstr
