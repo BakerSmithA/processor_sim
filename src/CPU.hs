@@ -10,32 +10,30 @@ import WriteBack
 import Decode
 import Types
 import ExecUnit
-
--- Fetches a single instruction pointed to by the program counter.
--- Returns Nothing if PC is past
-takeInstr :: State -> Res (Maybe FInstr, State)
-takeInstr st1 = do
-    pc <- St.pcVal st1
-    st2 <- incPc st1
-    case Mem.load (fromIntegral pc) (instrs st1) of
-        Nothing    -> return (Nothing, st2)
-        Just instr -> return (Just instr, st2)
+-- Removes any instructions that occur after a branch.
+stopAtBranch :: [FInstr] -> [FInstr]
+stopAtBranch = fst . (foldl f ([], True)) where
+    -- Stop taking elements if branch is encountered.
+    -- Only take elements if cond is True.
+    f (fis, True)  i = (i:fis, isBranch i)
+    f (fis, False) _ = (fis, False)
 
 -- Fetches the number of instructions specified, stopping at the end of
 -- instructions, or if a branch is encountered (the branch will be included in
 -- returned instrs).
-fetchN :: Int -> State -> Res [FInstr]
-fetchN = undefined
+fetchN :: Addr -> Addr -> State -> [FInstr]
+fetchN n start st = stopAtBranch $ Mem.take n start (instrs st)
 
 -- Fetches a number of instructions, starting at the instruction pointed to by
 -- the program counter.
 fetch :: State -> Res ([FInstr], State)
 fetch st1 = do
-    (maybeFi, st2) <- takeInstr st1
-    case maybeFi of
-        Nothing -> return ([], st2)
-        Just fi -> return ([fi], st2)
-
+     pc <- St.pcVal st1
+     let fis = fetchN 1 (fromIntegral pc) st1
+         n   = fromIntegral $ length fis
+     st2 <- St.incPC n st1
+     return (fis, st2)
+     
 -- Places executed results in reorder buffer.
 commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
 commit wbs st = return (St.addROB st wbs)
@@ -71,13 +69,6 @@ writeBackSingle (WriteMem i val)  st = St.setMemVal i val st
 writeBackSingle (WritePrint s)    st = addOutput s st
 writeBackSingle (NoOp)            st = return st
 writeBackSingle (Terminate)       st = Exit st
-
--- Increment PC by 1.
-incPc :: State -> Res State
-incPc st = do
-    pc <- pcVal st
-    pcReg <- St.namedReg pcIdx st
-    CPU.setRegVal pcReg (pc+1) st
 
 -- Return whether the pipeline should stall to wait for branch instructions
 -- to be executed, i.e. if there are branch instructions in the fetch or decode

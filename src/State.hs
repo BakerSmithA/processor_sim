@@ -185,6 +185,13 @@ namedRegVal getReg st = do
 pcVal :: State -> Res Val
 pcVal = namedRegVal pcIdx
 
+-- Increment PC by given amount.
+incPC :: Val -> State -> Res State
+incPC n st = do
+    pc <- pcVal st
+    pcReg <- namedReg pcIdx st
+    setRegVal pcReg (Just $ pc+n) st
+
 -- Sets the value of a register in the physical register file.
 setRegVal :: PhyReg -> Maybe Val -> State -> Res State
 setRegVal i val st =
