@@ -101,12 +101,20 @@ debugShow st =
      ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
      ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
 
+-- Defaults value of special registers to 0.
+-- This is because they may be used without being initialised, e.g. SP.
+defaultedMem :: [Maybe Val] -> RRT -> [Maybe Val]
+defaultedMem vals rrt = map f (zip [0..] vals) where
+    f :: (RegIdx, Maybe Val) -> Maybe Val
+    f (r, val) | isConst r rrt = Just 0
+               | otherwise     = val
+
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS alRS bRS outRS 0 0 where
     maxPhyReg = 15
     mem       = Mem.zeroed 255
-    regs      = Mem.fromList (replicate (maxPhyReg+1) Nothing)
+    regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
     instrs'   = Mem.fromList instrs
     bypass    = BP.empty
     rob       = ROB.empty 5
