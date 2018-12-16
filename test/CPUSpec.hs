@@ -22,14 +22,6 @@ cpuSpec :: Spec
 cpuSpec = describe "execution" $ do
     context "normal execution" $ do
         context "memory" $ do
-            it "interprets MoveI" $ do
-                let vm = runVm [moveI 0 5] []
-                regVal 0 vm `shouldBe` Res 5
-
-            it "interprets Move" $ do
-                let vm = runVm [moveI 0 6, move 1 0] []
-                regVal 1 vm `shouldBe` Res 6
-
             it "interprets LoadIdx" $ do
                 let vm  = runVm [moveI 0 1, loadIdx 1 0 2] [1, 2, 3, 4, 5]
                 regVal 1 vm `shouldBe` Res 4
@@ -47,6 +39,14 @@ cpuSpec = describe "execution" $ do
                 St.mem vm `shouldBe` Mem.fromList [0, 0, 0, 0, 0, 7]
 
         context "ALU instructions" $ do
+            it "interprets MoveI" $ do
+                let vm = runVm [moveI 0 5] []
+                regVal 0 vm `shouldBe` Res 5
+
+            it "interprets Move" $ do
+                let vm = runVm [moveI 0 6, move 1 0] []
+                regVal 1 vm `shouldBe` Res 6
+
             it "interprets Add" $ do
                 let vm  = runVm [moveI 0 1, moveI 1 2, add 2 0 1] []
                 regVal 2 vm `shouldBe` Res 3
