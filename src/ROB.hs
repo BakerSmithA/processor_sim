@@ -44,21 +44,25 @@ set :: ROBIdx -> WriteBack -> FreedReg -> ROB -> ROB
 set i wb freed (ROB q) = ROB q' where
     q' = Q.set i (Just (wb, freed)) q
 
--- Searches in the ROB for the most recent value of a register, or returns
+-- Searches in the ROB for the most recent value of a register, before
+-- the given index. This ensures the reg value is the logically most recent
+-- before the instruction at the given index.
 -- Nothing if an update to the register is not stored in the ROB.
 regVal :: PhyReg -> ROB -> Maybe Val
 regVal exp (ROB q) = do
-    Just (WriteReg _ val, _) <- Q.findNewest c q
+    Just (WriteReg _ val, _) <- Q.findOldest 0 c q
     return val
         where
             c (Just (WriteReg reg _, _)) = reg == exp
             c _ = False
 
--- Searches in the ROB for the most recent value of a memory address, or
--- returns Nothing if an update to the address is not stored in the ROB.
+-- Searches in the ROB for the most recent value of a memory address, before
+-- the given index. This ensures the mem value is the logically most recent
+-- before the instruction at the given index.
+-- Or, returns Nothing if an update to the address is not stored in the ROB.
 memVal :: Addr -> ROB -> Maybe Val
 memVal exp (ROB q) = do
-    Just (WriteMem _ val, _) <- Q.findNewest c q
+    Just (WriteMem _ val, _) <- Q.findOldest 0 c q
     return val
         where
             c (Just (WriteMem addr _, _)) = addr == exp

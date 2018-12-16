@@ -3,6 +3,7 @@ module Queue where
 import Data.Array (Array, (//), (!))
 import qualified Data.Array as Arr
 import Data.List (find)
+import Debug.Trace
 
 type Start = Int
 type End   = Int
@@ -11,6 +12,10 @@ type Len   = Int
 -- Start points to next available space, and end points to last element in array.
 data Range = Range Start End Len
            deriving (Show, Eq)
+
+-- Sets a new start index for the range.
+newEnd :: Start -> Range -> Range
+newEnd e (Range s _ l) = Range s e l
 
 -- Returns index of last element in queue, or Nothing if the queue is empty.
 last :: Range -> Maybe Int
@@ -66,11 +71,20 @@ fromList xs = Queue arr (Range 0 0 (length xs)) where
 allElems :: Queue a -> [a]
 allElems (Queue es _) = Arr.elems es
 
--- Returns all valid elements of the queue, in order from start to end.
--- I.e. newest to oldest.
+-- Takes elements of array from list of indices.
+takeIndices :: [Int] -> Array Int a -> [a]
+takeIndices is arr = foldr f [] is where
+    f i acc = (arr ! i):acc
+
+-- Returns all valid elements of the queue, in order from the given end to the start.
+-- I.e. logically newer than element at given index.
+elemsFiltered :: Start -> Queue a -> [a]
+elemsFiltered s (Queue es r) = takeIndices (reverse $ indices r') es where
+    r' = newEnd s r
+
+-- Return elements in order oldest to newest.
 elems :: Queue a -> [a]
-elems (Queue es r) = foldr f [] (indices r) where
-    f i acc = (es ! i):acc
+elems (Queue es r) = takeIndices (reverse $ indices r) es
 
 -- Place an element at the start of the queue.
 enq :: a -> Queue a -> (Int, Queue a)
@@ -103,6 +117,7 @@ get i (Queue es r) =
         then es ! i
         else error "Out of bounds get in Queue"
 
--- Searches for most recent element (i.e. closest to start) that statisfies predicate.
-findNewest :: (Show a) => (a -> Bool) -> Queue a -> Maybe a
-findNewest cond q = find cond (elems q)
+-- Searches for the first element logically newer than the element at the given
+-- index, which also satisfies the predicate.
+findOldest :: (Show a) => Start -> (a -> Bool) -> Queue a -> Maybe a
+findOldest s cond q = find cond (elemsFiltered s q)

@@ -12,7 +12,7 @@ queueSpec = describe "queue" $ do
 
         it "inserts multiple elements" $ do
             let q = snd $ Q.enq 15 (snd $ Q.enq 10 (snd $ Q.enq 5 (Q.fromList [0, 0, 0, 0])))
-            Q.elems q `shouldBe` [15, 10, 5]
+            Q.elems q `shouldBe` [5, 10, 15]
 
     context "set" $ do
         it "sets element" $ do
@@ -45,18 +45,35 @@ queueSpec = describe "queue" $ do
             let q = Q.fromList [0, 0, 0, 0]
             Q.peek q `shouldBe` Nothing
 
-    context "find newest" $ do
-        it "returns element closest to tail (most recent) that matches predicate" $ do
-            let q = snd $ Q.enq 15 (snd $ Q.enq 10 (snd $ Q.enq 5 (Q.fromList [0, 0, 0, 0])))
-                x = Q.findNewest (>9) q
+    context "find oldest" $ do
+        it "returns oldest element that matches predicate 1" $ do
+            let q0        = Q.fromList [0, 0, 0, 0]
+                (_,   q1) = Q.enq 5  q0
+                (i10, q2) = Q.enq 10 q1
+                (_,   q3) = Q.enq 15 q2
+                x         = Q.findOldest i10 (>1) q3
+            x `shouldBe` Just 10
+
+        it "returns oldest element that matches predicate 1" $ do
+            let q0       = Q.fromList [0, 0, 0, 0]
+                (i5, q1) = Q.enq 5  q0
+                (_,  q2) = Q.enq 10 q1
+                (_,  q3) = Q.enq 15 q2
+                x        = Q.findOldest i5 (>1) q3
+            x `shouldBe` Just 5
+
+        it "returns oldest element that matches predicate 3" $ do
+            let q0       = Q.fromList [0, 0, 0, 0]
+                (_,   q1) = Q.enq 5  q0
+                (_,   q2) = Q.enq 10 q1
+                (i15, q3) = Q.enq 15 q2
+                x        = Q.findOldest i15 (>1) q3
             x `shouldBe` Just 15
 
-        it "returns Nothing if no matches" $ do
-            let q = snd $ Q.enq 15 (snd $ Q.enq 10 (snd $ Q.enq 5 (Q.fromList [0, 0, 0, 0])))
-                x = Q.findNewest (>20) q
-            x `shouldBe` Nothing
-
-        it "returns Nothing if no matches" $ do
-            let q = snd $ Q.enq 15 (snd $ Q.enq 10 (snd $ Q.enq 5 (Q.fromList [0, 0, 0, 0])))
-                x = Q.findNewest (<3) q
+        it "returns nothing if no element matches" $ do
+            let q0       = Q.fromList [0, 0, 0, 0]
+                (i5, q1) = Q.enq 5  q0
+                (_,  q2) = Q.enq 10 q1
+                (_,  q3) = Q.enq 15 q2
+                x        = Q.findOldest i5 (>100) q3
             x `shouldBe` Nothing

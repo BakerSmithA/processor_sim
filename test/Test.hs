@@ -15,7 +15,7 @@ main = hspec specs where
         parserSpec
         rrtSpec
         queueSpec
-        robSpec
-        rsSpec
-        bypassSpec
-        cpuSpec
+        -- robSpec
+        -- rsSpec
+        -- bypassSpec
+        -- cpuSpec
