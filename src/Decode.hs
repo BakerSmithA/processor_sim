@@ -1,6 +1,7 @@
 module Decode where
 
 import Control.Monad.Trans.State.Lazy (StateT(..), runStateT)
+import Control.Monad (foldM)
 import qualified Control.Monad.State as MSt
 import Instr
 import State (State, Res)
@@ -10,8 +11,11 @@ import Types
 -- Because instruction are already parsed into struct, no need to decode.
 -- However, register renaming will be performed at this step and allocting
 -- the instruction a space in the reorder buffer.
-decode :: FInstr -> State -> Res (DPipeInstr, State)
-decode fi st = runStateT (decodeI fi) st
+decode :: [FInstr] -> State -> Res ([DPipeInstr], State)
+decode fis s = foldM f ([], s) fis where
+    f (dis, st1) fi = do
+        (di, st2) <- runStateT (decodeI fi) st1
+        return (di:dis, st2)
 
 decodeI :: FInstr -> StateT State Res DPipeInstr
 decodeI fi = do

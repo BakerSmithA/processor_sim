@@ -1,15 +1,24 @@
 module ExecUnit where
 
+import Control.Monad (foldM)
 import Data.Char (chr)
 import State as St
 import Instr
 import WriteBack
 import Types
 
+-- Add all decoded instruction to a reservation station, then promote any completed,
+-- instructions, and finally execute those and return the writeback instructions.
+exec :: [DPipeInstr] -> State -> Res ([(PipeData WriteBack)], State)
+exec dis st1 = foldM f ([], st1) dis where
+    f (allWbs, st) di = do
+        (wbs, st') <- execI di st
+        return (wbs ++ allWbs, st')
+
 -- Add decoded instruction to a reservation station, then promote any completed,
 -- instructions, and finally execute those and return the writeback instructions.
-exec :: DPipeInstr -> State -> Res ([(PipeData WriteBack)], State)
-exec di st1 = do
+execI :: DPipeInstr -> State -> Res ([(PipeData WriteBack)], State)
+execI di st1 = do
     let st2 = St.addRS di st1
     (mems, als, bs, outs, st2) <- St.runRS st2
 

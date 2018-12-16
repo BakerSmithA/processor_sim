@@ -6,17 +6,17 @@ import Types
 
 -- 5 stage pipeline: fetch, decod, execute, commit, and write-back.
 data Pipeline = Pipeline {
-    fetched   :: Maybe FInstr
-  , decoded   :: Maybe DPipeInstr
+    fetched   :: [FInstr]
+  , decoded   :: [DPipeInstr]
   , executed  :: [(WriteBack, ROBIdx, FreedReg)]
 } deriving (Show)
 
 -- FInstruction that was fetched, or Nothing if stalled at this stage.
-type Fetched a = (Maybe FInstr, a)
+type Fetched a = ([FInstr], a)
 -- Decodes a fetched instruction, or Nothing if stalls at this stage.
-type Decoder m a = FInstr -> a -> m (DPipeInstr, a)
+type Decoder m a = [FInstr] -> a -> m ([DPipeInstr], a)
 -- Executes a decoded instruction.
-type Executer m a = DPipeInstr -> a -> m ([PipeData WriteBack], a)
+type Executer m a = [DPipeInstr] -> a -> m ([PipeData WriteBack], a)
 -- Commits any executed instructions in ROB, and returns instructions that can be committed.
 type Committer m a = [PipeData WriteBack] -> a -> m a
 -- Writes instructions results to memory/registers.
@@ -24,26 +24,28 @@ type Writer m a = a -> m a
 
 -- Return pipeline with nothing in each stage.
 empty :: Pipeline
-empty = Pipeline Nothing Nothing []
+empty = Pipeline [] [] []
 
 -- Helper function for steps of pipeline.
-step :: (Monad m1, Monad m2) => m2 c -> (a -> b -> m1 (a, m2 c)) -> a -> Maybe b -> m1 (a, m2 c)
-step empty f x = maybe (return (x, empty)) success where
-    success y = do
-        (x', z) <- f x y
-        return (x', z)
+-- step :: (Monad m1, Monad m2) => m2 c -> (a -> b -> m1 (a, m2 c)) -> a -> [b] -> m1 (a, m2 c)
+-- step empty f x = maybe (return (x, empty)) success where
+--     success y = do
+--         (x', z) <- f x y
+--         return (x', z)
 
--- Steps a fetched instruction through the decode section of the pipeline.
-decodeStep :: (Monad m) => Decoder m a -> a -> Maybe FInstr -> m (a, Maybe DPipeInstr)
-decodeStep decode = step Nothing $ \x instr -> do
-    (decoded, x') <- decode instr x
-    return (x', Just decoded)
+-- decodeStep decode x = foldM f ([], x) where
+--     f (ds1, x1) fi = do
+--         (ds2, x2) <- decode
 
--- Steps a decoded instruction through the exectution step of the pipeline.
-execStep :: (Monad m) => Executer m a -> a -> Maybe DPipeInstr -> m (a, [PipeData WriteBack])
-execStep exec = step [] $ \x instr -> do
-    (wbs, x') <- exec instr x
-    return (x', wbs)
+--  ([DPipeInstr], a) -> FInstr -> m ([DPipeInstr], a)
+
+-- decodeStep decode = step [] $ \x instr -> do
+--     (decoded, x') <- decode instr x
+--     return (x', decoded)
+
+-- execStep exec = step [] $ \x instr -> do
+--     (wbs, x') <- exec instr x
+--     return (x', wbs)
 
 -- Steps an executed instruction through the commit stage of the pipeline.
 commitStep :: (Monad m) => Committer m a -> a -> [PipeData WriteBack] -> m a
@@ -60,8 +62,8 @@ advance :: (Monad m) => Fetched a
                      -> m (a, Pipeline)
 
 advance (f, x1) decode exec commit write p = do
-    (x2, d) <- decodeStep decode x1 (fetched p)
-    (x3, e) <- execStep   exec   x2 (decoded p)
-    x4      <- commitStep commit x3 (executed p)
-    x5      <- write             x4
+    (d, x2) <- decode (fetched p) x1
+    (e, x3) <- exec   (decoded p) x2 
+    x4      <- commitStep commit  x3 (executed p)
+    x5      <- write              x4
     return (x5, Pipeline f d e)

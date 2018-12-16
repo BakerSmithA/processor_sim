@@ -13,12 +13,12 @@ import ExecUnit
 
 -- Perform fetch state of pipeline by retreiving instruction.
 -- Or, return Nothing if the value of the pc is after the last instruction.
-fetch :: State -> Res (Maybe FInstr, State)
+fetch :: State -> Res ([FInstr], State)
 fetch st = do
     pc <- St.pcVal st
     case Mem.load (fromIntegral pc) (instrs st) of
-        Nothing    -> return (Nothing, st)
-        Just instr -> return (Just instr, st)
+        Nothing    -> return ([], st)
+        Just instr -> return ([instr], st)
 
 -- Places executed results in reorder buffer.
 commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
@@ -69,11 +69,11 @@ incPc st = do
 -- are available via bypass.
 shouldStall :: Pipeline -> Bool
 shouldStall p = f || d where
-    f  = maybe False isBranch (fetched p)
-    d  = maybe False isBranch (fmap (\(di, _, _) -> di) (decoded p))
+    f  = any isBranch (fetched p)
+    d  = any isBranch (fmap (\(di, _, _) -> di) (decoded p))
 
 -- Shifts instructions through pipeline.
-advancePipeline :: Maybe FInstr -> State -> Pipeline -> Res (State, Pipeline)
+advancePipeline :: [FInstr] -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st1 p = do
     (st2, p') <- P.advance (fetched, st1) decode exec CPU.commit writeBack p
     return (st2, p')
@@ -97,7 +97,7 @@ cycle st1 p = do
 -- PC is also NOT updated.
 cycleStall :: State -> Pipeline -> Res (State, Pipeline)
 cycleStall st1 p = do
-    (st2, p') <- advancePipeline Nothing st1 p
+    (st2, p') <- advancePipeline [] st1 p
     return (bypassed st2 p', p')
 
 -- Run processor to completion, i.e. until exit system call occurs.
