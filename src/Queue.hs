@@ -132,4 +132,7 @@ data Search
 find :: (Show a) => Search -> (a -> Bool) -> Queue a -> Maybe a
 find (NewToOld)      cond q = List.find cond (elemsNewOld q)
 find (OldToNew)      cond q = List.find cond (reverse $ elemsNewOld q)
-find (SubNewToOld s) cond q = List.find cond (elemsRange (newStart s (range q)) q)
+find (SubNewToOld s) cond q =
+    if inRange s (range q)
+        then List.find cond (elemsRange (newStart s (range q)) q)
+        else error "Out of bounds search sub new to old in Queue"
