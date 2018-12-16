@@ -4,10 +4,10 @@ import Test.Hspec
 import ParserSpec
 import RRTSpec
 import QueueSpec
-import ROBSpec
-import RSSpec
-import BypassSpec
-import CPUSpec
+-- import ROBSpec
+-- import RSSpec
+-- import BypassSpec
+-- import CPUSpec
 
 main :: IO ()
 main = hspec specs where

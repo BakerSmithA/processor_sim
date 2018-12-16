@@ -3,7 +3,6 @@ module Queue where
 import Data.Array (Array, (//), (!))
 import qualified Data.Array as Arr
 import Data.List (find)
-import Debug.Trace
 
 type Start = Int
 type End   = Int
@@ -13,7 +12,11 @@ type Len   = Int
 data Range = Range Start End Len
            deriving (Show, Eq)
 
--- Sets a new start index for the range.
+-- Sets a start index for the range.
+newStart :: Start -> Range -> Range
+newStart s (Range _ e l) = Range s e l
+
+-- Sets a new end index for the range.
 newEnd :: Start -> Range -> Range
 newEnd e (Range s _ l) = Range s e l
 
@@ -76,15 +79,13 @@ takeIndices :: [Int] -> Array Int a -> [a]
 takeIndices is arr = foldr f [] is where
     f i acc = (arr ! i):acc
 
--- Returns all valid elements of the queue, in order from the given end to the start.
--- I.e. logically newer than element at given index.
-elemsFiltered :: Start -> Queue a -> [a]
-elemsFiltered s (Queue es r) = takeIndices (reverse $ indices r') es where
-    r' = newEnd s r
+-- Returns all valid elements of the queue in the range.
+elemsRange :: Range -> Queue a -> [a]
+elemsRange r (Queue es _) = takeIndices (indices r) es
 
--- Return elements in order oldest to newest.
-elems :: Queue a -> [a]
-elems (Queue es r) = takeIndices (reverse $ indices r) es
+-- Return elements in order newest to oldest.
+elemsNewOld :: Queue a -> [a]
+elemsNewOld (Queue es r) = takeIndices (indices r) es
 
 -- Place an element at the start of the queue.
 enq :: a -> Queue a -> (Int, Queue a)
@@ -117,7 +118,18 @@ get i (Queue es r) =
         then es ! i
         else error "Out of bounds get in Queue"
 
+-- Specifies direction and range of search.
+data Search
+    -- Search from new to old elements.
+    = NewToOld
+    -- Search from old to new elements.
+    | OldToNew
+    -- Search from old to new, but with a different starting search point, non-inclusive.
+    | SubNewToOld Int
+
 -- Searches for the first element logically newer than the element at the given
 -- index, which also satisfies the predicate.
-findOldest :: (Show a) => Start -> (a -> Bool) -> Queue a -> Maybe a
-findOldest s cond q = find cond (elemsFiltered s q)
+findQ :: (Show a) => Search -> (a -> Bool) -> Queue a -> Maybe a
+findQ (NewToOld)      cond q = find cond (elemsNewOld q)
+findQ (OldToNew)      cond q = find cond (reverse $ elemsNewOld q)
+findQ (SubNewToOld s) cond q = find cond (elemsRange (newStart s (range q)) q)
