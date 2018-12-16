@@ -33,7 +33,7 @@ fetch st1 = do
          n   = fromIntegral $ length fis
      st2 <- St.incPC n st1
      return (fis, st2)
-     
+
 -- Places executed results in reorder buffer.
 commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
 commit wbs st = return (St.addROB st wbs)

@@ -15,3 +15,8 @@ memSpec = describe "mem" $ do
             let mem = Mem.fromList ['a', 'b', 'c', 'd']
                 xs  = Mem.take 10 1 mem
             xs `shouldBe` ['b', 'c', 'd']
+
+        it "takes nothing if past last element" $ do
+            let mem = Mem.fromList ['a', 'b', 'c', 'd']
+                xs  = Mem.take 10 20 mem
+            xs `shouldBe` []
