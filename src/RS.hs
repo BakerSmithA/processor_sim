@@ -2,7 +2,6 @@ module RS where
 
 import Instr
 import Types
-import Helper (tryPick)
 
 type RegVal m = PhyReg -> m (Maybe Val)
 type MemVal m = Addr -> m Val
@@ -29,16 +28,12 @@ run :: (Monad m)
     -- Checks whether an instruction has all operands filled, and returns an
     -- executable version of the instruction if so.
     -> (a -> Maybe b)
-    -- Returns whether an executable instruction should be removed from the RS.
-    -- Useful for the load/store queue, where extra checks need to occur to
-    -- ensure memory accesses occur in the correct order.
-    -> (b -> Bool)
     -- Reservation station to operate over.
     -> RS a b
     -- Returns any instructions ready to be executed, and the new state of the RS.
     -> m ([PipeData b], RS a b)
 
-run fill promote shouldPromote rs1 = do
+run fill promote rs1 = do
     -- Do not modify any filled instructions that are still in the RS.
     rs2 <- mapM (either (fmap Left . (mapPipeDataM fill)) (return . Right)) rs1
     return (foldr checkDone ([], []) rs2) where
@@ -47,23 +42,11 @@ run fill promote shouldPromote rs1 = do
                 Right execInstr -> (execInstr:execIs, rs)
                 Left  rsInstr   ->
                     case mapPipeDataM promote rsInstr of
-                        Nothing        -> (execIs, i:rs)
-                        Just (i, idx, freed) ->
-                            if shouldPromote i
-                                then ((i, idx, freed):execIs, rs)
-                                else (execIs, (Right (i, idx, freed)):rs)
+                        Nothing -> (execIs, i:rs)
+                        Just i  -> (i:execIs, rs)
 
 -- Load store queue.
 type LSQ = RS RSMemInstr EMemInstr
-
--- Searches through load store queue, from newest to oldest, for stores to
--- memory that match the given address.
-memVal :: Addr -> LSQ -> Maybe Val
-memVal chkAddr = tryPick chkDone where
-    chkDone = either (const Nothing) chkStore
-
-    chkStore (EStore val addr, _, _) = if addr == chkAddr then Just val else Nothing
-    chkStore _                       = Nothing
 
 -- Prepare a decoded instruction to be placed in the LSQ.
 rsMemInstr :: DMemInstr -> RSMemInstr
@@ -72,10 +55,7 @@ rsMemInstr = mapMem (\r -> (r, Nothing)) Left
 -- Tries to fill in operands of instructions in LSQ, and remove instructions
 -- which can be run.
 runLSQ :: (Monad m) => RegVal m -> MemVal m -> LSQ -> m ([PipeData EMemInstr], LSQ)
-runLSQ regVal memVal lsq = run (fillMem regVal memVal) promoteMem (canPromoteMem lsq) lsq
-
-canPromoteMem :: LSQ -> EMemInstr -> Bool
-canPromoteMem lsq i = True
+runLSQ regVal memVal lsq = run (fillMem regVal memVal) promoteMem lsq
 
 -- Fills in operands of a memory instruction.
 -- Goes to memory to load a value for load instructions.
@@ -134,7 +114,7 @@ rsALInstr = mapAL id Left
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.
 runAL :: (Monad m) => RegVal m -> ArithLogicRS -> m ([PipeData EALInstr], ArithLogicRS)
-runAL regVal = run (fillAL regVal) promoteAL (const True)
+runAL regVal = run (fillAL regVal) promoteAL
 
 -- Fills in operands of an AL instruction.
 fillAL :: (Monad m) => RegVal m -> RSALInstr -> m RSALInstr
@@ -155,7 +135,7 @@ rsBInstr = mapB Left Left
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.
 runB :: (Monad m) => RegVal m -> BranchRS -> m ([PipeData EBranchInstr], BranchRS)
-runB regVal = run (fillB regVal) promoteB (const True)
+runB regVal = run (fillB regVal) promoteB
 
 -- Fills in operands of a branch instruction. For return instructions,
 -- takes return address from link register.
@@ -177,7 +157,7 @@ rsOutInstr = mapOut Left
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.
 runOut :: (Monad m) => RegVal m -> OutRS -> m ([PipeData EOutInstr], OutRS)
-runOut regVal = run (fillOut regVal) promoteOut (const True)
+runOut regVal = run (fillOut regVal) promoteOut
 
 -- Fills in operands of an output instruction.
 fillOut :: (Monad m) => RegVal m -> RSOutInstr -> m RSOutInstr
