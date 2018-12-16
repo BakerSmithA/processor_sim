@@ -120,13 +120,13 @@ runPipeline st p = do
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
-    runPipeline (St.incCycles st') p'
-    --trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    --runPipeline (St.incCycles st') p'
+    trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State
 run st =
     case runPipeline st P.empty of
-        Exit st    -> trace (debugShow st) $ st
+        Exit st    -> st --trace (debugShow st) $ st
         Crash e st -> error (show e ++ "\n" ++ debugShow st)
         Res x      -> error ("Did not terminate:" ++ show x)

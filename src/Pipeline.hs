@@ -51,4 +51,4 @@ advance (f, x1) decode issue exec commit write p = do
     (e, x4) <- exec   (issued  p) x3
     x5      <- commitStep commit  x4 (executed p)
     x6      <- write              x5
-    return (x5, Pipeline f d i e)
+    return (x6, Pipeline f d i e)

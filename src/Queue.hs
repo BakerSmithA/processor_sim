@@ -109,14 +109,14 @@ set :: Int -> a -> Queue a -> Queue a
 set i x (Queue es r) =
     if inRange i r
         then Queue (es // [(i, x)]) r
-        else error "Out of bound set in Queue"
+        else error ("Out of bound set in Queue at index: " ++ (show i))
 
 -- Return element at index in queue.
 get :: Int -> Queue a -> a
 get i (Queue es r) =
     if inRange i r
         then es ! i
-        else error "Out of bounds get in Queue"
+        else error ("Out of bounds get in Queue at index: " ++ (show i))
 
 -- Specifies direction and range of search.
 data Search
@@ -135,4 +135,4 @@ find (OldToNew)      cond q = List.find cond (reverse $ elemsNewOld q)
 find (SubNewToOld s) cond q =
     if inRange s (range q)
         then List.find cond (elemsRange (newStart s (range q)) q)
-        else error "Out of bounds search sub new to old in Queue"
+        else error ("Out of bounds search sub new to old in Queue at index: " ++ (show s))
