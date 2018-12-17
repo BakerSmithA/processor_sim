@@ -198,11 +198,17 @@ type DPipeInstr  = PipeData DInstr
 type RSPipeInstr = PipeData RSInstr
 type EPipeInstr  = PipeData EInstr
 
+pipeInstr :: PipeData i -> i
+pipeInstr (x, _, _) = x
+
 mapPipeDataM' :: (Monad m) => (ROBIdx -> i1 -> m i2) -> PipeData i1 -> m (PipeData i2)
 mapPipeDataM' f (x, idx, freed) = f idx x >>= \x' -> return (x', idx, freed)
 
 mapPipeDataM :: (Monad m) => (i1 -> m i2) -> PipeData i1 -> m (PipeData i2)
 mapPipeDataM f (x, idx, freed) = f x >>= \x' -> return (x', idx, freed)
+
+mapPipeData :: (i1 -> i2) -> PipeData i1 -> PipeData i2
+mapPipeData f = runIdentity . mapPipeDataM (return . f)
 
 mapPipeIM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> (retS1 -> m retS2) -> PipeData (SameInstr d1 s1 retS1) -> m (PipeData (SameInstr d2 s2 retS2))
 mapPipeIM fd fs fret (i, idx, freed) = do

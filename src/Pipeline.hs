@@ -26,31 +26,6 @@ type Writer m a = a -> m a
 empty :: Pipeline
 empty = Pipeline [] [] []
 
--- Helper function for steps of pipeline.
--- step :: (Monad m1, Monad m2) => m2 c -> (a -> b -> m1 (a, m2 c)) -> a -> [b] -> m1 (a, m2 c)
--- step empty f x = maybe (return (x, empty)) success where
---     success y = do
---         (x', z) <- f x y
---         return (x', z)
-
--- decodeStep decode x = foldM f ([], x) where
---     f (ds1, x1) fi = do
---         (ds2, x2) <- decode
-
---  ([DPipeInstr], a) -> FInstr -> m ([DPipeInstr], a)
-
--- decodeStep decode = step [] $ \x instr -> do
---     (decoded, x') <- decode instr x
---     return (x', decoded)
-
--- execStep exec = step [] $ \x instr -> do
---     (wbs, x') <- exec instr x
---     return (x', wbs)
-
--- Steps an executed instruction through the commit stage of the pipeline.
-commitStep :: (Monad m) => Committer m a -> a -> [PipeData WriteBack] -> m a
-commitStep commit x wb = commit wb x
-
 -- Supplies new instruction into pipleine, and shifts in-flight instructions
 -- through pipeline. Returns write-back result, and new state of pipeline.
 advance :: (Monad m) => Fetched a
@@ -63,7 +38,7 @@ advance :: (Monad m) => Fetched a
 
 advance (f, x1) decode exec commit write p = do
     (d, x2) <- decode (fetched p) x1
-    (e, x3) <- exec   (decoded p) x2 
-    x4      <- commitStep commit  x3 (executed p)
+    (e, x3) <- exec   (decoded p) x2
+    x4      <- commit (executed p) x3
     x5      <- write              x4
     return (x5, Pipeline f d e)

@@ -158,6 +158,11 @@ cpuSpec = describe "execution" $ do
                 let vm  = runVm [printLn] []
                 St.output vm `shouldBe` "\n"
 
+        context "updating special registers" $ do
+            it "resolves read after write hazards" $ do
+                let vm = runVm [addI 12 12 6, move 0 12] []
+                regVal 0 vm `shouldBe` Res 6
+
         context "running example programs" $ do
             it "runs bubble-sort" $ do
                 let vm = runVm bubbleSort (replicate 32 0)
