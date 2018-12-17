@@ -1,7 +1,6 @@
 module CPUSpec (cpuSpec) where
 
 import Test.Hspec
-import Data.Maybe (fromJust)
 import Instr
 import State as St hiding (newestRegVal)
 import qualified State as St (newestRegVal)
@@ -11,7 +10,11 @@ import CPU
 import Types
 
 regVal :: PhyReg -> State -> Res Val
-regVal p st = fmap fromJust (St.newestRegVal p st)
+regVal p st = do
+    mVal <- St.newestRegVal p st
+    case mVal of
+        Nothing  -> error "Test reg val had no value"
+        Just val -> return val
 
 runVm :: [FInstr] -> [Int32] -> State
 runVm instrs memCnts = run state' where
@@ -22,14 +25,6 @@ cpuSpec :: Spec
 cpuSpec = describe "execution" $ do
     context "normal execution" $ do
         context "memory" $ do
-            it "interprets MoveI" $ do
-                let vm = runVm [moveI 0 5] []
-                regVal 0 vm `shouldBe` Res 5
-
-            it "interprets Move" $ do
-                let vm = runVm [moveI 0 6, move 1 0] []
-                regVal 1 vm `shouldBe` Res 6
-
             it "interprets LoadIdx" $ do
                 let vm  = runVm [moveI 0 1, loadIdx 1 0 2] [1, 2, 3, 4, 5]
                 regVal 1 vm `shouldBe` Res 4
@@ -47,6 +42,14 @@ cpuSpec = describe "execution" $ do
                 St.mem vm `shouldBe` Mem.fromList [0, 0, 0, 0, 0, 7]
 
         context "ALU instructions" $ do
+            it "interprets MoveI" $ do
+                let vm = runVm [moveI 0 5] []
+                regVal 0 vm `shouldBe` Res 5
+
+            it "interprets Move" $ do
+                let vm = runVm [moveI 0 6, move 1 0] []
+                regVal 1 vm `shouldBe` Res 6
+
             it "interprets Add" $ do
                 let vm  = runVm [moveI 0 1, moveI 1 2, add 2 0 1] []
                 regVal 2 vm `shouldBe` Res 3
@@ -118,32 +121,32 @@ cpuSpec = describe "execution" $ do
         context "branch instructions" $ do
             it "interprets B" $ do
                 -- Branch should cause MoveI instruction to be skipped.
-                let vm  = runVm [b 1, moveI 0 5] []
-                regVal 0 vm `shouldBe` Res 0
+                let vm  = runVm [b 1, printLn] []
+                output vm `shouldBe` ""
 
             it "interprets BT and takes branch" $ do
                 -- BT instruction should cause MoveI to be skipped.
-                let vm  = runVm [moveI 0 1, bt 0 2, moveI 1 5] []
-                regVal 1 vm `shouldBe` Res 0
+                let vm  = runVm [moveI 0 1, bt 0 2, printLn] []
+                output vm `shouldBe` ""
 
             it "interprets BT and does not take branch" $ do
-                let vm  = runVm [moveI 0 0, bt 0 1, moveI 1 5] []
-                regVal 1 vm `shouldBe` Res 5
+                let vm  = runVm [moveI 0 0, bt 0 1, printLn] []
+                output vm `shouldBe` "\n"
 
             it "interprets BF and takes branch" $ do
                 -- BT instruction should cause MoveI to be skipped.
-                let vm  = runVm [moveI 0 0, bf 0 2, moveI 1 5] []
-                regVal 1 vm `shouldBe` Res 0
+                let vm  = runVm [moveI 0 0, bf 0 2, printLn] []
+                output vm `shouldBe` ""
 
             it "interprets BF and does not take branch" $ do
-                let vm  = runVm [moveI 0 1, bf 0 1, moveI 1 5] []
-                regVal 1 vm `shouldBe` Res 5
+                let vm  = runVm [moveI 0 1, bf 0 1, printLn] []
+                output vm `shouldBe` "\n"
 
             it "interprets Ret" $ do
                 -- Ret instruction should cause MoveI to be skipped.
                 let lrIdx = 13
-                    vm    = runVm [moveI lrIdx 2, ret (), moveI 0 5] []
-                regVal 0 vm `shouldBe` Res 0
+                    vm    = runVm [moveI lrIdx 2, ret (), printLn] []
+                output vm `shouldBe` ""
 
         context "output instructions" $ do
             it "interprets Print" $ do
@@ -157,12 +160,11 @@ cpuSpec = describe "execution" $ do
             it "interprets PrintLn" $ do
                 let vm  = runVm [printLn] []
                 St.output vm `shouldBe` "\n"
-
         context "updating special registers" $ do
             it "resolves read after write hazards" $ do
                 let vm = runVm [addI 12 12 6, move 0 12] []
                 regVal 0 vm `shouldBe` Res 6
-
+                
         context "running example programs" $ do
             it "runs bubble-sort" $ do
                 let vm = runVm bubbleSort (replicate 32 0)
