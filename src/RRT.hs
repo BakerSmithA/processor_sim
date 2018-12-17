@@ -67,3 +67,8 @@ free phy rrt = do
 get :: RegIdx -> RRT -> Maybe PhyReg
 get reg rrt = Map.lookup reg (consts rrt)
           <|> Map.lookup reg (reg2phy rrt)
+
+-- Return where there is a mapping from the register to a constant physical
+-- register.
+isConst :: RegIdx -> RRT -> Bool
+isConst r rrt = r `Map.member` (consts rrt)

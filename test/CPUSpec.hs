@@ -160,7 +160,7 @@ cpuSpec = describe "execution" $ do
             it "interprets PrintLn" $ do
                 let vm  = runVm [printLn] []
                 St.output vm `shouldBe` "\n"
-                
+
         context "updating special registers" $ do
             it "resolves read after write hazards" $ do
                 let vm = runVm [addI 12 12 6, move 0 12] []
