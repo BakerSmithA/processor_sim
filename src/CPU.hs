@@ -13,27 +13,28 @@ import qualified RS
 import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
-stopAtBranch :: [FInstr] -> [FInstr]
+stopAtBranch :: [FPipeInstr] -> [FPipeInstr]
 stopAtBranch [] = []
-stopAtBranch (i:is) | isBranch i = [i]
-                    | otherwise  = i:(stopAtBranch is)
+stopAtBranch (i:is) | isBranch (fst i) = [i]
+                    | otherwise        = i:(stopAtBranch is)
 
 -- Fetches the number of instructions specified, stopping at the end of
 -- instructions, or if a branch is encountered (the branch will be included in
 -- returned instrs).
-fetchN :: Addr -> Addr -> State -> [FInstr]
-fetchN n start st = stopAtBranch $ Mem.take n start (instrs st)
+fetchN :: Addr -> Addr -> State -> [FPipeInstr]
+fetchN n start st = stopAtBranch $ map f (Mem.take n start (instrs st)) where
+    f (i, savedPC) = (i, fromIntegral savedPC)
 
 -- Fetches a number of instructions, starting at the instruction pointed to by
 -- the program counter.
-fetch :: State -> Res [FInstr]
+fetch :: State -> Res [FPipeInstr]
 fetch st = do
      pc <- St.pcVal st
      let n = St.numFetch st
      return $ fetchN n (fromIntegral pc) st
 
 -- Places executed results in reorder buffer.
-commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
+commit :: [PipeData WriteBack] -> State -> Res State
 commit wbs st = return (St.addROB st wbs)
 
 -- Set the value stored in a register, or Crash if invalid index.
@@ -74,12 +75,12 @@ writeBackSingle (Terminate)       st = Exit st
 -- are available via bypass.
 shouldStall :: State -> Pipeline -> Bool
 shouldStall st p = f || d || rs where
-    f       = any isBranch (fetched p)
+    f       = any isBranch (fmap fst (fetched p))
     d       = any isBranch (fmap pipeInstr (decoded p))
     rs      = not (RS.isEmpty (bRS st))
 
 -- Shifts instructions through pipeline.
-advancePipeline :: [FInstr] -> State -> Pipeline -> Res (State, Pipeline)
+advancePipeline :: [FPipeInstr] -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st1 p = do
     (st2, p') <- P.advance (fetched, st1) decode exec CPU.commit writeBack p
     return (st2, p')

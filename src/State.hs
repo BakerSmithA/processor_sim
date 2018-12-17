@@ -237,9 +237,9 @@ allocROB st = (idx, st { rob = rob' }) where
     (idx, rob') = ROB.alloc (rob st)
 
 -- Places writeback instructions in the reorder buffer.
-addROB :: State -> [(WriteBack, ROBIdx, FreedReg)] -> State
+addROB :: State -> [PipeData WriteBack] -> State
 addROB st wbs =
-    let rob' = foldl (\rob (wb, idx, freed) -> ROB.set idx wb freed rob) (rob st) wbs
+    let rob' = foldl (\rob (wb, idx, freed, savedPC) -> ROB.set idx wb freed rob) (rob st) wbs
     in st { rob = rob' }
 
 -- Takes instruction that can be executed from ROB, to be passed to
@@ -269,10 +269,10 @@ getPhyReg reg st =
 -- Adds an instruction to its corresponding reservation station, e.g. branch
 -- instruction goes to branch RS.
 addRS :: DPipeInstr -> State -> State
-addRS (Mem    di, idx, freed) st = st { memRS = RS.add (RS.rsMemInstr di, idx, freed) (memRS st)}
-addRS (AL     di, idx, freed) st = st { alRS  = RS.add (RS.rsALInstr  di, idx, freed) (alRS  st)}
-addRS (Branch di, idx, freed) st = st { bRS   = RS.add (RS.rsBInstr   di, idx, freed) (bRS   st)}
-addRS (Out    di, idx, freed) st = st { outRS = RS.add (RS.rsOutInstr di, idx, freed) (outRS st)}
+addRS (Mem    di, idx, freed, savedPC) st = st { memRS = RS.add (RS.rsMemInstr di, idx, freed, savedPC) (memRS st)}
+addRS (AL     di, idx, freed, savedPC) st = st { alRS  = RS.add (RS.rsALInstr  di, idx, freed, savedPC) (alRS  st)}
+addRS (Branch di, idx, freed, savedPC) st = st { bRS   = RS.add (RS.rsBInstr   di, idx, freed, savedPC) (bRS   st)}
+addRS (Out    di, idx, freed, savedPC) st = st { outRS = RS.add (RS.rsOutInstr di, idx, freed, savedPC) (outRS st)}
 
 -- Returns instructions which have had all operands filled in and are ready
 -- to execute.

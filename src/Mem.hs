@@ -51,8 +51,8 @@ store i val = checkedAddr f i where
 
 -- Take a number of elements starting at the given index.
 -- If goes past end of memory, then only up to end is returned.
-take :: (Num k, Ix k) => k -> k -> Mem k v -> [v]
+take :: (Num k, Ix k) => k -> k -> Mem k v -> [(v, k)]
 take _ _ Empty = []
 take num start (Mem arr maxAddr) = take' start where
-    take' i | i <= maxAddr && i < (num+start) = (arr ! i):(take' (i+1))
+    take' i | i <= maxAddr && i < (num+start) = (arr ! i, i):(take' (i+1))
             | otherwise = []

@@ -191,29 +191,30 @@ mapI fd fs fret = runIdentity . mapIM (return . fd) (return . fs) (return . fret
 
 -- Used to store instructions with accompanying data as they pass through the
 -- pipeline.
-type PipeData i = (i, ROBIdx, FreedReg)
+type PCVal = Val
+type PipeData i = (i, ROBIdx, FreedReg, PCVal)
 
-type FPipeInstr  = PipeData FInstr
+type FPipeInstr  = (FInstr, PCVal)
 type DPipeInstr  = PipeData DInstr
 type RSPipeInstr = PipeData RSInstr
 type EPipeInstr  = PipeData EInstr
 
 pipeInstr :: PipeData i -> i
-pipeInstr (x, _, _) = x
+pipeInstr (x, _, _, _) = x
 
 mapPipeDataM' :: (Monad m) => (ROBIdx -> i1 -> m i2) -> PipeData i1 -> m (PipeData i2)
-mapPipeDataM' f (x, idx, freed) = f idx x >>= \x' -> return (x', idx, freed)
+mapPipeDataM' f (x, idx, freed, savedPC) = f idx x >>= \x' -> return (x', idx, freed, savedPC)
 
 mapPipeDataM :: (Monad m) => (i1 -> m i2) -> PipeData i1 -> m (PipeData i2)
-mapPipeDataM f (x, idx, freed) = f x >>= \x' -> return (x', idx, freed)
+mapPipeDataM f (x, idx, freed, savedPC)= f x >>= \x' -> return (x', idx, freed, savedPC)
 
 mapPipeData :: (i1 -> i2) -> PipeData i1 -> PipeData i2
 mapPipeData f = runIdentity . mapPipeDataM (return . f)
 
 mapPipeIM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> (retS1 -> m retS2) -> PipeData (SameInstr d1 s1 retS1) -> m (PipeData (SameInstr d2 s2 retS2))
-mapPipeIM fd fs fret (i, idx, freed) = do
+mapPipeIM fd fs fret (i, idx, freed, savedPC) = do
     i' <- mapIM fd fs fret i
-    return (i', idx, freed)
+    return (i', idx, freed, savedPC)
 
 mapPipeI :: (d1 -> d2) -> (s1 -> s2) -> (retS1 -> retS2) -> PipeData (SameInstr d1 s1 retS1) -> PipeData (SameInstr d2 s2 retS2)
 mapPipeI fd fs fret = runIdentity . mapPipeIM (return . fd) (return . fs) (return . fret)

@@ -6,9 +6,9 @@ import Types
 
 -- 5 stage pipeline: fetch, decod, execute, commit, and write-back.
 data Pipeline = Pipeline {
-    fetched   :: [FInstr]
+    fetched   :: [FPipeInstr]
   , decoded   :: [DPipeInstr]
-  , executed  :: [(WriteBack, ROBIdx, FreedReg)]
+  , executed  :: [PipeData WriteBack]
 }
 
 instance Show Pipeline where
@@ -19,9 +19,9 @@ instance Show Pipeline where
         ++ "  E: " ++ (show e)
 
 -- FInstruction that was fetched, or Nothing if stalled at this stage.
-type Fetched a = ([FInstr], a)
+type Fetched a = ([FPipeInstr], a)
 -- Decodes a fetched instruction, or Nothing if stalls at this stage.
-type Decoder m a = [FInstr] -> a -> m ([DPipeInstr], a)
+type Decoder m a = [FPipeInstr] -> a -> m ([DPipeInstr], a)
 -- Executes a decoded instruction.
 type Executer m a = [DPipeInstr] -> a -> m ([PipeData WriteBack], a)
 -- Commits any executed instructions in ROB, and returns instructions that can be committed.
