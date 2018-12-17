@@ -148,8 +148,8 @@ incCycles :: State -> State
 incCycles st = st { cycles = (cycles st) + 1 }
 
 -- Increments the number of instrucions exectuted.
-incExec :: State -> State
-incExec st = st { instrsExec = (instrsExec st) + 1 }
+incExec :: Int -> State -> State
+incExec n st = st { instrsExec = (instrsExec st) + n }
 
 -- Return value of a register with matching index. Crash if invalid index.
 findRegVal :: Q.Search -> PhyReg -> State -> Res (Maybe Val)

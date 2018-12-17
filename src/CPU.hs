@@ -49,7 +49,7 @@ writeBack st1 = do
     let (is, st2) = St.commitROB st1
     st3 <- foldM writeBackFreed st2 is
     -- Only increment the number of instructions executed if any were.
-    let st4 = if is /= [] then St.incExec st3 else st3
+    let st4 = if is /= [] then St.incExec (length is) st3 else st3
     return st4
 
 -- Writes the result of an instruction back to memory/register file, and

@@ -11,6 +11,7 @@ runVm :: [FInstr] -> IO ()
 runVm []     = putStrLn "No instructions to run"
 runVm instrs = do
     let vm = run (State.emptyDefault instrs)
+    putStrLn (show instrs)
     putStrLn $ State.output vm
     putStrLn (show vm)
 
