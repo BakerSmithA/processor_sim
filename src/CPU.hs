@@ -27,13 +27,12 @@ fetchN n start st = stopAtBranch $ Mem.take n start (instrs st)
 
 -- Fetches a number of instructions, starting at the instruction pointed to by
 -- the program counter.
-fetch :: State -> Res ([FInstr], State)
-fetch st1 = do
-     pc <- St.pcVal st1
-     let fis = fetchN 1 (fromIntegral pc) st1
+fetch :: State -> Res [FInstr]
+fetch st = do
+     pc <- St.pcVal st
+     let fis = fetchN 1 (fromIntegral pc) st
          n   = fromIntegral $ length fis
-     st2 <- St.incPC n st1
-     return (fis, st2)
+     return fis
 
 -- Places executed results in reorder buffer.
 commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
@@ -90,8 +89,9 @@ advancePipeline fetched st1 p = do
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)
 cycle st1 p = do
-    (fetched, st2) <- fetch st1
-    (st3, p') <- advancePipeline fetched st2 p
+    fetched <- fetch st1
+    (st2, p') <- advancePipeline fetched st1 p
+    st3 <- St.incPC (fromIntegral $ length fetched) st2
     return (st3, p')
 
 -- Shift instructions through pipeline without fetching a new instruction.
@@ -108,8 +108,8 @@ runPipeline st p = do
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
-    -- runPipeline (St.incCycles st') p'
-    trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    runPipeline (St.incCycles st') p'
+    -- trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State
