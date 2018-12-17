@@ -9,7 +9,14 @@ data Pipeline = Pipeline {
     fetched   :: [FInstr]
   , decoded   :: [DPipeInstr]
   , executed  :: [(WriteBack, ROBIdx, FreedReg)]
-} deriving (Show)
+}
+
+instance Show Pipeline where
+    show (Pipeline f d e)
+        =  "Pipeline:\n"
+        ++ "  F: " ++ (show f) ++ "\n"
+        ++ "  D: " ++ (show d) ++ "\n"
+        ++ "  E: " ++ (show e)
 
 -- FInstruction that was fetched, or Nothing if stalled at this stage.
 type Fetched a = ([FInstr], a)

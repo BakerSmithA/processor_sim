@@ -12,7 +12,10 @@ type Entry = Maybe (WriteBack, FreedReg)
 
 -- Reorder Buffer, used to store write-back instructions before they are committed.
 data ROB = ROB (Queue Entry)
-         deriving (Eq, Show)
+         deriving (Eq)
+
+instance Show ROB where
+    show (ROB q) = show (Q.elemsNewOld q)
 
 -- Creates a Reorder Buffer of the given length containing empty entries.
 empty :: ROBIdx -> ROB

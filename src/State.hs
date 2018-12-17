@@ -96,9 +96,9 @@ instance Show State where
 debugShow :: State -> String
 debugShow st =
         "\nBypass : "  ++ show (bypass st)
-     ++ "\nRRT    : "  ++ show (rrt st)
+     -- ++ "\nRRT    : "  ++ show (rrt st)
      ++ "\nROB    : "  ++ show (rob st)
-     ++ "\nMemRS  : "  ++ show (memRS st)
+     ++ "\nMem RS : "  ++ show (memRS st)
      ++ "\nAL  RS : "  ++ show (alRS st)
      ++ "\nB   RS : "  ++ show (bRS st)
      ++ "\nOut RS : "  ++ show (outRS st)
@@ -117,13 +117,13 @@ defaultedMem vals rrt = map f (zip [0..] vals) where
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs = State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS alRS bRS outRS 0 0 where
-    numFetch  = 1
+    numFetch  = 3
     maxPhyReg = 15
     mem       = Mem.zeroed 255
     regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
     instrs'   = Mem.fromList instrs
     bypass    = BP.empty
-    rob       = ROB.empty 8
+    rob       = ROB.empty 15
     rrt       = RRT.fromRegs [pc, sp, lr, bp, ret] maxPhyReg
     memRS     = RS.empty
     alRS      = RS.empty

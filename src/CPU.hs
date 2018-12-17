@@ -10,6 +10,7 @@ import Decode
 import Types
 import ExecUnit
 import qualified RS
+import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
 stopAtBranch :: [FInstr] -> [FInstr]
@@ -105,8 +106,8 @@ runPipeline st p = do
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
-    runPipeline (St.incCycles st') p'
-    -- trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    -- runPipeline (St.incCycles st') p'
+    trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State
