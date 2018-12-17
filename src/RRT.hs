@@ -3,7 +3,6 @@ module RRT where
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Types
-import Control.Applicative ((<|>))
 
 -- Register Rename Table, holds a mapping from names of registers in source
 -- code, e.g. reg 2, to physical registers, e.g. reg 45.
@@ -38,8 +37,8 @@ fromRegs rs maxPhy = foldr f (empty maxPhy) rs where
 -- are no free registers. Also returns the old register that was freed, if
 -- one was freed.
 ins :: RegIdx -> RRT -> Maybe (PhyReg, RRT, FreedReg)
-ins _        (RRT _ _ []) = Nothing
-ins name rrt@(RRT reg2phy phy2reg frees) = Just (phy, rrt', freedReg) where
+ins _    (RRT _ _ []) = Nothing
+ins name (RRT reg2phy phy2reg frees) = Just (phy, rrt', freedReg) where
     rrt'       = RRT reg2phy' phy2reg' rest'
     reg2phy'   = Map.insert name phy reg2phy
     phy2reg'   = Map.insert phy name phy2reg

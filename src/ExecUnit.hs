@@ -6,7 +6,6 @@ import State as St
 import Instr
 import WriteBack
 import Types
-import Debug.Trace
 
 exec :: [DPipeInstr] -> State ->  Res ([(PipeData WriteBack)], State)
 exec dis st1 = do

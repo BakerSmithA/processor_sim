@@ -10,8 +10,6 @@ import Decode
 import Types
 import ExecUnit
 import qualified RS
-import qualified ROB
-import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
 stopAtBranch :: [FInstr] -> [FInstr]
@@ -30,9 +28,7 @@ fetchN n start st = stopAtBranch $ Mem.take n start (instrs st)
 fetch :: State -> Res [FInstr]
 fetch st = do
      pc <- St.pcVal st
-     let fis = fetchN 1 (fromIntegral pc) st
-         n   = fromIntegral $ length fis
-     return fis
+     return $ fetchN 1 (fromIntegral pc) st
 
 -- Places executed results in reorder buffer.
 commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
