@@ -24,6 +24,11 @@ runVm instrs memCnts = run state' where
 cpuSpec :: Spec
 cpuSpec = describe "execution" $ do
     context "normal execution" $ do
+        context "updating special registers" $ do
+            it "resolves WR hazards" $ do
+                let vm = runVm [addI 12 12 6, move 0 12] []
+                regVal 0 vm `shouldBe` Res 6
+
         context "memory" $ do
             it "interprets LoadIdx" $ do
                 let vm  = runVm [moveI 0 1, loadIdx 1 0 2] [1, 2, 3, 4, 5]
@@ -160,7 +165,7 @@ cpuSpec = describe "execution" $ do
             it "interprets PrintLn" $ do
                 let vm  = runVm [printLn] []
                 St.output vm `shouldBe` "\n"
-
+--
 --         context "running example programs" $ do
 --             it "runs bubble-sort" $ do
 --                 let vm = runVm bubbleSort (replicate 32 0)
