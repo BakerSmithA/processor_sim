@@ -48,10 +48,3 @@ advance (f, x1) decode issue exec commit write p = do
     (i, x5) <- issue  (decoded p)  x4
     (d, x6) <- decode (fetched p)  x5
     return (x6, Pipeline f d i e)
-
-    -- (d, x2) <- decode (fetched p)  x1
-    -- (i, x3) <- issue  (decoded p)  x2
-    -- (e, x4) <- exec   (issued  p)  x3
-    -- x5      <- commit (executed p) x4
-    -- x6      <- write               x5
-    -- return (x6, Pipeline f d i e)

@@ -30,7 +30,7 @@ fetchN n start st = stopAtBranch $ Mem.take n start (instrs st)
 fetch :: State -> Res ([FInstr], State)
 fetch st1 = do
      pc <- St.pcVal st1
-     let fis = fetchN 1 (fromIntegral pc) st1
+     let fis = fetchN 2 (fromIntegral pc) st1
          n   = fromIntegral $ length fis
      st2 <- St.incPC n st1
      return (fis, st2)
@@ -94,13 +94,6 @@ advancePipeline :: [FInstr] -> State -> Pipeline -> Res (State, Pipeline)
 advancePipeline fetched st1 p = do
     (st2, p') <- P.advance (fetched, st1) decode issue exec CPU.commit writeBack p
     return (st2, p')
-
--- -- Returns state which contains bypass value that was just written as part of
--- -- the write-back stage of the pipeline. This makes this value available to
--- -- previous stages of the pipeline.
--- bypassed :: State -> Pipeline -> State
--- bypassed st p = St.withBypass b st where
---     b = BP.fromWbs (fmap pipeInstr (executed p))
 
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)
