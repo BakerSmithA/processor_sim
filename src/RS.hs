@@ -22,7 +22,7 @@ add :: PipeData a -> RS a -> RS a
 add = (:)
 
 isEmpty :: RS a -> Bool
-isEmpty = null 
+isEmpty = null
 
 run :: (Monad m)
     -- Fills in operands in an instruction.

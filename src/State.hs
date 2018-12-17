@@ -96,7 +96,7 @@ instance Show State where
 debugShow :: State -> String
 debugShow st =
         "\nBypass : "  ++ show (bypass st)
-     -- ++ "\nRRT    : "  ++ show (rrt st)
+     ++ "\nRRT    : "  ++ show (rrt st)
      ++ "\nROB    : "  ++ show (rob st)
      ++ "\nMem RS : "  ++ show (memRS st)
      ++ "\nAL  RS : "  ++ show (alRS st)
@@ -257,11 +257,6 @@ allocPhyReg reg st =
     case RRT.ins reg (rrt st) of
         Nothing -> crash NoFreePhyRegs st
         Just (phy, rrt', freed) -> return ((phy, freed), st { rrt=rrt' })
-
--- Frees a physical register allocated to a register name.
--- Crashes if there if no mapping to the physical register.
-freePhyReg :: PhyReg -> State -> State
-freePhyReg phy st = st { rrt=RRT.free phy (rrt st) }
 
 -- Returns physical register mapped to register name, or crashes if there
 -- is no mapping.

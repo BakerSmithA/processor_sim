@@ -23,20 +23,8 @@ rrtSpec = describe "register rename table" $ do
             let rrt                   = RRT.fromMapping [(1, 0)] [1, 2, 3]
                 Just (i, rrt', freed) = RRT.ins 1 rrt
             i `shouldBe` 1
-            (frees rrt') `shouldBe` [0, 2, 3]
+            (frees rrt') `shouldBe` [2, 3, 0]
             freed `shouldBe` Just 0
-
-    context "freeing mapping" $ do
-        it "allows removal of mapping" $ do
-            let rrt  = RRT.fromMapping [(1, 0)] [1, 2, 3]
-                rrt' = RRT.free 0 rrt
-                exp  = RRT.empty 3
-            rrt' `shouldBe` exp
-
-        it "does nothing if no mapping exists" $ do
-            let rrt  = RRT.fromMapping [(1, 0)] [1, 2, 3]
-                rrt' = RRT.free 5 rrt
-            rrt' `shouldBe` rrt
 
     context "getting mapping" $ do
         it "gets physical register for register name" $ do

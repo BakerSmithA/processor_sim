@@ -44,35 +44,9 @@ ins name (RRT reg2phy phy2reg frees) = Just (phy, rrt', freedReg) where
     phy2reg'   = Map.insert phy name phy2reg
     -- We are overwriting the register mapping. Therefore, if a mapping
     -- already exists it can be freed.
-    rest'      = maybe rest (:rest) freedReg
+    rest'      = maybe rest (\r -> rest ++ [r]) freedReg
     freedReg   = Map.lookup name reg2phy
     (phy:rest) = frees
-
--- ins name rrt@(RRT reg2phy phy2reg frees) =
---     case Map.lookup name cs of
---         Just phy -> Just (phy, rrt, Nothing) -- Already exists in consts.
---         Nothing  -> Just (phy, rrt', freedReg) where -- Insert new.
---             rrt'       = RRT reg2phy' phy2reg' cs rest'
---             reg2phy'   = Map.insert name phy reg2phy
---             phy2reg'   = Map.insert phy name phy2reg
---             -- We are overwriting the register mapping. Therefore, if a mapping
---             -- already exists it can be freed.
---             rest'      = maybe rest (:rest) freedReg
---             freedReg   = Map.lookup name reg2phy
---             (phy:rest) = frees
-
--- Frees the physical register from being mapped to a register name.
--- Or, does nothing if there is no mapping. Useful if trying to free a const
--- mapping.
-free :: PhyReg -> RRT -> RRT
-free phy rrt = do
-    case Map.lookup phy (phy2reg rrt) of
-        Nothing -> rrt
-        Just reg ->
-            let reg2phy' = Map.delete reg (reg2phy rrt)
-                phy2reg' = Map.delete phy (phy2reg rrt)
-                frees'   = phy:(frees rrt)
-            in rrt { reg2phy=reg2phy', phy2reg=phy2reg', frees=frees' }
 
 -- Return physical register mapped to name of register in source code, or
 -- Nothing if no mapping exists.
