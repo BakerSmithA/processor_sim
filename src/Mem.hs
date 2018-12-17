@@ -28,7 +28,7 @@ fromList xs = Mem { arr = array (0, len) (zip [0..] xs), maxAddr = len } where
 
 -- Return memory containing all zeros.
 zeroed :: (Ix k, Num k, Enum k, Num v, Integral k) => k -> Mem k v
-zeroed maxAddr = fromList (take n (repeat 0)) where
+zeroed maxAddr = fromList (Prelude.take n (repeat 0)) where
     n = fromIntegral maxAddr + 1
 
 -- Checks index is within range 0 to maxAddr, inclusive. If so the operation
@@ -48,3 +48,10 @@ load = checkedAddr (\i mem -> (arr mem) ! i)
 store :: (Num k, Ix k) => k -> v -> Mem k v -> Maybe (Mem k v)
 store i val = checkedAddr f i where
     f i' mem = mem { arr = (arr mem) // [(i', val)] }
+
+-- Take a number of elements starting at the given index.
+-- If goes past end of memory, then only up to end is returned.
+take :: (Num k, Ix k) => k -> k -> Mem k v -> [v]
+take num start (Mem arr maxAddr) = take' start where
+    take' i | i <= maxAddr && i < (num+start) = (arr ! i):(take' (i+1))
+            | otherwise = []

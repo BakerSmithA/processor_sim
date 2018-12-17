@@ -11,29 +11,27 @@ import Decode
 import Types
 import ExecUnit
 
--- Fetches a single instruction pointed to by the program counter.
-takeInstr :: State -> Res (Maybe FInstr, State)
-takeInstr st1 = do
-    pc <- St.pcVal st1
-    st2 <- incPc st1
-    case Mem.load (fromIntegral pc) (instrs st1) of
-        Nothing    -> return (Nothing, st2)
-        Just instr -> return (Just instr, st2)
+-- Removes any instructions that occur after a branch.
+stopAtBranch :: [FInstr] -> [FInstr]
+stopAtBranch [] = []
+stopAtBranch (i:is) | isBranch i = [i]
+                    | otherwise  = i:(stopAtBranch is)
+
+-- Fetches the number of instructions specified, stopping at the end of
+-- instructions, or if a branch is encountered (the branch will be included in
+-- returned instrs).
+fetchN :: Addr -> Addr -> State -> [FInstr]
+fetchN n start st = stopAtBranch $ Mem.take n start (instrs st)
 
 -- Fetches a number of instructions, starting at the instruction pointed to by
 -- the program counter.
 fetch :: State -> Res ([FInstr], State)
 fetch st1 = do
-    (maybeFi, st2) <- takeInstr st1
-    case maybeFi of
-        Nothing -> return ([], st2)
-        Just fi -> return ([fi], st2)
-
--- fetch st = do
---     pc <- St.pcVal st
---     case Mem.load (fromIntegral pc) (instrs st) of
---         Nothing    -> return ([], st)
---         Just instr -> return ([instr], st)
+     pc <- St.pcVal st1
+     let fis = fetchN 1 (fromIntegral pc) st1
+         n   = fromIntegral $ length fis
+     st2 <- St.incPC n st1
+     return (fis, st2)
 
 -- Places executed results in reorder buffer.
 commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
@@ -70,13 +68,6 @@ writeBackSingle (WriteMem i val)  st = St.setMemVal i val st
 writeBackSingle (WritePrint s)    st = addOutput s st
 writeBackSingle (NoOp)            st = return st
 writeBackSingle (Terminate)       st = Exit st
-
--- Increment PC by 1.
-incPc :: State -> Res State
-incPc st = do
-    pc <- pcVal st
-    pcReg <- St.namedReg pcIdx st
-    CPU.setRegVal pcReg (pc+1) st
 
 -- Return whether the pipeline should stall to wait for branch instructions
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
