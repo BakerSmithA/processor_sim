@@ -97,13 +97,13 @@ debugShow :: State -> String
 debugShow st =
         "\nBypass : "  ++ show (bypass st)
      ++ "\nRRT    : "  ++ show (rrt st)
-     ++ "\nROB    : "  ++ show (rob st)
-     ++ "\nMem RS : "  ++ show (memRS st)
-     ++ "\nAL  RS : "  ++ show (alRS st)
-     ++ "\nB   RS : "  ++ show (bRS st)
-     ++ "\nOut RS : "  ++ show (outRS st)
-     ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
-     ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
+     -- ++ "\nROB    : "  ++ show (rob st)
+     -- ++ "\nMem RS : "  ++ show (memRS st)
+     -- ++ "\nAL  RS : "  ++ show (alRS st)
+     -- ++ "\nB   RS : "  ++ show (bRS st)
+     -- ++ "\nOut RS : "  ++ show (outRS st)
+     -- ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
+     -- ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
 
 -- Defaults value of assigned physical registers to 0.
 -- This is because there are registers they may be used without being
