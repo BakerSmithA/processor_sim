@@ -21,6 +21,9 @@ fromList = id
 add :: PipeData a -> RS a -> RS a
 add = (:)
 
+isEmpty :: RS a -> Bool
+isEmpty = null 
+
 run :: (Monad m)
     -- Fills in operands in an instruction.
     => (ROBIdx -> a -> m a)
