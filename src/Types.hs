@@ -14,3 +14,6 @@ type ROBIdx = Int
 -- architectural register to a physical register. The value in the register
 -- should be invalided at the writeback stage.
 type FreedReg = Maybe PhyReg
+
+-- Used for flushing pipeline.
+type SavedPC = Val

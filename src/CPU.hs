@@ -56,8 +56,8 @@ writeBack st1 = do
 
 -- Writes the result of an instruction back to memory/register file, and
 -- invalidates the physical register previously mapped.
-writeBackFreed :: State -> (WriteBack, FreedReg) -> Res State
-writeBackFreed st1 (wb, freed) = do
+writeBackFreed :: State -> (WriteBack, FreedReg, SavedPC) -> Res State
+writeBackFreed st1 (wb, freed, _) = do
     st2 <- writeBackSingle wb st1
     St.clearFreedReg freed st2
 

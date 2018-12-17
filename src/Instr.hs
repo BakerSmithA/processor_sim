@@ -191,10 +191,9 @@ mapI fd fs fret = runIdentity . mapIM (return . fd) (return . fs) (return . fret
 
 -- Used to store instructions with accompanying data as they pass through the
 -- pipeline.
-type PCVal = Val
-type PipeData i = (i, ROBIdx, FreedReg, PCVal)
+type PipeData i = (i, ROBIdx, FreedReg, SavedPC)
 
-type FPipeInstr  = (FInstr, PCVal)
+type FPipeInstr  = (FInstr, SavedPC)
 type DPipeInstr  = PipeData DInstr
 type RSPipeInstr = PipeData RSInstr
 type EPipeInstr  = PipeData EInstr

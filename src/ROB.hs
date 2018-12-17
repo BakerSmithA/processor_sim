@@ -8,7 +8,7 @@ import Types
 -- Entry into the Reorder Buffer. Whether the instruction is present determines
 -- whether the entry is ready to be committed. Also stores the register to be
 -- invalidated once writeback of the instruction occurs.
-type Entry = Maybe (WriteBack, FreedReg)
+type Entry = Maybe (WriteBack, FreedReg, SavedPC)
 
 -- Reorder Buffer, used to store write-back instructions before they are committed.
 data ROB = ROB (Queue Entry)
@@ -30,7 +30,7 @@ alloc (ROB q) = (i, ROB q') where
 
 -- Return all instructions that can be committed, i.e. are ready and are at the
 -- start of the queue.
-commitable :: ROB -> ([(WriteBack, FreedReg)], ROB)
+commitable :: ROB -> ([(WriteBack, FreedReg, SavedPC)], ROB)
 commitable (ROB q) = (wbs, ROB q') where
     (wbs, q') = commitable' q
     commitable' q =
@@ -43,26 +43,26 @@ commitable (ROB q) = (wbs, ROB q') where
                         (wbs, q') = commitable' (Q.rem q Nothing)
 
 -- Set the writeback instruction computed by the execution step.
-set :: ROBIdx -> WriteBack -> FreedReg -> ROB -> ROB
-set i wb freed (ROB q) = ROB q' where
-    q' = Q.set i (Just (wb, freed)) q
+set :: ROBIdx -> WriteBack -> FreedReg -> SavedPC -> ROB -> ROB
+set i wb freed savedPC (ROB q) = ROB q' where
+    q' = Q.set i (Just (wb, freed, savedPC)) q
 
 -- Searches in the ROB for physical register with matching register.
 -- Nothing if an update to the register is not stored in the ROB.
 regVal :: Q.Search -> PhyReg -> ROB -> Maybe Val
 regVal search exp (ROB q) = do
-    Just (WriteReg _ val, _) <- Q.find search c q
+    Just (WriteReg _ val, _, _) <- Q.find search c q
     return val
         where
-            c (Just (WriteReg reg _, _)) = reg == exp
+            c (Just (WriteReg reg _, _, _)) = reg == exp
             c _ = False
 
 -- Searches in the ROB for matching memory address.
 -- Or, returns Nothing if an update to the address is not stored in the ROB.
 memVal :: Q.Search -> Addr -> ROB -> Maybe Val
 memVal search exp (ROB q) = do
-    Just (WriteMem _ val, _) <- Q.find search c q
+    Just (WriteMem _ val, _, _) <- Q.find search c q
     return val
         where
-            c (Just (WriteMem addr _, _)) = addr == exp
+            c (Just (WriteMem addr _, _, _)) = addr == exp
             c _ = False
