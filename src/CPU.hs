@@ -30,7 +30,7 @@ fetchN n start st = stopAtBranch $ Mem.take n start (instrs st)
 fetch :: State -> Res ([FInstr], State)
 fetch st1 = do
      pc <- St.pcVal st1
-     let fis = fetchN 2 (fromIntegral pc) st1
+     let fis = fetchN 1 (fromIntegral pc) st1
          n   = fromIntegral $ length fis
      st2 <- St.incPC n st1
      return (fis, st2)

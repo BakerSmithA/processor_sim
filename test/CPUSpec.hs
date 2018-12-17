@@ -24,10 +24,10 @@ runVm instrs memCnts = run state' where
 cpuSpec :: Spec
 cpuSpec = describe "execution" $ do
     context "normal execution" $ do
-        context "updating special registers" $ do
-            it "resolves read after write hazards" $ do
-                let vm = runVm [addI 12 12 6, move 0 12] []
-                regVal 0 vm `shouldBe` Res 6
+        -- context "updating special registers" $ do
+        --     it "resolves read after write hazards" $ do
+        --         let vm = runVm [addI 12 12 6, move 0 12] []
+        --         regVal 0 vm `shouldBe` Res 6
 --
 --         context "memory" $ do
 --             it "interprets LoadIdx" $ do
@@ -166,10 +166,10 @@ cpuSpec = describe "execution" $ do
 --                 let vm  = runVm [printLn] []
 --                 St.output vm `shouldBe` "\n"
 --
---         context "running example programs" $ do
---             it "runs bubble-sort" $ do
---                 let vm = runVm bubbleSort (replicate 32 0)
---                 St.output vm `shouldBe` "491203\n134920"
---
--- bubbleSort :: [FInstr]
--- bubbleSort = [AL (AddI 12 12 6),AL (Move 0 12),AL (SubI 0 0 5),Mem (StoreIdx 0 14 0),Mem (LoadIdx 0 14 0),AL (MoveI 1 4),Mem (StoreIdx 1 0 0),AL (MoveI 1 9),Mem (StoreIdx 1 0 1),AL (MoveI 1 1),Mem (StoreIdx 1 0 2),AL (MoveI 1 20),Mem (StoreIdx 1 0 3),AL (MoveI 1 3),Mem (StoreIdx 1 0 4),Mem (LoadIdx 0 14 0),Mem (StoreIdx 14 12 0),Mem (StoreIdx 13 12 1),AL (AddI 12 12 2),AL (Move 14 12),AL (MoveI 13 23),Mem (StoreIdx 0 12 0),AL (AddI 12 12 1),Branch (B 115),AL (SubI 12 12 1),Mem (LoadIdx 13 12 (-1)),Mem (LoadIdx 14 12 (-2)),AL (SubI 12 12 2),Out PrintLn,Mem (LoadIdx 0 14 0),Mem (StoreIdx 14 12 0),Mem (StoreIdx 13 12 1),AL (AddI 12 12 2),AL (Move 14 12),AL (MoveI 13 37),Mem (StoreIdx 0 12 0),AL (AddI 12 12 1),Branch (B 56),AL (SubI 12 12 1),Mem (LoadIdx 13 12 (-1)),Mem (LoadIdx 14 12 (-2)),AL (SubI 12 12 2),Mem (LoadIdx 0 14 0),Mem (StoreIdx 14 12 0),Mem (StoreIdx 13 12 1),AL (AddI 12 12 2),AL (Move 14 12),AL (MoveI 13 50),Mem (StoreIdx 0 12 0),AL (AddI 12 12 1),Branch (B 115),AL (SubI 12 12 1),Mem (LoadIdx 13 12 (-1)),Mem (LoadIdx 14 12 (-2)),AL (SubI 12 12 2),AL (SubI 12 12 6),Branch SysCall,AL (AddI 12 12 3),AL (MoveI 0 0),Mem (StoreIdx 0 14 3),Mem (LoadIdx 0 14 3),AL (MoveI 1 4),AL (Lt 0 0 1),Branch (BF 0 113),AL (MoveI 1 0),Mem (StoreIdx 1 14 2),Mem (LoadIdx 1 14 2),AL (MoveI 2 4),AL (Lt 1 1 2),Branch (BF 1 105),Mem (LoadIdx 2 14 0),Mem (LoadIdx 4 14 2),AL (MoveI 5 1),AL (Add 4 4 5),Mem (LoadBaseIdx 2 2 4),Mem (LoadIdx 3 14 0),Mem (LoadIdx 4 14 2),Mem (LoadBaseIdx 3 3 4),AL (Lt 2 2 3),Branch (BF 2 97),Mem (LoadIdx 3 14 0),Mem (LoadIdx 4 14 2),Mem (LoadBaseIdx 3 3 4),Mem (StoreIdx 3 14 1),Mem (LoadIdx 3 14 0),Mem (LoadIdx 4 14 2),Mem (LoadIdx 5 14 0),Mem (LoadIdx 6 14 2),AL (MoveI 7 1),AL (Add 6 6 7),Mem (LoadBaseIdx 5 5 6),Mem (StoreBaseIdx 5 3 4),Mem (LoadIdx 3 14 0),Mem (LoadIdx 4 14 2),AL (MoveI 6 1),AL (Add 4 4 6),Mem (LoadIdx 5 14 1),Mem (StoreBaseIdx 5 3 4),Mem (LoadIdx 2 14 2),AL (MoveI 3 1),AL (Add 2 2 3),Mem (StoreIdx 2 14 2),Mem (LoadIdx 1 14 2),AL (MoveI 2 4),AL (Lt 1 1 2),Branch (BT 1 69),Mem (LoadIdx 1 14 3),AL (MoveI 2 1),AL (Add 1 1 2),Mem (StoreIdx 1 14 3),Mem (LoadIdx 0 14 3),AL (MoveI 1 4),AL (Lt 0 0 1),Branch (BT 0 63),AL (SubI 12 12 3),ret (),AL (AddI 12 12 1),AL (MoveI 0 0),Mem (StoreIdx 0 14 1),Mem (LoadIdx 0 14 1),AL (MoveI 1 5),AL (Lt 0 0 1),Branch (BF 0 134),Mem (LoadIdx 1 14 0),Mem (LoadIdx 2 14 1),Mem (LoadBaseIdx 1 1 2),Out (Print 1),Mem (LoadIdx 1 14 1),AL (MoveI 2 1),AL (Add 1 1 2),Mem (StoreIdx 1 14 1),Mem (LoadIdx 0 14 1),AL (MoveI 1 5),AL (Lt 0 0 1),Branch (BT 0 122),AL (SubI 12 12 1),ret ()]
+        context "running example programs" $ do
+            it "runs bubble-sort" $ do
+                let vm = runVm bubbleSort (replicate 32 0)
+                St.output vm `shouldBe` "491203\n134920"
+
+bubbleSort :: [FInstr]
+bubbleSort = [AL (AddI 12 12 6),AL (Move 0 12),AL (SubI 0 0 5),Mem (StoreIdx 0 14 0),Mem (LoadIdx 0 14 0),AL (MoveI 1 4),Mem (StoreIdx 1 0 0),AL (MoveI 1 9),Mem (StoreIdx 1 0 1),AL (MoveI 1 1),Mem (StoreIdx 1 0 2),AL (MoveI 1 20),Mem (StoreIdx 1 0 3),AL (MoveI 1 3),Mem (StoreIdx 1 0 4),Mem (LoadIdx 0 14 0),Mem (StoreIdx 14 12 0),Mem (StoreIdx 13 12 1),AL (AddI 12 12 2),AL (Move 14 12),AL (MoveI 13 23),Mem (StoreIdx 0 12 0),AL (AddI 12 12 1),Branch (B 115),AL (SubI 12 12 1),Mem (LoadIdx 13 12 (-1)),Mem (LoadIdx 14 12 (-2)),AL (SubI 12 12 2),Out PrintLn,Mem (LoadIdx 0 14 0),Mem (StoreIdx 14 12 0),Mem (StoreIdx 13 12 1),AL (AddI 12 12 2),AL (Move 14 12),AL (MoveI 13 37),Mem (StoreIdx 0 12 0),AL (AddI 12 12 1),Branch (B 56),AL (SubI 12 12 1),Mem (LoadIdx 13 12 (-1)),Mem (LoadIdx 14 12 (-2)),AL (SubI 12 12 2),Mem (LoadIdx 0 14 0),Mem (StoreIdx 14 12 0),Mem (StoreIdx 13 12 1),AL (AddI 12 12 2),AL (Move 14 12),AL (MoveI 13 50),Mem (StoreIdx 0 12 0),AL (AddI 12 12 1),Branch (B 115),AL (SubI 12 12 1),Mem (LoadIdx 13 12 (-1)),Mem (LoadIdx 14 12 (-2)),AL (SubI 12 12 2),AL (SubI 12 12 6),Branch SysCall,AL (AddI 12 12 3),AL (MoveI 0 0),Mem (StoreIdx 0 14 3),Mem (LoadIdx 0 14 3),AL (MoveI 1 4),AL (Lt 0 0 1),Branch (BF 0 113),AL (MoveI 1 0),Mem (StoreIdx 1 14 2),Mem (LoadIdx 1 14 2),AL (MoveI 2 4),AL (Lt 1 1 2),Branch (BF 1 105),Mem (LoadIdx 2 14 0),Mem (LoadIdx 4 14 2),AL (MoveI 5 1),AL (Add 4 4 5),Mem (LoadBaseIdx 2 2 4),Mem (LoadIdx 3 14 0),Mem (LoadIdx 4 14 2),Mem (LoadBaseIdx 3 3 4),AL (Lt 2 2 3),Branch (BF 2 97),Mem (LoadIdx 3 14 0),Mem (LoadIdx 4 14 2),Mem (LoadBaseIdx 3 3 4),Mem (StoreIdx 3 14 1),Mem (LoadIdx 3 14 0),Mem (LoadIdx 4 14 2),Mem (LoadIdx 5 14 0),Mem (LoadIdx 6 14 2),AL (MoveI 7 1),AL (Add 6 6 7),Mem (LoadBaseIdx 5 5 6),Mem (StoreBaseIdx 5 3 4),Mem (LoadIdx 3 14 0),Mem (LoadIdx 4 14 2),AL (MoveI 6 1),AL (Add 4 4 6),Mem (LoadIdx 5 14 1),Mem (StoreBaseIdx 5 3 4),Mem (LoadIdx 2 14 2),AL (MoveI 3 1),AL (Add 2 2 3),Mem (StoreIdx 2 14 2),Mem (LoadIdx 1 14 2),AL (MoveI 2 4),AL (Lt 1 1 2),Branch (BT 1 69),Mem (LoadIdx 1 14 3),AL (MoveI 2 1),AL (Add 1 1 2),Mem (StoreIdx 1 14 3),Mem (LoadIdx 0 14 3),AL (MoveI 1 4),AL (Lt 0 0 1),Branch (BT 0 63),AL (SubI 12 12 3),ret (),AL (AddI 12 12 1),AL (MoveI 0 0),Mem (StoreIdx 0 14 1),Mem (LoadIdx 0 14 1),AL (MoveI 1 5),AL (Lt 0 0 1),Branch (BF 0 134),Mem (LoadIdx 1 14 0),Mem (LoadIdx 2 14 1),Mem (LoadBaseIdx 1 1 2),Out (Print 1),Mem (LoadIdx 1 14 1),AL (MoveI 2 1),AL (Add 1 1 2),Mem (StoreIdx 1 14 1),Mem (LoadIdx 0 14 1),AL (MoveI 1 5),AL (Lt 0 0 1),Branch (BT 0 122),AL (SubI 12 12 1),ret ()]
