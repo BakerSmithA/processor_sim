@@ -1,5 +1,6 @@
 module State where
 
+import Data.Word (Word32)
 import Mem (Mem)
 import qualified Mem as Mem
 import qualified Mem as Reg
@@ -19,8 +20,12 @@ import Types
 -- Stores current state of CPU at a point in time.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
 data State = State {
+    -- Stats
+    -- Maximum number of instructions to fetch on each cycle.
+    numFetch :: Word32
+
     -- Memory
-    mem    :: Mem Addr Val
+  , mem    :: Mem Addr Val
     -- Register contains Nothing if it has not yet been written to, or it was
     -- invalidated when the physical regsiter was assigned to a new architectural
     -- register.
@@ -111,7 +116,8 @@ defaultedMem vals rrt = map f (zip [0..] vals) where
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
-empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS alRS bRS outRS 0 0 where
+empty pc sp lr bp ret instrs = State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS alRS bRS outRS 0 0 where
+    numFetch  = 1
     maxPhyReg = 15
     mem       = Mem.zeroed 255
     regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)

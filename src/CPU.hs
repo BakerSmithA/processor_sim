@@ -28,7 +28,8 @@ fetchN n start st = stopAtBranch $ Mem.take n start (instrs st)
 fetch :: State -> Res [FInstr]
 fetch st = do
      pc <- St.pcVal st
-     return $ fetchN 1 (fromIntegral pc) st
+     let n = St.numFetch st
+     return $ fetchN n (fromIntegral pc) st
 
 -- Places executed results in reorder buffer.
 commit :: [(WriteBack, ROBIdx, FreedReg)] -> State -> Res State
