@@ -95,26 +95,26 @@ advancePipeline fetched st1 p = do
     (st2, p') <- P.advance (fetched, st1) decode issue exec CPU.commit writeBack p
     return (st2, p')
 
--- Returns state which contains bypass value that was just written as part of
--- the write-back stage of the pipeline. This makes this value available to
--- previous stages of the pipeline.
-bypassed :: State -> Pipeline -> State
-bypassed st p = St.withBypass b st where
-    b = BP.fromWbs (fmap pipeInstr (executed p))
+-- -- Returns state which contains bypass value that was just written as part of
+-- -- the write-back stage of the pipeline. This makes this value available to
+-- -- previous stages of the pipeline.
+-- bypassed :: State -> Pipeline -> State
+-- bypassed st p = St.withBypass b st where
+--     b = BP.fromWbs (fmap pipeInstr (executed p))
 
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)
 cycle st1 p = do
     (fetched, st2) <- fetch st1
     (st3, p') <- advancePipeline fetched st2 p
-    return (bypassed st3 p', p')
+    return (st3, p')
 
 -- Shift instructions through pipeline without fetching a new instruction.
 -- PC is also NOT updated.
 cycleStall :: State -> Pipeline -> Res (State, Pipeline)
 cycleStall st1 p = do
     (st2, p') <- advancePipeline [] st1 p
-    return (bypassed st2 p', p')
+    return (st2, p')
 
 -- Run processor to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> Res (State, Pipeline)

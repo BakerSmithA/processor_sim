@@ -12,7 +12,7 @@ import Types
 exec :: [EPipeInstr] -> State -> Res ([(PipeData WriteBack)], State)
 exec eis st = do
     wbs <- foldM f [] eis
-    return (wbs, st)
+    return (wbs, St.bypassed (fmap pipeInstr wbs) st)
         where
             f allWbs ei = do
                 wbs <- execI ei st

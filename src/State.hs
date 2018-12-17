@@ -292,3 +292,10 @@ runRS st = do
         outExecs' = fmap (mapPipeData Out)    outExecs
 
     return (memExecs' ++ alExecs' ++ bExecs' ++ outExecs', st')
+
+-- Returns state which contains bypass value that was just written as part of
+-- the write-back stage of the pipeline. This makes this value available to
+-- previous stages of the pipeline.
+bypassed :: [WriteBack] -> State -> State
+bypassed wbs st = withBypass b st where
+    b = BP.fromWbs wbs
