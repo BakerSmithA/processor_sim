@@ -6,6 +6,7 @@ import State as St
 import Instr
 import WriteBack
 import Types
+import Debug.Trace
 
 exec :: [DPipeInstr] -> State ->  Res ([(PipeData WriteBack)], State)
 exec dis st1 = do
@@ -28,7 +29,7 @@ execEs eis st = do
 issue :: [DPipeInstr] -> State -> Res ([EPipeInstr], State)
 issue dis st1 = do
     let st2 = foldr St.addRS st1 dis
-    St.runRS st2
+    trace (debugShow st2) $ St.runRS st2
 
 -- Add decoded instruction to a reservation station, then promote any completed,
 -- instructions, and finally execute those and return the writeback instructions.

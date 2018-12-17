@@ -93,20 +93,21 @@ debugShow st =
         "\nBypass : "  ++ show (bypass st)
      ++ "\nRRT    : "  ++ show (rrt st)
      ++ "\nROB    : "  ++ show (rob st)
-     ++ "\nMemRS    : "  ++ show (memRS st)
+     ++ "\nMemRS  : "  ++ show (memRS st)
      ++ "\nAL  RS : "  ++ show (alRS st)
      ++ "\nB   RS : "  ++ show (bRS st)
      ++ "\nOut RS : "  ++ show (outRS st)
      ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
      ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
 
--- Defaults value of special registers to 0.
--- This is because they may be used without being initialised, e.g. SP.
+-- Defaults value of assigned physical registers to 0.
+-- This is because there are registers they may be used without being
+-- initialised, e.g. SP.
 defaultedMem :: [Maybe Val] -> RRT -> [Maybe Val]
 defaultedMem vals rrt = map f (zip [0..] vals) where
-    f :: (RegIdx, Maybe Val) -> Maybe Val
-    f (r, val) | isConst r rrt = Just 0
-               | otherwise     = val
+    f :: (PhyReg, Maybe Val) -> Maybe Val
+    f (p, val) | isPhy p rrt = Just 0
+               | otherwise   = val
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
@@ -116,9 +117,9 @@ empty pc sp lr bp ret instrs = State mem regs instrs' pc sp lr bp ret [] bypass 
     regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
     instrs'   = Mem.fromList instrs
     bypass    = BP.empty
-    rob       = ROB.empty 6
-    rrt       = RRT.fromConstRegs [pc, sp, lr, bp, ret] maxPhyReg
-    memRS       = RS.empty
+    rob       = ROB.empty 8
+    rrt       = RRT.fromRegs [pc, sp, lr, bp, ret] maxPhyReg
+    memRS     = RS.empty
     alRS      = RS.empty
     bRS       = RS.empty
     outRS     = RS.empty
@@ -186,7 +187,7 @@ namedRegVal getReg st = do
     phy <- namedReg getReg st
     val <- newestRegVal phy st
     case val of
-        Nothing  -> error "Named reg contained no value"
+        Nothing  -> return 0
         Just val -> return val
 
 -- Returns the value stored in the PC register.

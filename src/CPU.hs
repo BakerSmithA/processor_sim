@@ -9,7 +9,8 @@ import WriteBack
 import Decode
 import Types
 import ExecUnit
-import qualified RS as RS
+import qualified RS
+import qualified ROB
 import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
@@ -29,7 +30,7 @@ fetchN n start st = stopAtBranch $ Mem.take n start (instrs st)
 fetch :: State -> Res ([FInstr], State)
 fetch st1 = do
      pc <- St.pcVal st1
-     let fis = fetchN 2 (fromIntegral pc) st1
+     let fis = fetchN 1 (fromIntegral pc) st1
          n   = fromIntegral $ length fis
      st2 <- St.incPC n st1
      return (fis, st2)
@@ -76,9 +77,9 @@ writeBackSingle (Terminate)       st = Exit st
 -- are available via bypass.
 shouldStall :: State -> Pipeline -> Bool
 shouldStall st p = f || d || rs where
-    f  = any isBranch (fetched p)
-    d  = any isBranch (fmap pipeInstr (decoded p))
-    rs = not (RS.isEmpty (bRS st))
+    f       = any isBranch (fetched p)
+    d       = any isBranch (fmap pipeInstr (decoded p))
+    rs      = not (RS.isEmpty (bRS st))
 
 -- Shifts instructions through pipeline.
 advancePipeline :: [FInstr] -> State -> Pipeline -> Res (State, Pipeline)
@@ -107,8 +108,8 @@ runPipeline st p = do
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
-    -- runPipeline (St.incCycles st') p'
-    trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    runPipeline (St.incCycles st') p'
+    -- trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State

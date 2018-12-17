@@ -9,9 +9,10 @@ import Data.Int (Int32)
 import CPU
 import Types
 
-regVal :: PhyReg -> State -> Res Val
-regVal p st = do
-    mVal <- St.newestRegVal p st
+regVal :: RegIdx -> State -> Res Val
+regVal r st = do
+    phy  <- St.getPhyReg r st
+    mVal <- St.newestRegVal phy st
     case mVal of
         Nothing  -> error "Test reg val had no value"
         Just val -> return val
