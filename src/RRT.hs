@@ -48,6 +48,16 @@ ins name (RRT reg2phy phy2reg frees) = Just (phy, rrt', freedReg) where
     freedReg   = Map.lookup name reg2phy
     (phy:rest) = frees
 
+-- Makes a 'pending' assignment between an architectural and physical register.
+-- The mapping is stored in the ROB.
+assign :: RegIdx -> RRT -> Maybe (PhyReg, RRT, FreedReg)
+assign _    (RRT _ _ []) = Nothing
+assign name (RRT reg2phy phy2reg frees) = Just (phy, rrt', freedReg) where
+    rrt'       = RRT reg2phy phy2reg rest'
+    rest'      = maybe rest (\r -> rest ++ [r]) freedReg
+    freedReg   = Map.lookup name reg2phy
+    (phy:rest) = frees
+
 -- Return physical register mapped to name of register in source code, or
 -- Nothing if no mapping exists.
 get :: RegIdx -> RRT -> Maybe PhyReg

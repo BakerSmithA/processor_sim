@@ -8,7 +8,7 @@ import Instr
 import Bypass (Bypass)
 import qualified Bypass as BP
 import Queue as Q
-import ROB (ROB)
+import ROB (ROB, RegMap)
 import qualified ROB as ROB
 import Error
 import WriteBack
@@ -249,7 +249,7 @@ addROB st wbs =
 
 -- Takes instruction that can be executed from ROB, to be passed to
 -- write back stage.
-commitROB :: State -> ([(WriteBack, FreedReg, SavedPC)], State)
+commitROB :: State -> ([(WriteBack, FreedReg, SavedPC, RegMap)], State)
 commitROB st =
     let (out, rob') = ROB.commitable (rob st)
     in (out, st { rob = rob' })

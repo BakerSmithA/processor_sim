@@ -10,6 +10,7 @@ import Decode
 import Types
 import ExecUnit
 import qualified RS
+import ROB (RegMap)
 import qualified ROB
 import Debug.Trace
 
@@ -67,9 +68,9 @@ invalidateLoads st =
                 WriteMem a _ -> St.invalidateLoads a st
                 _            -> st
 
-split :: [(WriteBack, FreedReg, SavedPC)] -> ([(WriteBack, SavedPC)], [FreedReg])
+split :: [(WriteBack, FreedReg, SavedPC, RegMap)] -> ([(WriteBack, SavedPC)], [FreedReg])
 split = foldr f ([], []) where
-    f (wb, freed, savedPC) (xs, ys) = ((wb,savedPC):xs, freed:ys)
+    f (wb, freed, savedPC, _) (xs, ys) = ((wb,savedPC):xs, freed:ys)
 
 -- Writes back instructions to register file/memory. If an invalid load is
 -- encountered, then returns that pipeline should be flushed, and flushed state.
