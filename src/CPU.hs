@@ -46,13 +46,13 @@ addOutput :: String -> State -> Res State
 addOutput s st = return st { output = (output st) ++ s }
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
-writeBack :: State -> Res State
+writeBack :: State -> Res (State, ShouldFlush)
 writeBack st1 = do
     let (is, st2) = St.commitROB st1
     st3 <- foldM writeBackFreed st2 is
     -- Only increment the number of instructions executed if any were.
     let st4 = if is /= [] then St.incExec (length is) st3 else st3
-    return st4
+    return (st4, NoFlush)
 
 -- Writes the result of an instruction back to memory/register file, and
 -- invalidates the physical register previously mapped.

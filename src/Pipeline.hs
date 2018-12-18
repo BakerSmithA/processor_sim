@@ -3,6 +3,12 @@ module Pipeline where
 import Instr
 import WriteBack
 
+-- Returned by write-back stage of pipeline to indicate whether pipeline should
+-- be flushed.
+data ShouldFlush
+    = Flush
+    | NoFlush
+
 -- 5 stage pipeline: fetch, decode, execute, commit, and write-back.
 -- The instructions stored in the pipeline represent instructions on wires
 -- between stages.
@@ -28,7 +34,7 @@ type Executer m a = [DPipeInstr] -> a -> m ([PipeData WriteBack], a)
 -- Commits any executed instructions in ROB, and returns instructions that can be committed.
 type Committer m a = [PipeData WriteBack] -> a -> m a
 -- Writes instructions results to memory/registers.
-type Writer m a = a -> m a
+type Writer m a = a -> m (a, ShouldFlush)
 
 -- Return pipeline with nothing in each stage.
 empty :: Pipeline
@@ -49,8 +55,11 @@ advance :: (Monad m) => Fetched a
                      -> m (a, Pipeline)
 
 advance (f, x1) decode exec commit write p = do
-    (d, x2) <- decode (fetched p) x1
-    (e, x3) <- exec   (decoded p) x2
-    x4      <- commit (executed p) x3
-    x5      <- write              x4
-    return (x5, Pipeline f d e)
+    (d, x2)     <- decode (fetched p) x1
+    (e, x3)     <- exec   (decoded p) x2
+    x4          <- commit (executed p) x3
+    (x5, flush) <- write              x4
+
+    case flush of
+        NoFlush -> return (x5, Pipeline f d e)
+        Flush   -> return (x5, flushed)
