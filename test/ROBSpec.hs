@@ -67,23 +67,26 @@ robSpec = describe "Reorder Buffer" $ do
 
     context "invalidate loads" $ do
         it "invalidates loads with matching addresses" $ do
-            let rob1 = ROB.empty 6
+            let rob1 = ROB.empty 7
 
                 (i1, rob2) = ROB.alloc rob1
                 (i2, rob3) = ROB.alloc rob2
                 (_,  rob4) = ROB.alloc rob3
                 (i4, rob5) = ROB.alloc rob4
                 (i5, rob6) = ROB.alloc rob5
+                (i6, rob7) = ROB.alloc rob6
 
-                rob7  = set i1 (WriteMem  5 15)                Nothing  0 rob6
-                rob8  = set i2 (writeLoad 0 10 (ValidLoad 1)) (Just 1) 1 rob7
-                rob9  = set i4 (writeReg  1 5)                 Nothing  2 rob8
-                rob10 = set i5 (writeLoad 1 5 InvalidLoad)     Nothing  3 rob9
+                rob8  = set i1 (WriteMem  5 15)                Nothing 0 rob7
+                rob9  = set i2 (writeLoad 0 10 (ValidLoad 1)) (Just 1) 1 rob8
+                rob10 = set i4 (writeReg  1 5)                 Nothing 2 rob9
+                rob11 = set i5 (writeLoad 1 5 InvalidLoad)     Nothing 3 rob10
+                rob12 = set i6 (writeLoad 3 4 (ValidLoad 5))   Nothing 4 rob11
 
-                rob11 = invalidateLoads 1 rob10
-                es    = contents rob11
+                rob13 = invalidateLoads 1 rob12
+                es    = contents rob13
 
             es `shouldBe` [
+                Just (writeLoad 3 4 (ValidLoad 5), Nothing, 4),
                 Just (writeLoad 1 5 InvalidLoad, Nothing, 3),
                 Just (writeReg 1 5, Nothing, 2),
                 Nothing,
