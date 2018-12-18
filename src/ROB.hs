@@ -86,6 +86,15 @@ memVal search exp (ROB q) = do
             c (Just (WriteMem addr _, _, _), _) = addr == exp
             c _ = False
 
+-- Return a 'pending' mapping from an architectural register to a physical register.
+regMap :: RegIdx -> ROB -> Maybe PhyReg
+regMap reg (ROB q) = do
+    (_, RegMap _ phy) <- Q.find Q.NewToOld matches q
+    return phy
+        where
+            matches (_, RegMap r _) = r == reg
+            matches _               = False
+
 -- Searches through ROB, invalidating and loads which have the given address.
 invalidateLoads :: Addr -> ROB -> ROB
 invalidateLoads addr (ROB q) = ROB q' where
