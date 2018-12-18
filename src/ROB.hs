@@ -51,10 +51,10 @@ set i wb freed savedPC (ROB q) = ROB q' where
 -- Nothing if an update to the register is not stored in the ROB.
 regVal :: Q.Search -> PhyReg -> ROB -> Maybe Val
 regVal search exp (ROB q) = do
-    Just (WriteReg _ val, _, _) <- Q.find search c q
+    Just (WriteReg _ val _, _, _) <- Q.find search c q
     return val
         where
-            c (Just (WriteReg reg _, _, _)) = reg == exp
+            c (Just (WriteReg reg _ _, _, _)) = reg == exp
             c _ = False
 
 -- Searches in the ROB for matching memory address.

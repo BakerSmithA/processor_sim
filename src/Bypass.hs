@@ -37,9 +37,9 @@ fromWbs = foldr f [] where
 -- Return values of registers and memory that will be written back, to be made
 -- available to execution stage of pipeline.
 fromWriteback :: WriteBack -> Maybe BypassEntry
-fromWriteback (WriteReg reg val)  = Just $ BypassReg reg val
-fromWriteback (WriteMem addr val) = Just $ BypassMem addr val
-fromWriteback _                   = Nothing
+fromWriteback (WriteReg reg val _) = Just $ BypassReg reg val
+fromWriteback (WriteMem addr val)  = Just $ BypassMem addr val
+fromWriteback _                    = Nothing
 
 -- Return value of register written if matches given physical index.
 regVal :: PhyReg -> Bypass -> Maybe Val

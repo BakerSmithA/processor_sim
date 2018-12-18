@@ -76,7 +76,7 @@ ou (PrintLn)  = writePrint "\n"
 
 -- Convenience method for WriteReg in Res.
 writeReg :: PhyReg -> Val -> Res WriteBack
-writeReg r v = return (WriteReg r v)
+writeReg r v = return (WriteReg r v True)
 
 writeMem :: Addr -> Val -> Res WriteBack
 writeMem addr v = return (WriteMem (fromIntegral addr) v)
@@ -111,7 +111,7 @@ branch addr st = do
     pcReg <- namedReg pcIdx st
     -- +1 because pipeline stalls until branch executed, and PC not updated.
     let addr' = fromIntegral (addr+1)
-    return (WriteReg pcReg addr')
+    writeReg pcReg addr'
 
 -- Executes a branch if the condition is true, otherwise NoOp.
 branchCond :: Bool -> Addr -> State -> Res WriteBack

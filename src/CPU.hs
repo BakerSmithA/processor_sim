@@ -63,11 +63,11 @@ writeBackFreed st1 (wb, freed, _) = do
 
 -- Writes the result of an instruction back to memory/register file.
 writeBackSingle :: WriteBack -> State -> Res State
-writeBackSingle (WriteReg r val)  st = CPU.setRegVal r val st
-writeBackSingle (WriteMem i val)  st = St.setMemVal i val st
-writeBackSingle (WritePrint s)    st = addOutput s st
-writeBackSingle (NoOp)            st = return st
-writeBackSingle (Terminate)       st = Exit st
+writeBackSingle (WriteReg r val _) st = CPU.setRegVal r val st
+writeBackSingle (WriteMem i val)   st = St.setMemVal i val st
+writeBackSingle (WritePrint s)     st = addOutput s st
+writeBackSingle (NoOp)             st = return st
+writeBackSingle (Terminate)        st = Exit st
 
 -- Return whether the pipeline should stall to wait for branch instructions
 -- to be executed, i.e. if there are branch instructions in the fetch or decode

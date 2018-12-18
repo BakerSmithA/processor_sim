@@ -8,7 +8,7 @@ bypassSpec :: Spec
 bypassSpec = describe "bypass" $ do
     context "fromWbs" $ do
         it "only puts mem or reg writes in bypass" $ do
-            let wbs = [Terminate, NoOp, WriteReg 0 1, WriteMem 10 20, WritePrint "x"]
+            let wbs = [Terminate, NoOp, WriteReg 0 1 True, WriteMem 10 20, WritePrint "x"]
                 bp  = BP.fromWbs wbs
                 exp = BP.fromList [BypassReg 0 1, BypassMem 10 20]
             bp `shouldBe` exp
