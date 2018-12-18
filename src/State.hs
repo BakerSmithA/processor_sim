@@ -117,7 +117,7 @@ defaultedMem vals rrt = map f (zip [0..] vals) where
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs = State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS alRS bRS outRS 0 0 where
-    numFetch  = 2
+    numFetch  = 1
     maxPhyReg = 31
     mem       = Mem.zeroed 255
     regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
@@ -259,8 +259,8 @@ commitROB st =
 -- is stored in the RRT.
 -- By initially storing mappings in the ROB, then they can be easily reverted
 -- if a flush occurs.
-allocPendingReg :: RegIdx -> ROBIdx -> State -> Res ((PhyReg, FreedReg), State)
-allocPendingReg reg robIdx st =
+allocPendingReg :: ROBIdx -> RegIdx -> State -> Res ((PhyReg, FreedReg), State)
+allocPendingReg robIdx reg st =
     case RRT.assign reg (rrt st) of
         Nothing -> crash NoFreePhyRegs st
         Just (phy, rrt', freed) -> return ((phy, freed), st') where
@@ -279,9 +279,12 @@ allocPhyReg reg st =
 -- is no mapping.
 getPhyReg :: RegIdx -> State -> Res PhyReg
 getPhyReg reg st =
-    case RRT.get reg (rrt st) of
-        Nothing  -> crash (NoPhyRegAssigned reg) st
+    case ROB.regMap reg (rob st) of
         Just phy -> return phy
+        Nothing  ->
+            case RRT.get reg (rrt st) of
+                Nothing  -> crash (NoPhyRegAssigned reg) st
+                Just phy -> return phy
 
 -- Adds an instruction to its corresponding reservation station, e.g. branch
 -- instruction goes to branch RS.

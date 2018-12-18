@@ -55,7 +55,7 @@ writeBack st1 = do
         (wbs, frees) = split is
     (st4, shouldFlush) <- writeBackInstrs wbs st3
     st5 <- invalidateRegs frees st4
-    trace (debugShow st1) $ return (st5, shouldFlush)
+    return (st5, shouldFlush)
 
 -- Invalidates loads in the ROB if the next writeback instruction to be committed
 -- is a memory write that has a clashing address.
