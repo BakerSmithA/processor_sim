@@ -10,7 +10,7 @@ import Decode
 import Types
 import ExecUnit
 import qualified RS
-import ROB (RegMap)
+import RRT (RegMap(..))
 import qualified ROB
 import Debug.Trace
 

@@ -8,7 +8,7 @@ import Instr
 import Bypass (Bypass)
 import qualified Bypass as BP
 import Queue as Q
-import ROB (ROB, RegMap)
+import ROB (ROB)
 import qualified ROB as ROB
 import Error
 import WriteBack

@@ -3,6 +3,7 @@ module ROBSpec where
 import Test.Hspec
 import ROB as ROB
 import WriteBack
+import RRT (RegMap(..))
 import Types
 
 writeReg :: PhyReg -> Val -> WriteBack

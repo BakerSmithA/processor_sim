@@ -4,6 +4,13 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Types
 
+-- Pending mapping from architectural to physical register. Stored in ROB so
+-- it can be flushed.
+data RegMap
+    = NoMap
+    | RegMap RegIdx PhyReg
+    deriving (Eq, Show)
+
 -- Register Rename Table, holds a mapping from names of registers in source
 -- code, e.g. reg 2, to physical registers, e.g. reg 45.
 data RRT = RRT {

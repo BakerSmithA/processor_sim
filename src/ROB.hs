@@ -3,14 +3,8 @@ module ROB where
 import Queue (Queue)
 import qualified Queue as Q
 import WriteBack
+import RRT (RegMap(..))
 import Types
-
--- Pending mapping from architectural to physical register. Stored in ROB so
--- it can be flushed.
-data RegMap
-    = NoMap
-    | RegMap RegIdx PhyReg
-    deriving (Eq, Show)
 
 -- Entry into the Reorder Buffer. Whether the instruction is present determines
 -- whether the entry is ready to be committed. Also stores the register to be
