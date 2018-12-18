@@ -74,3 +74,7 @@ memVal search exp (ROB q) = do
 invalidateLoads :: Addr -> ROB -> ROB
 invalidateLoads addr (ROB q) = ROB q' where
     q' = Q.mapQ (mapEntry (invalidateLoad addr)) q
+
+-- Returns contents arranged newest to oldest. Useful for testing.
+contents :: ROB -> [Entry]
+contents (ROB q) = Q.elemsNewOld q
