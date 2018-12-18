@@ -47,38 +47,14 @@ addOutput :: String -> State -> Res State
 addOutput s st = return st { output = (output st) ++ s }
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
--- writeBack :: State -> Res (State, ShouldFlush)
--- writeBack st1 = do
---     let (is, st2) = St.commitROB st1
---     st3 <- foldM writeBackFreed st2 is
---     -- Only increment the number of instructions executed if any were.
---     let st4 = if is /= [] then St.incExec (length is) st3 else st3
---     return (st4, NoFlush)
---
--- -- Writes the result of an instruction back to memory/register file, and
--- -- invalidates the physical register previously mapped.
--- writeBackFreed :: State -> (WriteBack, FreedReg, SavedPC) -> Res State
--- writeBackFreed st1 (wb, freed, _) = do
---     st2 <- writeBackSingle wb st1
---     St.clearFreedReg freed st2
---
--- -- Writes the result of an instruction back to memory/register file.
--- writeBackSingle :: WriteBack -> State -> Res State
--- writeBackSingle (WriteReg r val _) st = CPU.setRegVal r val st
--- writeBackSingle (WriteMem i val)   st = St.setMemVal i val st
--- writeBackSingle (WritePrint s)     st = addOutput s st
--- writeBackSingle (NoOp)             st = return st
--- writeBackSingle (Terminate)        st = Exit st
-
--- Perform write-back stage of pipeline, writing result back to register/memory.
 writeBack :: State -> Res (State, ShouldFlush)
 writeBack st1 = do
-    let (is, st2) = St.commitROB st1
+    let st2 = CPU.invalidateLoads st1
+        (is, st3) = St.commitROB st2
         (wbs, frees) = split is
-        st3 = CPU.invalidateLoads st2
     (st4, shouldFlush) <- writeBackInstrs wbs st3
     st5 <- invalidateRegs frees st4
-    return (st5, shouldFlush)
+    trace (debugShow st1) $ return (st5, shouldFlush)
 
 -- Invalidates loads in the ROB if the next writeback instruction to be committed
 -- is a memory write that has a clashing address.
