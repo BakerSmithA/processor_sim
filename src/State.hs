@@ -254,6 +254,18 @@ commitROB st =
     let (out, rob') = ROB.commitable (rob st)
     in (out, st { rob = rob' })
 
+-- Allocates a mapping from an architectural to a physical register and stores
+-- it in the ROB. Only if the instruction graduates from the ROB then the mapping
+-- is stored in the RRT.
+-- By initially storing mappings in the ROB, then they can be easily reverted
+-- if a flush occurs.
+allocPendingReg :: RegIdx -> ROBIdx -> State -> Res ((PhyReg, FreedReg), State)
+allocPendingReg reg robIdx st =
+    case RRT.assign reg (rrt st) of
+        Nothing -> crash NoFreePhyRegs st
+        Just (phy, rrt', freed) -> return ((phy, freed), st') where
+            st' = st { rrt=rrt', rob = ROB.setRegMap robIdx reg phy (rob st) }
+
 -- Takes a free physical register and returns its index.
 -- Also returns the physical register that was freed, if the architectural
 -- register was already mapped to a value.
