@@ -54,10 +54,17 @@ commitable (ROB q) = (wbs, ROB q') where
                     Just (wb,freed,pc) -> ((wb,freed,pc,regMap):wbs, q') where
                         (wbs, q') = commitable' (Q.rem q (Nothing, NoMap))
 
+-- Stores a mapping from an architectural to physical register in the ROB.
+-- This allows mappings to be reverted if a flush occurs.
+setRegMap :: ROBIdx -> RegIdx -> PhyReg -> ROB -> ROB
+setRegMap i reg phy (ROB q) = ROB q' where
+    q' = Q.set i (entry, RegMap reg phy) q
+    (entry, _) = Q.get i q
+
 -- Set the writeback instruction computed by the execution step.
 set :: ROBIdx -> WriteBack -> FreedReg -> SavedPC -> ROB -> ROB
 set i wb freed savedPC (ROB q) = ROB q' where
-    q'          = Q.set i (Just (wb, freed, savedPC), regMap) q
+    q' = Q.set i (Just (wb, freed, savedPC), regMap) q
     (_, regMap) = Q.get i q
 
 -- Return instruction next to be removed from ROB.
