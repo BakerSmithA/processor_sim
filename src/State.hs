@@ -200,12 +200,17 @@ namedRegVal getReg st = do
 pcVal :: State -> Res Val
 pcVal = namedRegVal pcIdx
 
+-- Set the PC to a given value.
+setPC :: Val -> State -> Res State
+setPC newPC st = do
+    pcReg <- namedReg pcIdx st
+    setRegVal pcReg (Just $ newPC) st
+
 -- Increment PC by given amount.
 incPC :: Val -> State -> Res State
 incPC n st = do
     pc <- pcVal st
-    pcReg <- namedReg pcIdx st
-    setRegVal pcReg (Just $ pc+n) st
+    setPC (pc+n) st
 
 -- Sets the value of a register in the physical register file.
 setRegVal :: PhyReg -> Maybe Val -> State -> Res State
@@ -302,8 +307,13 @@ bypassed wbs st = withBypass b st where
     b = BP.fromWbs wbs
 
 -- State after flusing the pipeline.
-flushed :: SavedPC -> State -> State
-flushed savedPC st = st {
+flush :: SavedPC -> State -> Res State
+flush savedPC st = setPC savedPC $ st {
     bypass = BP.empty
   , rob = ROB.flush (rob st)
+
+  , memRS = RS.empty
+  , alRS = RS.empty
+  , bRS = RS.empty
+  , outRS = RS.empty
 }
