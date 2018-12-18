@@ -66,3 +66,7 @@ memVal search exp (ROB q) = do
         where
             c (Just (WriteMem addr _, _, _)) = addr == exp
             c _ = False
+
+-- Searches through ROB, invalidating and loads which have the given address.
+invalidateLoads :: Addr -> ROB -> ROB
+invalidateLoads = undefined

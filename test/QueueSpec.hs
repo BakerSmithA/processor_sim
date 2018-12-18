@@ -143,3 +143,12 @@ queueSpec = describe "queue" $ do
                 (_,  q3) = Q.enq 15 q2
                 x        = Q.find (Q.SubNewToOld i5) (>100) q3
             x `shouldBe` Nothing
+
+    context "mapQ" $ do
+        it "maps elements" $ do
+            let q0 = Q.fromList [0, 0, 0, 0]
+                (_, q1) = Q.enq 5  q0
+                (_, q2) = Q.enq 10 q1
+                (_, q3) = Q.enq 15 q2
+                q4 = Q.mapQ (+10) q3
+            Q.elemsNewOld q4 `shouldBe` [25, 20, 15]

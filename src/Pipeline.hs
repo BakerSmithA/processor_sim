@@ -4,7 +4,9 @@ import Instr
 import WriteBack
 import Types
 
--- 5 stage pipeline: fetch, decod, execute, commit, and write-back.
+-- 5 stage pipeline: fetch, decode, execute, commit, and write-back.
+-- The instructions stored in the pipeline represent instructions on wires
+-- between stages.
 data Pipeline = Pipeline {
     fetched   :: [FPipeInstr]
   , decoded   :: [DPipeInstr]
