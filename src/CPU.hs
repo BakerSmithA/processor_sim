@@ -53,9 +53,9 @@ writeBack st1 = do
     let st2 = CPU.invalidateLoads st1
         (is, st3) = St.commitROB st2
         (wbs, frees) = split is
-    (st4, shouldFlush) <- writeBackInstrs wbs st3
+    (st4, shouldFlush, regMaps) <- writeBackInstrs wbs st3
     st5 <- invalidateRegs frees st4
-    return (st5, shouldFlush)
+    return (setRRTMappings regMaps st5, shouldFlush)
 
 -- Invalidates loads in the ROB if the next writeback instruction to be committed
 -- is a memory write that has a clashing address.
@@ -68,27 +68,38 @@ invalidateLoads st =
                 WriteMem a _ -> St.invalidateLoads a st
                 _            -> st
 
-split :: [(WriteBack, FreedReg, SavedPC, RegMap)] -> ([(WriteBack, SavedPC)], [FreedReg])
+split :: [(WriteBack, FreedReg, SavedPC, RegMap)] -> ([(WriteBack, SavedPC, RegMap)], [FreedReg])
 split = foldr f ([], []) where
-    f (wb, freed, savedPC, _) (xs, ys) = ((wb,savedPC):xs, freed:ys)
+    f (wb, freed, savedPC, regMap) (xs, ys) = ((wb,savedPC,regMap):xs, freed:ys)
 
 -- Writes back instructions to register file/memory. If an invalid load is
 -- encountered, then returns that pipeline should be flushed, and flushed state.
-writeBackInstrs :: [(WriteBack, SavedPC)] -> State -> Res (State, ShouldFlush)
-writeBackInstrs [] st = return (st, NoFlush)
-writeBackInstrs ((wb, savedPC):wbs) st =
+-- Also returns register mapping that should be committed to the RRT.
+writeBackInstrs :: [(WriteBack, SavedPC, RegMap)] -> State -> Res (State, ShouldFlush, [RegMap])
+writeBackInstrs [] st = return (st, NoFlush, [])
+writeBackInstrs ((wb, savedPC, regMap):wbs) st =
     case wb of
-        WriteReg _ _ InvalidLoad -> St.flush savedPC st  >>= \st' -> return (st', Flush)
-        WriteReg r v _           -> CPU.setRegVal r v st >>= writeBackInstrs wbs
-        WriteMem a v             -> St.setMemVal a v st  >>= writeBackInstrs wbs
-        WritePrint s             -> addOutput s st       >>= writeBackInstrs wbs
+        WriteReg _ _ InvalidLoad -> St.flush savedPC st  >>= \st' -> return (st', Flush, [regMap])
+        WriteReg r v _           -> CPU.setRegVal r v st >>= appendRegMap regMap wbs
+        WriteMem a v             -> St.setMemVal a v st  >>= appendRegMap regMap wbs
+        WritePrint s             -> addOutput s st       >>= appendRegMap regMap wbs
         NoOp                     -> writeBackInstrs wbs st
         Terminate                -> Exit st
+
+appendRegMap :: RegMap -> [(WriteBack, SavedPC, RegMap)] -> State -> Res (State, ShouldFlush, [RegMap])
+appendRegMap regMap wbs st = do
+    (st', shouldFlush, maps) <- writeBackInstrs wbs st
+    return (st', shouldFlush, regMap:maps)
 
 -- Invalidates the values stored in any registers after they have finished being used.
 invalidateRegs :: [FreedReg] -> State -> Res State
 invalidateRegs frees st = foldM f st frees where
     f st' freed = St.clearFreedReg freed st'
+
+-- Adds mappings to RRT for committed instructions. We know these mappings
+-- cannot change if there is a flush, therefore this is safe.
+setRRTMappings :: [RegMap] -> State -> State
+setRRTMappings ms st = foldr St.confirmRegMap st ms
 
 -- Return whether the pipeline should stall to wait for branch instructions
 -- to be executed, i.e. if there are branch instructions in the fetch or decode

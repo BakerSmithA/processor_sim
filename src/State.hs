@@ -266,6 +266,12 @@ allocPendingReg robIdx reg st =
         Just (phy, rrt', freed) -> return ((phy, freed), st') where
             st' = st { rrt=rrt', rob = ROB.setRegMap robIdx reg phy (rob st) }
 
+-- Sets the mapping from an architectural register to a physical register in the RRT.
+-- The mapping was previously stored in the ROB.
+confirmRegMap :: RegMap -> State -> State
+confirmRegMap regMap st = st { rrt=rrt' } where
+    rrt' = RRT.insMapping regMap (rrt st)
+
 -- Takes a free physical register and returns its index.
 -- Also returns the physical register that was freed, if the architectural
 -- register was already mapped to a value.
