@@ -46,6 +46,10 @@ cpuSpec = describe "execution" $ do
                 let vm  = runVm [moveI 0 0, moveI 1 5, storeIdx 1 0 0, loadIdx 2 0 0] [0]
                 regVal 2 vm `shouldBe` Res 5
 
+            it "continues execution after RAW hazard" $ do
+                let vm  = runVm [moveI 0 0, moveI 1 5, storeIdx 1 0 0, loadIdx 2 0 0, moveI 3 10] [0]
+                regVal 3 vm `shouldBe` Res 10
+
         context "ALU instructions" $ do
             it "interprets MoveI" $ do
                 let vm = runVm [moveI 0 5] []
