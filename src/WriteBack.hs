@@ -34,3 +34,8 @@ invalidateLoad :: Addr -> WriteBack -> WriteBack
 invalidateLoad addr (WriteReg r v ld) = WriteReg r v ld' where
     ld' = invalidateLoadData addr ld
 invalidateLoad _ wb = wb
+
+-- Return whether a writeback instruction is writing to the PC for a branch.
+isWBBranch :: WriteBack -> Bool
+isWBBranch (WriteReg _ _ (None isBranch)) = isBranch
+isWBBranch _ = False

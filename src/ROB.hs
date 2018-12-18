@@ -85,6 +85,12 @@ invalidateLoads :: Addr -> ROB -> ROB
 invalidateLoads addr (ROB q) = ROB q' where
     q' = Q.mapQ (mapEntry (invalidateLoad addr)) q
 
+-- Return all entries that have been filled in.
+filledContents :: ROB -> [(WriteBack, FreedReg, SavedPC)]
+filledContents rob = foldr f [] (contents rob) where
+    f (Nothing)    acc = acc
+    f (Just entry) acc = entry:acc
+
 -- Returns contents arranged newest to oldest. Useful for testing.
 contents :: ROB -> [Entry]
 contents (ROB q) = Q.elemsNewOld q

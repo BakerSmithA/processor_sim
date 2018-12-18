@@ -94,11 +94,11 @@ invalidateRegs frees st = foldM f st frees where
 -- stages. Do not need to check for execute stage because write-back results
 -- are available via bypass.
 shouldStall :: State -> Pipeline -> Bool
-shouldStall st p = f || d || rs || rob where
-    f       = any isBranch (fmap fst (fetched p))
-    d       = any isBranch (fmap pipeInstr (decoded p))
-    rs      = not (RS.isEmpty (bRS st))
-    rob     = False
+shouldStall st p = f || d || rs || r where
+    f  = any isBranch (fmap fst (fetched p))
+    d  = any isBranch (fmap pipeInstr (decoded p))
+    rs = not (RS.isEmpty (bRS st))
+    r  = any isWBBranch (fmap (\(wb,_,_) -> wb) (ROB.filledContents (rob st)))
 
 -- Shifts instructions through pipeline.
 advancePipeline :: [FPipeInstr] -> State -> Pipeline -> Res (State, Pipeline)
