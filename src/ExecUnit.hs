@@ -41,8 +41,8 @@ execI ei st = mapPipeDataM f ei where
 
 -- Load/Store Unit.
 lsu :: EMemInstr -> Res WriteBack
-lsu (ELoad r val _)   = writeReg r val
-lsu (EStore val addr) = writeMem addr val
+lsu (ELoad r val addr) = writeLoad r val addr
+lsu (EStore val addr)  = writeMem addr val
 
 -- Arithmetic/Logic Unit.
 alu :: EALInstr -> Res WriteBack
@@ -74,9 +74,11 @@ ou (Print r)  = writePrint (show r)
 ou (PrintC r) = writePrint ([chr (fromIntegral r)])
 ou (PrintLn)  = writePrint "\n"
 
--- Convenience method for WriteReg in Res.
 writeReg :: PhyReg -> Val -> Res WriteBack
-writeReg r v = return (WriteReg r v True)
+writeReg r v = return (WriteReg r v Nothing)
+
+writeLoad :: PhyReg -> Val -> Addr -> Res WriteBack
+writeLoad r v addr = return (WriteReg r v (Just (LoadData addr True)))
 
 writeMem :: Addr -> Val -> Res WriteBack
 writeMem addr v = return (WriteMem (fromIntegral addr) v)

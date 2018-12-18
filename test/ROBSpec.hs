@@ -6,7 +6,7 @@ import WriteBack
 import Types
 
 writeRegValid :: PhyReg -> Val -> WriteBack
-writeRegValid p v = WriteReg p v True
+writeRegValid p v = WriteReg p v Nothing
 
 robSpec :: Spec
 robSpec = describe "Reorder Buffer" $ do
