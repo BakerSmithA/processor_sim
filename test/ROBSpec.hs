@@ -14,13 +14,13 @@ robSpec = describe "Reorder Buffer" $ do
             (_,  rob4) = ROB.alloc rob3
             (i4, rob5) = ROB.alloc rob4
 
-            rob6 = set i1 (WriteReg 0 10) Nothing rob5
-            rob7 = set i2 (WriteMem 5 15) (Just 1) rob6
-            rob8 = set i4 (WriteReg 1 5)  Nothing rob7
+            rob6 = set i1 (WriteReg 0 10) Nothing  0 rob5
+            rob7 = set i2 (WriteMem 5 15) (Just 1) 1 rob6
+            rob8 = set i4 (WriteReg 1 5)  Nothing  2 rob7
 
             (cs, _) = ROB.commitable rob8
 
-        cs `shouldBe` [(WriteReg 0 10, Nothing), (WriteMem 5 15, Just 1)]
+        cs `shouldBe` [(WriteReg 0 10, Nothing, 0), (WriteMem 5 15, Just 1, 1)]
 
     it "returns new state of ROB" $ do
         let rob1 = ROB.empty 5
@@ -30,15 +30,15 @@ robSpec = describe "Reorder Buffer" $ do
             (i3, rob4) = ROB.alloc rob3
             (i4, rob5) = ROB.alloc rob4
 
-            rob6 = set i1 (WriteReg 0 10) Nothing rob5
-            rob7 = set i2 (WriteMem 5 15) Nothing rob6
-            rob8 = set i4 (WriteReg 1 5)  Nothing rob7
+            rob6 = set i1 (WriteReg 0 10) Nothing 0 rob5
+            rob7 = set i2 (WriteMem 5 15) Nothing 1 rob6
+            rob8 = set i4 (WriteReg 1 5)  Nothing 2 rob7
 
             (_, rob9) = ROB.commitable rob8
-            rob10     = set i3 (WriteReg 0 1) Nothing rob9
+            rob10     = set i3 (WriteReg 0 1) Nothing 3 rob9
             (cs, _)   = ROB.commitable rob10
 
-        cs `shouldBe` [(WriteReg 0 1, Nothing), (WriteReg 1 5,  Nothing)]
+        cs `shouldBe` [(WriteReg 0 1, Nothing, 3), (WriteReg 1 5,  Nothing, 2)]
 
     it "allows allocation after commiting" $ do
         let rob1 = ROB.empty 5
@@ -46,12 +46,12 @@ robSpec = describe "Reorder Buffer" $ do
             (i1, rob2) = ROB.alloc rob1
             (i2, rob3) = ROB.alloc rob2
 
-            rob4      = ROB.set i1 (WriteReg 0 1) Nothing rob3
+            rob4      = ROB.set i1 (WriteReg 0 1) Nothing 0 rob3
             (_, rob5) = ROB.commitable rob4
 
             (i3, rob6) = ROB.alloc rob5
-            rob7       = ROB.set i2 (WriteReg 1 2) Nothing rob6
-            rob8       = ROB.set i3 (WriteReg 2 3) Nothing rob7
+            rob7       = ROB.set i2 (WriteReg 1 2) Nothing 1 rob6
+            rob8       = ROB.set i3 (WriteReg 2 3) Nothing 2 rob7
             (cs, _)    = ROB.commitable rob8
 
-        cs `shouldBe` [(WriteReg 1 2, Nothing), (WriteReg 2 3, Nothing)]
+        cs `shouldBe` [(WriteReg 1 2, Nothing, 1), (WriteReg 2 3, Nothing, 2)]
