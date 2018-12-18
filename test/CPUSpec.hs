@@ -42,6 +42,10 @@ cpuSpec = describe "execution" $ do
                 let vm  = runVm [moveI 0 7, moveI 1 2, moveI 2 3, storeBaseIdx 0 1 2] [0, 0, 0, 0, 0, 0]
                 St.mem vm `shouldBe` Mem.fromList [0, 0, 0, 0, 0, 7]
 
+            it "handles RAW hazards" $ do
+                let vm  = runVm [moveI 0 0, moveI 1 5, storeIdx 1 0 0, loadIdx 2 0 0] [0]
+                regVal 2 vm `shouldBe` Res 5
+
         context "ALU instructions" $ do
             it "interprets MoveI" $ do
                 let vm = runVm [moveI 0 5] []
