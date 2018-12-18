@@ -69,6 +69,9 @@ writeBackSingle (WritePrint s)     st = addOutput s st
 writeBackSingle (NoOp)             st = return st
 writeBackSingle (Terminate)        st = Exit st
 
+-- writeBackInstrs :: [WriteBack] -> Res State
+-- writeBackInstrs
+
 -- Return whether the pipeline should stall to wait for branch instructions
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
 -- stages. Do not need to check for execute stage because write-back results

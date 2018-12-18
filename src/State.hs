@@ -300,3 +300,10 @@ runRS st = do
 bypassed :: [WriteBack] -> State -> State
 bypassed wbs st = withBypass b st where
     b = BP.fromWbs wbs
+
+-- State after flusing the pipeline.
+flushed :: SavedPC -> State -> State
+flushed savedPC st = st {
+    bypass = BP.empty
+  , rob = ROB.flush (rob st)
+}

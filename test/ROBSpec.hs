@@ -89,3 +89,38 @@ robSpec = describe "Reorder Buffer" $ do
                 Nothing,
                 Just (writeLoad 0 10 1 False, Just 1, 1),
                 Just (WriteMem 5 15,Nothing,0)]
+
+    context "flush" $ do
+        it "resets all elements" $ do
+            let rob1 = ROB.empty 5
+                (i1, rob2) = ROB.alloc rob1
+                (i2, rob3) = ROB.alloc rob2
+                (_,  rob4) = ROB.alloc rob3
+                (i4, rob5) = ROB.alloc rob4
+
+                rob6 = set i1 (writeReg 0 10) Nothing 0 rob5
+                rob7 = set i2 (WriteMem 5 15) Nothing 1 rob6
+                -- i3 filled in later.
+                rob8 = set i4 (writeReg 1 5)  Nothing 3 rob7
+                rob9 = flush rob8
+
+                es = allContents rob9
+
+            es `shouldBe` [Nothing, Nothing, Nothing, Nothing, Nothing]
+
+        it "resets queue range" $ do
+            let rob1 = ROB.empty 5
+                (i1, rob2) = ROB.alloc rob1
+                (i2, rob3) = ROB.alloc rob2
+                (_,  rob4) = ROB.alloc rob3
+                (i4, rob5) = ROB.alloc rob4
+
+                rob6 = set i1 (writeReg 0 10) Nothing 0 rob5
+                rob7 = set i2 (WriteMem 5 15) Nothing 1 rob6
+                -- i3 filled in later.
+                rob8 = set i4 (writeReg 1 5)  Nothing 3 rob7
+                rob9 = flush rob8
+
+                es = contents rob9
+
+            es `shouldBe` []

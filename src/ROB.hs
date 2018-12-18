@@ -25,6 +25,10 @@ empty :: ROBIdx -> ROB
 empty len = ROB (Q.fromList es) where
     es = replicate len Nothing
 
+-- Removes all elements from ROB.
+flush :: ROB -> ROB
+flush (ROB q) = empty (Q.totalSize q)
+
 -- Allocate a space for a not-yet-ready instruction, returning index to update
 -- once the instruction is ready.
 alloc :: ROB -> (ROBIdx, ROB)
@@ -78,3 +82,7 @@ invalidateLoads addr (ROB q) = ROB q' where
 -- Returns contents arranged newest to oldest. Useful for testing.
 contents :: ROB -> [Entry]
 contents (ROB q) = Q.elemsNewOld q
+
+-- Returns all elements, including unassigned elements. Useful for testing.
+allContents :: ROB -> [Entry]
+allContents (ROB q) = Q.allElems q

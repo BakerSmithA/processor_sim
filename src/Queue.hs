@@ -65,6 +65,10 @@ data Queue a = Queue {
   , range :: Range
 } deriving (Show, Eq)
 
+-- The total size assigned the queue, including invalid elements.
+totalSize :: Queue a -> Int
+totalSize (Queue _ (Range _ _ l)) = l
+
 mapQ :: (a -> a) -> Queue a -> Queue a
 mapQ f (Queue es r) = Queue es' r where
     es' = foldr modify es (indices r)
