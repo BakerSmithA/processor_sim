@@ -10,6 +10,9 @@ import Types
 -- invalidated once writeback of the instruction occurs.
 type Entry = Maybe (WriteBack, FreedReg, SavedPC)
 
+mapEntry :: (WriteBack -> WriteBack) -> Entry -> Entry
+mapEntry f = fmap (\(wb, freed, savedPC) -> (f wb, freed, savedPC))
+
 -- Reorder Buffer, used to store write-back instructions before they are committed.
 data ROB = ROB (Queue Entry)
          deriving (Eq)
@@ -69,4 +72,5 @@ memVal search exp (ROB q) = do
 
 -- Searches through ROB, invalidating and loads which have the given address.
 invalidateLoads :: Addr -> ROB -> ROB
-invalidateLoads = undefined
+invalidateLoads addr (ROB q) = ROB q' where
+    q' = Q.mapQ (mapEntry (invalidateLoad addr)) q
