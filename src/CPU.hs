@@ -46,34 +46,59 @@ addOutput :: String -> State -> Res State
 addOutput s st = return st { output = (output st) ++ s }
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
+-- writeBack :: State -> Res (State, ShouldFlush)
+-- writeBack st1 = do
+--     let (is, st2) = St.commitROB st1
+--     st3 <- foldM writeBackFreed st2 is
+--     -- Only increment the number of instructions executed if any were.
+--     let st4 = if is /= [] then St.incExec (length is) st3 else st3
+--     return (st4, NoFlush)
+--
+-- -- Writes the result of an instruction back to memory/register file, and
+-- -- invalidates the physical register previously mapped.
+-- writeBackFreed :: State -> (WriteBack, FreedReg, SavedPC) -> Res State
+-- writeBackFreed st1 (wb, freed, _) = do
+--     st2 <- writeBackSingle wb st1
+--     St.clearFreedReg freed st2
+--
+-- -- Writes the result of an instruction back to memory/register file.
+-- writeBackSingle :: WriteBack -> State -> Res State
+-- writeBackSingle (WriteReg r val _) st = CPU.setRegVal r val st
+-- writeBackSingle (WriteMem i val)   st = St.setMemVal i val st
+-- writeBackSingle (WritePrint s)     st = addOutput s st
+-- writeBackSingle (NoOp)             st = return st
+-- writeBackSingle (Terminate)        st = Exit st
+
+-- Perform write-back stage of pipeline, writing result back to register/memory.
 writeBack :: State -> Res (State, ShouldFlush)
 writeBack st1 = do
     let (is, st2) = St.commitROB st1
-    st3 <- foldM writeBackFreed st2 is
-    -- Only increment the number of instructions executed if any were.
-    let st4 = if is /= [] then St.incExec (length is) st3 else st3
-    return (st4, NoFlush)
+        (wbs, frees) = split is
+    (st3, shouldFlush) <- writeBackInstrs wbs st2
+    st4 <- invalidateRegs frees st3
+    return (st4, shouldFlush)
 
--- Writes the result of an instruction back to memory/register file, and
--- invalidates the physical register previously mapped.
-writeBackFreed :: State -> (WriteBack, FreedReg, SavedPC) -> Res State
-writeBackFreed st1 (wb, freed, _) = do
-    st2 <- writeBackSingle wb st1
-    St.clearFreedReg freed st2
+split :: [(WriteBack, FreedReg, SavedPC)] -> ([(WriteBack, SavedPC)], [FreedReg])
+split = foldr f ([], []) where
+    f (wb, freed, savedPC) (xs, ys) = ((wb,savedPC):xs, freed:ys)
 
--- Writes the result of an instruction back to memory/register file.
-writeBackSingle :: WriteBack -> State -> Res State
-writeBackSingle (WriteReg r val _) st = CPU.setRegVal r val st
-writeBackSingle (WriteMem i val)   st = St.setMemVal i val st
-writeBackSingle (WritePrint s)     st = addOutput s st
-writeBackSingle (NoOp)             st = return st
-writeBackSingle (Terminate)        st = Exit st
+-- Writes back instructions to register file/memory. If an invalid load is
+-- encountered, then returns that pipeline should be flushed, and flushed state.
+writeBackInstrs :: [(WriteBack, SavedPC)] -> State -> Res (State, ShouldFlush)
+writeBackInstrs [] st = return (st, NoFlush)
+writeBackInstrs ((wb, savedPC):wbs) st =
+    case wb of
+        WriteReg _ _ InvalidLoad -> St.flush savedPC st  >>= \st' -> return (st', Flush)
+        WriteReg r v _           -> CPU.setRegVal r v st >>= writeBackInstrs wbs
+        WriteMem a v             -> St.setMemVal a v st  >>= writeBackInstrs wbs
+        WritePrint s             -> addOutput s st       >>= writeBackInstrs wbs
+        NoOp                     -> writeBackInstrs wbs st
+        Terminate                -> Exit st
 
--- writeBackInstrs :: [WriteBack] -> State -> Res State
--- writeBackInstrs []       st = return st
--- writeBackInstrs (wb:wbs) st = writeBackInstrs wbs (f wb) where
---     -- Flush if the load is invalid.
---     f = undefined
+-- Invalidates the values stored in any registers after they have finished being used.
+invalidateRegs :: [FreedReg] -> State -> Res State
+invalidateRegs frees st = foldM f st frees where
+    f st' freed = St.clearFreedReg freed st'
 
 -- Return whether the pipeline should stall to wait for branch instructions
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
