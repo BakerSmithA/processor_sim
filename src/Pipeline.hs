@@ -2,7 +2,6 @@ module Pipeline where
 
 import Instr
 import WriteBack
-import Types
 
 -- 5 stage pipeline: fetch, decode, execute, commit, and write-back.
 -- The instructions stored in the pipeline represent instructions on wires
@@ -34,6 +33,10 @@ type Writer m a = a -> m a
 -- Return pipeline with nothing in each stage.
 empty :: Pipeline
 empty = Pipeline [] [] []
+
+-- Return pipeline with nothing in each stage.
+flushed :: Pipeline
+flushed = empty
 
 -- Supplies new instruction into pipleine, and shifts in-flight instructions
 -- through pipeline. Returns write-back result, and new state of pipeline.
