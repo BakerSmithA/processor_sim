@@ -6,7 +6,7 @@ import WriteBack
 import Types
 
 writeReg :: PhyReg -> Val -> WriteBack
-writeReg p v = WriteReg p v None
+writeReg p v = WriteReg p v (None False)
 
 writeLoad :: PhyReg -> Val -> LoadData -> WriteBack
 writeLoad p v ld = WriteReg p v ld

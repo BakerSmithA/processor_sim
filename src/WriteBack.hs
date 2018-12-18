@@ -3,15 +3,16 @@ module WriteBack where
 import Types
 
 type Valid = Bool
+type IsBranch = Bool
 
 data LoadData
-    = None
+    = None IsBranch
     | ValidLoad Addr
     | InvalidLoad
     deriving (Show, Eq)
 
 invalidateLoadData :: Addr -> LoadData -> LoadData
-invalidateLoadData _       (None)           = None
+invalidateLoadData _       (None isBranch)  = None isBranch
 invalidateLoadData _       (InvalidLoad)    = InvalidLoad
 invalidateLoadData chkAddr (ValidLoad addr) | chkAddr == addr = InvalidLoad
                                             | otherwise       = ValidLoad addr

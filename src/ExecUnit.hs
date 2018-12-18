@@ -75,7 +75,10 @@ ou (PrintC r) = writePrint ([chr (fromIntegral r)])
 ou (PrintLn)  = writePrint "\n"
 
 writeReg :: PhyReg -> Val -> Res WriteBack
-writeReg r v = return (WriteReg r v None)
+writeReg r v = return (WriteReg r v (None False))
+
+writeBranch :: PhyReg -> Val -> Res WriteBack
+writeBranch r v = return (WriteReg r v (None True))
 
 writeLoad :: PhyReg -> Val -> Addr -> Res WriteBack
 writeLoad r v addr = return (WriteReg r v (ValidLoad addr))
@@ -113,7 +116,7 @@ branch addr st = do
     pcReg <- namedReg pcIdx st
     -- +1 because pipeline stalls until branch executed, and PC not updated.
     let addr' = fromIntegral (addr+1)
-    writeReg pcReg addr'
+    writeBranch pcReg addr'
 
 -- Executes a branch if the condition is true, otherwise NoOp.
 branchCond :: Bool -> Addr -> State -> Res WriteBack
