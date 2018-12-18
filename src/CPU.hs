@@ -10,6 +10,7 @@ import Decode
 import Types
 import ExecUnit
 import qualified RS
+import qualified ROB
 import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
@@ -74,9 +75,21 @@ writeBack :: State -> Res (State, ShouldFlush)
 writeBack st1 = do
     let (is, st2) = St.commitROB st1
         (wbs, frees) = split is
-    (st3, shouldFlush) <- writeBackInstrs wbs st2
-    st4 <- invalidateRegs frees st3
-    return (st4, shouldFlush)
+        st3 = CPU.invalidateLoads st2
+    (st4, shouldFlush) <- writeBackInstrs wbs st3
+    st5 <- invalidateRegs frees st4
+    return (st5, shouldFlush)
+
+-- Invalidates loads in the ROB if the next writeback instruction to be committed
+-- is a memory write that has a clashing address.
+invalidateLoads :: State -> State
+invalidateLoads st =
+    case ROB.peek (rob st) of
+        Nothing         -> st
+        Just (wb, _, _) ->
+            case wb of
+                WriteMem a _ -> St.invalidateLoads a st
+                _            -> st
 
 split :: [(WriteBack, FreedReg, SavedPC)] -> ([(WriteBack, SavedPC)], [FreedReg])
 split = foldr f ([], []) where

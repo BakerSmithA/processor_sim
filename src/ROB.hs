@@ -54,6 +54,12 @@ set :: ROBIdx -> WriteBack -> FreedReg -> SavedPC -> ROB -> ROB
 set i wb freed savedPC (ROB q) = ROB q' where
     q' = Q.set i (Just (wb, freed, savedPC)) q
 
+-- Return instruction next to be removed from ROB.
+peek :: ROB -> Maybe (WriteBack, FreedReg, SavedPC)
+peek (ROB q) = do
+    e <- Q.peek q
+    e
+
 -- Searches in the ROB for physical register with matching register.
 -- Nothing if an update to the register is not stored in the ROB.
 regVal :: Q.Search -> PhyReg -> ROB -> Maybe Val
