@@ -14,7 +14,7 @@ writeLoad p v a valid = WriteReg p v (Just (LoadData a valid))
 robSpec :: Spec
 robSpec = describe "Reorder Buffer" $ do
     context "committable" $ do
-        it "returns all instructions that can be committed" $ do
+        it "returns all instructions that can be committed in order oldest to newest" $ do
             let rob1 = ROB.empty 5
 
                 (i1, rob2) = ROB.alloc rob1
@@ -40,13 +40,14 @@ robSpec = describe "Reorder Buffer" $ do
 
                 rob6 = set i1 (writeReg 0 10) Nothing 0 rob5
                 rob7 = set i2 (WriteMem 5 15) Nothing 1 rob6
-                rob8 = set i4 (writeReg 1 5)  Nothing 2 rob7
+                -- i3 filled in later.
+                rob8 = set i4 (writeReg 1 5)  Nothing 3 rob7
 
                 (_, rob9) = ROB.commitable rob8
-                rob10     = set i3 (writeReg 0 1) Nothing 3 rob9
+                rob10     = set i3 (writeReg 0 1) Nothing 2 rob9
                 (cs, _)   = ROB.commitable rob10
 
-            cs `shouldBe` [(writeReg 0 1, Nothing, 3), (writeReg 1 5,  Nothing, 2)]
+            cs `shouldBe` [(writeReg 0 1, Nothing, 2), (writeReg 1 5,  Nothing, 3)]
 
         it "allows allocation after commiting" $ do
             let rob1 = ROB.empty 5
