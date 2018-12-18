@@ -75,10 +75,10 @@ ou (PrintC r) = writePrint ([chr (fromIntegral r)])
 ou (PrintLn)  = writePrint "\n"
 
 writeReg :: PhyReg -> Val -> Res WriteBack
-writeReg r v = return (WriteReg r v Nothing)
+writeReg r v = return (WriteReg r v None)
 
 writeLoad :: PhyReg -> Val -> Addr -> Res WriteBack
-writeLoad r v addr = return (WriteReg r v (Just (LoadData addr True)))
+writeLoad r v addr = return (WriteReg r v (ValidLoad addr))
 
 writeMem :: Addr -> Val -> Res WriteBack
 writeMem addr v = return (WriteMem (fromIntegral addr) v)

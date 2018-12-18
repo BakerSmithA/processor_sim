@@ -6,10 +6,10 @@ import WriteBack
 import Types
 
 writeReg :: PhyReg -> Val -> WriteBack
-writeReg p v = WriteReg p v Nothing
+writeReg p v = WriteReg p v None
 
-writeLoad :: PhyReg -> Val -> Addr -> Valid -> WriteBack
-writeLoad p v a valid = WriteReg p v (Just (LoadData a valid))
+writeLoad :: PhyReg -> Val -> LoadData -> WriteBack
+writeLoad p v ld = WriteReg p v ld
 
 robSpec :: Spec
 robSpec = describe "Reorder Buffer" $ do
@@ -75,20 +75,20 @@ robSpec = describe "Reorder Buffer" $ do
                 (i4, rob5) = ROB.alloc rob4
                 (i5, rob6) = ROB.alloc rob5
 
-                rob7  = set i1 (WriteMem  5 15)        Nothing  0 rob6
-                rob8  = set i2 (writeLoad 0 10 1 True) (Just 1) 1 rob7
-                rob9  = set i4 (writeReg  1 5)         Nothing  2 rob8
-                rob10 = set i5 (writeLoad 1 5 4 False) Nothing  3 rob9
+                rob7  = set i1 (WriteMem  5 15)                Nothing  0 rob6
+                rob8  = set i2 (writeLoad 0 10 (ValidLoad 1)) (Just 1) 1 rob7
+                rob9  = set i4 (writeReg  1 5)                 Nothing  2 rob8
+                rob10 = set i5 (writeLoad 1 5 InvalidLoad)     Nothing  3 rob9
 
                 rob11 = invalidateLoads 1 rob10
                 es    = contents rob11
 
             es `shouldBe` [
-                Just (writeLoad 1 5 4 False, Nothing, 3),
+                Just (writeLoad 1 5 InvalidLoad, Nothing, 3),
                 Just (writeReg 1 5, Nothing, 2),
                 Nothing,
-                Just (writeLoad 0 10 1 False, Just 1, 1),
-                Just (WriteMem 5 15,Nothing,0)]
+                Just (writeLoad 0 10 InvalidLoad, Just 1, 1),
+                Just (WriteMem 5 15, Nothing,0)]
 
     context "flush" $ do
         it "resets all elements" $ do

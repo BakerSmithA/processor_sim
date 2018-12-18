@@ -69,8 +69,11 @@ writeBackSingle (WritePrint s)     st = addOutput s st
 writeBackSingle (NoOp)             st = return st
 writeBackSingle (Terminate)        st = Exit st
 
--- writeBackInstrs :: [WriteBack] -> Res State
--- writeBackInstrs
+-- writeBackInstrs :: [WriteBack] -> State -> Res State
+-- writeBackInstrs []       st = return st
+-- writeBackInstrs (wb:wbs) st = writeBackInstrs wbs (f wb) where
+--     -- Flush if the load is invalid.
+--     f = undefined
 
 -- Return whether the pipeline should stall to wait for branch instructions
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
