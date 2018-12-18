@@ -66,11 +66,11 @@ insMapping (RegMap reg phy) rrt = rrt { reg2phy=reg2phy', phy2reg=phy2reg' } whe
 -- The mapping is stored in the ROB.
 assign :: RegIdx -> RRT -> Maybe (PhyReg, RRT, FreedReg)
 assign _    (RRT _ _ []) = Nothing
-assign name (RRT reg2phy phy2reg frees) = Just (phy, rrt', freedReg) where
-    rrt'       = RRT reg2phy phy2reg rest'
-    rest'      = maybe rest (\r -> rest ++ [r]) freedReg
-    freedReg   = Map.lookup name reg2phy
-    (phy:rest) = frees
+assign name rrt = Just (phy, rrt', freedReg) where
+    rrt'       = rrt { frees=frees' }
+    frees'     = maybe rest (\r -> rest ++ [r]) freedReg
+    freedReg   = Map.lookup name (reg2phy rrt)
+    (phy:rest) = (frees rrt)
 
 -- Return physical register mapped to name of register in source code, or
 -- Nothing if no mapping exists.
