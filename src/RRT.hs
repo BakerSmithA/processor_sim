@@ -55,6 +55,13 @@ ins name (RRT reg2phy phy2reg frees) = Just (phy, rrt', freedReg) where
     freedReg   = Map.lookup name reg2phy
     (phy:rest) = frees
 
+-- Insert mapping saved in ROB.
+insMapping :: RegMap -> RRT -> RRT
+insMapping NoMap rrt = rrt
+insMapping (RegMap reg phy) rrt = rrt { reg2phy=reg2phy', phy2reg=phy2reg' } where
+    reg2phy' = Map.insert reg phy (reg2phy rrt)
+    phy2reg' = Map.insert phy reg (phy2reg rrt)
+
 -- Makes a 'pending' assignment between an architectural and physical register.
 -- The mapping is stored in the ROB.
 assign :: RegIdx -> RRT -> Maybe (PhyReg, RRT, FreedReg)
