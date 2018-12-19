@@ -54,8 +54,8 @@ writeBack st1 = do
         (is, st3) = St.commitROB st2
         (wbs, frees) = split is
     (st4, shouldFlush, regMaps) <- writeBackInstrs wbs st3
-    --st5 <- invalidateRegs frees st4
-    return (setRRTMappings regMaps st4, shouldFlush)
+    st5 <- invalidateRegs frees st4
+    return (setRRTMappings regMaps st5, shouldFlush)
 
 -- Invalidates loads in the ROB if the next writeback instruction to be committed
 -- is a memory write that has a clashing address.
@@ -94,7 +94,7 @@ appendRegMap regMap wbs st = do
 -- Invalidates the values stored in any registers after they have finished being used.
 invalidateRegs :: [FreedReg] -> State -> Res State
 invalidateRegs frees st = foldM f st frees where
-    f st' freed = St.clearFreedReg freed st'
+    f st' freed = St.freeReg freed st'
 
 -- Adds mappings to RRT for committed instructions. We know these mappings
 -- cannot change if there is a flush, therefore this is safe.

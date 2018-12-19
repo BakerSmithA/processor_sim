@@ -64,13 +64,24 @@ insMapping (RegMap reg phy) rrt = rrt { reg2phy=reg2phy', phy2reg=phy2reg' } whe
 
 -- Makes a 'pending' assignment between an architectural and physical register.
 -- The mapping is stored in the ROB.
-assign :: RegIdx -> RRT -> Maybe (PhyReg, RRT, FreedReg)
+assign :: RegIdx -> RRT -> Maybe (PhyReg, RRT)
 assign _    (RRT _ _ []) = Nothing
-assign name rrt = Just (phy, rrt', freedReg) where
-    rrt'       = rrt { frees=frees' }
-    frees'     = maybe rest (\r -> rest ++ [r]) freedReg
-    freedReg   = Map.lookup name (reg2phy rrt)
+assign name rrt = Just (phy, rrt') where
+    rrt'       = rrt { frees=rest }
     (phy:rest) = (frees rrt)
+
+free :: PhyReg -> RRT -> RRT
+free phy rrt = rrt' where
+    rrt'   = rrt { frees=frees'}
+    frees' = (frees rrt)++ [phy]
+
+-- free phy rrt = do
+--     case Map.lookup phy (phy2reg rrt) of
+--         Nothing  -> error ("Tried to free unmapped reg: " ++ show phy ++ ", " ++ show rrt)
+--         Just reg -> rrt { reg2phy=reg2phy', phy2reg=phy2reg', frees=frees' } where
+--             reg2phy' = Map.delete reg (reg2phy rrt)
+--             phy2reg' = Map.delete phy (phy2reg rrt)
+--             frees'   = (frees rrt) ++ [phy]
 
 -- Return physical register mapped to name of register in source code, or
 -- Nothing if no mapping exists.

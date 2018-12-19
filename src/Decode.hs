@@ -38,7 +38,11 @@ separateFreed = mapIM f return return where
 -- register was already assigned to a physical register. This allows
 -- the value in this register to the invalidated at the write-back stage.
 renameDst :: ROBIdx -> RegIdx -> StateT State Res (PhyReg, FreedReg)
-renameDst robIdx r = StateT (\st -> St.allocPendingReg robIdx r st)
+renameDst robIdx r = StateT $ \st -> do
+    -- Free the previous mapping.
+    freedReg <- St.getMaybePhyReg r st
+    (phy, st') <- St.allocPendingReg robIdx r st
+    return ((phy, freedReg), st')
 
 -- Looks up the mapping from a source register to a physical register.
 lookupSrc :: RegIdx -> StateT State Res PhyReg

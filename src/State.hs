@@ -16,6 +16,7 @@ import RRT
 import RS (MemRS, ArithLogicRS, BranchRS, OutRS)
 import qualified RS as RS
 import Types
+import Debug.Trace
 
 -- Stores current state of CPU at a point in time.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -221,11 +222,12 @@ setRegVal i val st =
 
 -- Used to clear a register (make non-ready) after its mapping from an
 -- architectural register has been removed.
-clearFreedReg :: FreedReg -> State -> Res State
-clearFreedReg mPhy st =
+freeReg :: FreedReg -> State -> Res State
+freeReg mPhy st =
     case mPhy of
         Nothing  -> return st
-        Just phy -> setRegVal phy Nothing st
+        Just phy -> setRegVal phy Nothing st' where
+            st' = st { rrt=RRT.free phy (rrt st) }
 
 -- Set the value at a memory address, or Crash if invalid address.
 setMemVal :: Addr -> Val -> State -> Res State
@@ -259,11 +261,11 @@ commitROB st =
 -- is stored in the RRT.
 -- By initially storing mappings in the ROB, then they can be easily reverted
 -- if a flush occurs.
-allocPendingReg :: ROBIdx -> RegIdx -> State -> Res ((PhyReg, FreedReg), State)
+allocPendingReg :: ROBIdx -> RegIdx -> State -> Res (PhyReg, State)
 allocPendingReg robIdx reg st =
     case RRT.assign reg (rrt st) of
         Nothing -> crash NoFreePhyRegs st
-        Just (phy, rrt', freed) -> return ((phy, freed), st') where
+        Just (phy, rrt') -> return (phy, st') where
             st' = st { rrt=rrt', rob = ROB.setRegMap robIdx reg phy (rob st) }
 
 -- Sets the mapping from an architectural register to a physical register in the RRT.
@@ -280,6 +282,15 @@ allocPhyReg reg st =
     case RRT.ins reg (rrt st) of
         Nothing -> crash NoFreePhyRegs st
         Just (phy, rrt', freed) -> return ((phy, freed), st { rrt=rrt' })
+
+getMaybePhyReg :: RegIdx -> State -> Res (Maybe PhyReg)
+getMaybePhyReg reg st =
+    case ROB.regMap reg (rob st) of
+        Just phy -> return (Just phy)
+        Nothing  ->
+            case RRT.get reg (rrt st) of
+                Nothing  -> return Nothing
+                Just phy -> return (Just phy)
 
 -- Returns physical register mapped to register name, or crashes if there
 -- is no mapping.
