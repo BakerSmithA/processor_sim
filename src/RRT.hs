@@ -79,14 +79,6 @@ freeAll :: [PhyReg] -> RRT -> RRT
 freeAll ps rrt = rrt { frees=frees' } where
     frees' = (frees rrt) ++ ps
 
--- free phy rrt = do
---     case Map.lookup phy (phy2reg rrt) of
---         Nothing  -> error ("Tried to free unmapped reg: " ++ show phy ++ ", " ++ show rrt)
---         Just reg -> rrt { reg2phy=reg2phy', phy2reg=phy2reg', frees=frees' } where
---             reg2phy' = Map.delete reg (reg2phy rrt)
---             phy2reg' = Map.delete phy (phy2reg rrt)
---             frees'   = (frees rrt) ++ [phy]
-
 -- Return physical register mapped to name of register in source code, or
 -- Nothing if no mapping exists.
 get :: RegIdx -> RRT -> Maybe PhyReg

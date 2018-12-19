@@ -64,8 +64,10 @@ writeBack st1 = do
     case savedPC of
         Nothing -> return (st7, NoFlush)
         Just pc -> do
-            let frees = ROB.mappedPhyRegs (rob st7)
-            st8 <- St.flush pc frees st7
+            -- Need to free any mapped registers still in the ROB otherwise
+            -- they will be lost when the flush resets the ROB.
+            let remainingFrees = ROB.mappedPhyRegs (rob st7)
+            st8 <- St.flush pc remainingFrees st7
             return (st8, Flush)
 
 -- Invalidates loads in the ROB if the next writeback instruction to be committed
@@ -97,7 +99,8 @@ split = foldr f ([], [], []) where
 -- Adds mappings to RRT for committed instructions. We know these mappings
 -- cannot change if there is a flush, therefore this is safe.
 setRRTMappings :: [RegMap] -> State -> State
-setRRTMappings ms st = foldr St.confirmRegMap st ms
+setRRTMappings ms st = foldl f st ms where
+    f st regMap = St.confirmRegMap regMap st
 
 -- Writes back instructions, assuming they are all valid.
 writeBackInstrs :: [WriteBack] -> State -> Res State
@@ -155,8 +158,8 @@ runPipeline st p = do
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
-    runPipeline (St.incCycles st') p'
-    -- trace (show p' ++ "\n" ++ debugShow st' ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    -- runPipeline (St.incCycles st') p'
+    trace (show p' ++ "\n" ++ debugShow st' ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State
