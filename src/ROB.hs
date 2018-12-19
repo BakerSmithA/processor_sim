@@ -23,7 +23,7 @@ data ROB = ROB (Queue Entry)
          deriving (Eq)
 
 instance Show ROB where
-    show (ROB q) = show (Q.elemsNewOld q)
+    show (ROB q) = unlines (fmap (\s -> "\t" ++ show s) (Q.elemsNewOld q))
 
 -- Creates a Reorder Buffer of the given length containing empty entries.
 empty :: ROBIdx -> ROB

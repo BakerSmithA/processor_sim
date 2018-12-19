@@ -54,8 +54,8 @@ writeBack st1 = do
         (is, st3) = St.commitROB st2
         (wbs, frees) = split is
     (st4, shouldFlush, regMaps) <- writeBackInstrs wbs st3
-    st5 <- invalidateRegs frees st4
-    return (setRRTMappings regMaps st5, shouldFlush)
+    --st5 <- invalidateRegs frees st4
+    return (setRRTMappings regMaps st4, shouldFlush)
 
 -- Invalidates loads in the ROB if the next writeback instruction to be committed
 -- is a memory write that has a clashing address.
@@ -139,8 +139,8 @@ runPipeline st p = do
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
-    runPipeline (St.incCycles st') p'
-    -- trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    -- runPipeline (St.incCycles st') p'
+    trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State
