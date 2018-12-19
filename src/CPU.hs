@@ -32,7 +32,7 @@ fetchN n start st = stopAtBranch $ map f (Mem.take n start (instrs st)) where
 fetch :: State -> Res [FPipeInstr]
 fetch st = do
      pc <- St.pcVal st
-     let n = trace ("FETCH AT: " ++ show pc) St.numFetch st
+     let n = St.numFetch st
      return $ fetchN n (fromIntegral pc) st
 
 -- Places executed results in reorder buffer.
@@ -152,8 +152,8 @@ runPipeline st p = do
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
-    -- runPipeline (St.incCycles st') p'
-    trace (show p' ++ "\n" ++ debugShow st' ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    runPipeline (St.incCycles st') p'
+    -- trace (show p' ++ "\n" ++ debugShow st' ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State
