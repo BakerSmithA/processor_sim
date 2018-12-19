@@ -32,7 +32,7 @@ executable vm
                      , Queue
                      , ROB
                      , WriteBack
-                     , ExecUnit
+                     , Exec
                      , RS
                      , Types
   build-depends:       base
@@ -75,7 +75,7 @@ test-suite spec
                      , WriteBack
                      , Decode
                      , RS
-                     , ExecUnit
+                     , Exec
                      , RSSpec
                      , Types
                      , BypassSpec

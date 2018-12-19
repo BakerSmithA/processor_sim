@@ -8,7 +8,7 @@ import qualified Mem as Mem
 import WriteBack
 import Decode
 import Types
-import ExecUnit
+import Exec
 import qualified RS
 import RRT (RegMap(..))
 import qualified ROB

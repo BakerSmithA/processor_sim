@@ -1,4 +1,4 @@
-module ExecUnit where
+module Exec where
 
 import Control.Monad (foldM)
 import Data.Char (chr)
