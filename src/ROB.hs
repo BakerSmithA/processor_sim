@@ -48,7 +48,7 @@ commitable (ROB q) = (wbs, ROB q') where
     commitable' q =
         case Q.peek q of
             Nothing -> ([], q)
-            Just (entry, regMap) ->
+            Just (idx, (entry, regMap)) ->
                 case entry of
                     Nothing -> ([], q)
                     Just (wb,freed,pc) -> ((wb,freed,pc,regMap):wbs, q') where
@@ -70,7 +70,7 @@ set i wb freed savedPC (ROB q) = ROB q' where
 -- Return instruction next to be removed from ROB.
 peek :: ROB -> Maybe (WriteBack, FreedReg, SavedPC)
 peek (ROB q) = do
-    (e, _) <- Q.peek q
+    (_, (e, _)) <- Q.peek q
     e
 
 -- Searches in the ROB for physical register with matching register.

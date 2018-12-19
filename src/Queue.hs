@@ -92,6 +92,10 @@ takeIndices is arr = foldr f [] is where
 elemsRange :: Range -> Queue a -> [a]
 elemsRange r (Queue es _) = takeIndices (indices r) es
 
+-- Return all elements after the given index, excluding the index.
+elemsAfter :: Int -> Queue a -> [a]
+elemsAfter i q = elemsRange (newStart i (range q)) q
+
 -- Return elements in order newest to oldest.
 elemsNewOld :: Queue a -> [a]
 elemsNewOld (Queue es r) = takeIndices (indices r) es
@@ -109,9 +113,9 @@ rem q@(Queue es r) x = maybe q f (Queue.last r) where
     f i = Queue es' (decEnd r) where
         es' = es // [(i, x)]
 
--- Return element at the start of the end, without modifying queue.
-peek :: (Show a) => Queue a -> Maybe a
-peek (Queue es r) = fmap (\i -> es ! i) (Queue.last r)
+-- Return index and element at the start of the end, without modifying queue.
+peek :: (Show a) => Queue a -> Maybe (Int, a)
+peek (Queue es r) = fmap (\i -> (i, es ! i)) (Queue.last r)
 
 -- Set the element stored at a given index.
 set :: Int -> a -> Queue a -> Queue a
