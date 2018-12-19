@@ -120,16 +120,26 @@ invalidateRegs frees st = foldM f st frees where
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
 -- stages. Do not need to check for execute stage because write-back results
 -- are available via bypass.
-shouldStall :: State -> Pipeline -> Bool
-shouldStall st p = f || d || rs || rob where
+shouldStallFetch :: State -> Pipeline -> Bool
+shouldStallFetch st p = f || d || rs || rob where
     f       = any isBranch (fmap fst (fetched p))
     d       = any isBranch (fmap pipeInstr (decoded p))
     rs      = not (RS.isEmpty (bRS st))
     rob     = False
 
+shouldStallDecode :: State -> Bool
+shouldStallDecode _ = False
+
+shouldStallExec :: State -> Bool
+shouldStallExec _ = False
+
+shouldStallCommit :: State -> Bool
+shouldStallCommit _ = False
+
 -- Shifts instructions through pipeline.
 advancePipeline :: [FPipeInstr] -> State -> Pipeline -> Res (State, Pipeline, ShouldFlush)
-advancePipeline fetched st1 p = P.advance (fetched, st1) decode exec CPU.commit writeBack p
+advancePipeline fetched st1 p =
+    P.advance (fetched, st1) decode shouldStallDecode exec shouldStallExec CPU.commit shouldStallCommit writeBack p
 
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)
@@ -154,7 +164,7 @@ cycleStall st1 p = do
 -- Run processor to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> Res (State, Pipeline)
 runPipeline st p = do
-    let x = if not (shouldStall st p)
+    let x = if not (shouldStallFetch st p)
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
