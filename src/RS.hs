@@ -8,20 +8,30 @@ import Types
 type RegVal m = ROBIdx -> PhyReg -> m (Maybe Val)
 type MemVal m = ROBIdx -> Addr -> m Val
 
+data InstrState a b
+    = Waiting b
+    | Filled a
+    deriving (Eq, Show)
+
+-- Only modify instruction if it has not been filled.
+mapMISt :: (Monad m) => (c -> m d) -> InstrState a c -> m (InstrState a d)
+mapMISt f (Waiting x) = f x >>= \x' -> return (Waiting x')
+mapMISt _ (Filled  x) = return (Filled x)
+
 -- General pupose reservation station. Is specialised for different types of
 -- instructions.
-type RS a = [PipeData a]
+type RS a b = [PipeData (InstrState b a)]
 
-empty :: RS a
+empty :: RS a b
 empty = []
 
-fromList :: [PipeData a] -> RS a
-fromList = id
+fromList :: [PipeData a] -> RS a b
+fromList = fmap (mapPipeData Waiting)
 
-add :: PipeData a -> RS a -> RS a
-add = (:)
+add :: PipeData a -> RS a b -> RS a b
+add x rs = (mapPipeData Waiting x):rs
 
-isEmpty :: RS a -> Bool
+isEmpty :: RS a b -> Bool
 isEmpty = null
 
 run :: (Monad m)
@@ -31,23 +41,26 @@ run :: (Monad m)
     -- executable version of the instruction if so.
     -> (a -> Maybe b)
     -- Reservation station to operate over.
-    -> RS a
+    -> RS a b
     -- Returns any instructions ready to be executed, and the new state of the RS.
-    -> m ([PipeData b], RS a)
+    -> m ([PipeData b], RS a b)
 
 run fill promote rs1 = do
     -- Do not modify any filled instructions that are still in the RS.
-    rs2 <- mapM (mapPipeDataM' fill) rs1
+    rs2 <- mapM (mapPipeDataM' (\idx i -> mapMISt (fill idx) i)) rs1
+    -- Remove instruction that have all operands filled.
     return (foldr checkDone ([], []) rs2) where
-        checkDone i (execIs, rs) =
-            case mapPipeDataM promote i of
-                -- The instruction did not have all operands filled in.
-                Nothing -> (execIs, i:rs)
-                -- The instruction has all operands filled in.
-                Just ei -> (ei:execIs, rs)
+        -- If already filled, simply remove.
+        checkDone (instrState, robIdx, freed, savedPC) (execIs, rs) =
+            case instrState of
+                (Filled  i) -> ((i, robIdx, freed, savedPC):execIs, rs)
+                (Waiting i) ->
+                    case promote i of
+                        Nothing -> (execIs, (Waiting i, robIdx, freed, savedPC):rs)
+                        Just ei -> ((ei, robIdx, freed, savedPC):execIs, rs)
 
 -- Load store queue.
-type MemRS = RS RSMemInstr
+type MemRS = RS RSMemInstr EMemInstr
 
 -- Prepare a decoded instruction to be placed in the MemRS.
 rsMemInstr :: DMemInstr -> RSMemInstr
@@ -106,7 +119,7 @@ promoteMem (StoreBaseIdx src base off) = do
     off'  <- rightToMaybe off
     return (EStore src' (fromIntegral $ base' + off'))
 
-type ArithLogicRS = RS RSALInstr
+type ArithLogicRS = RS RSALInstr EALInstr
 
 -- Prepare a decoded instruction to be placed in the RS.
 rsALInstr :: DALInstr -> RSALInstr
@@ -127,7 +140,7 @@ promoteAL :: RSALInstr -> Maybe EALInstr
 promoteAL = mapALM return f where
     f = either (const Nothing) Just
 
-type BranchRS = RS RSBranchInstr
+type BranchRS = RS RSBranchInstr EBranchInstr
 
 -- Prepare a decoded instruction to be placed in the RS.
 rsBInstr :: DBranchInstr -> RSBranchInstr
@@ -149,7 +162,7 @@ promoteB :: RSBranchInstr -> Maybe EBranchInstr
 promoteB = mapBM f f where
     f = either (const Nothing) Just
 
-type OutRS = RS RSOutInstr
+type OutRS = RS RSOutInstr EOutInstr
 
 -- Prepare a decoded instruction to be placed in the RS.
 rsOutInstr :: DOutInstr -> RSOutInstr
