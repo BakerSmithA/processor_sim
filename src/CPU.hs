@@ -55,8 +55,10 @@ writeBack st1 = do
         (wbs, frees, maps) = split is
         st4                = setRRTMappings maps st3
 
-    st6 <- writeBackInstrs wbs st4
-    st7 <- invalidateRegs frees st6
+    st5 <- writeBackInstrs wbs st4
+    st6 <- invalidateRegs frees st5
+
+    let st7 = St.incExec (length is) st6
 
     -- Whether to flush the pipeline.
     case savedPC of
