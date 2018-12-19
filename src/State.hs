@@ -223,11 +223,12 @@ setRegVal i val st =
 -- Used to clear a register (make non-ready) after its mapping from an
 -- architectural register has been removed.
 freeReg :: FreedReg -> State -> Res State
-freeReg mPhy st =
+freeReg mPhy st1 =
     case mPhy of
-        Nothing  -> return st
-        Just phy -> setRegVal phy Nothing st' where
-            st' = st { rrt=RRT.free phy (rrt st) }
+        Nothing  -> return st1
+        Just phy -> do
+            st2 <- setRegVal phy Nothing st1
+            return (st2 { rrt=RRT.free phy (rrt st2) })
 
 -- Set the value at a memory address, or Crash if invalid address.
 setMemVal :: Addr -> Val -> State -> Res State
