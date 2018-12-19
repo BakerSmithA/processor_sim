@@ -62,7 +62,8 @@ writeBack st1 = do
     case savedPC of
         Nothing -> return (st7, NoFlush)
         Just pc -> do
-            st8 <- St.flush pc st7
+            let frees = ROB.mappedPhyRegs (rob st7)
+            st8 <- St.flush pc frees st7
             return (st8, Flush)
 
 -- Invalidates loads in the ROB if the next writeback instruction to be committed

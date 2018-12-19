@@ -264,7 +264,7 @@ commitROB st =
 -- if a flush occurs.
 allocPendingReg :: ROBIdx -> RegIdx -> State -> Res (PhyReg, State)
 allocPendingReg robIdx reg st =
-    case RRT.assign reg (rrt st) of
+    case RRT.assign (rrt st) of
         Nothing -> crash NoFreePhyRegs st
         Just (phy, rrt') -> return (phy, st') where
             st' = st { rrt=rrt', rob = ROB.setRegMap robIdx reg phy (rob st) }
@@ -344,10 +344,11 @@ invalidateLoads :: Addr -> State -> State
 invalidateLoads addr st = st { rob=ROB.invalidateLoads addr (rob st) }
 
 -- State after flusing the pipeline.
-flush :: SavedPC -> State -> Res State
-flush savedPC st = setPC savedPC $ st {
+flush :: SavedPC -> [PhyReg] -> State -> Res State
+flush savedPC frees st = setPC savedPC $ st {
     bypass = BP.empty
   , rob = ROB.flush (rob st)
+  , rrt = RRT.freeAll frees (rrt st)
 
   , memRS = RS.empty
   , alRS = RS.empty

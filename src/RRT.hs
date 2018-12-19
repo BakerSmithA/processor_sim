@@ -64,16 +64,20 @@ insMapping (RegMap reg phy) rrt = rrt { reg2phy=reg2phy', phy2reg=phy2reg' } whe
 
 -- Makes a 'pending' assignment between an architectural and physical register.
 -- The mapping is stored in the ROB.
-assign :: RegIdx -> RRT -> Maybe (PhyReg, RRT)
-assign _    (RRT _ _ []) = Nothing
-assign name rrt = Just (phy, rrt') where
+assign :: RRT -> Maybe (PhyReg, RRT)
+assign (RRT _ _ []) = Nothing
+assign rrt = Just (phy, rrt') where
     rrt'       = rrt { frees=rest }
     (phy:rest) = (frees rrt)
 
 free :: PhyReg -> RRT -> RRT
 free phy rrt = rrt' where
-    rrt'   = rrt { frees=frees'}
-    frees' = (frees rrt)++ [phy]
+    rrt'   = rrt { frees=frees' }
+    frees' = (frees rrt) ++ [phy]
+
+freeAll :: [PhyReg] -> RRT -> RRT
+freeAll ps rrt = rrt { frees=frees' } where
+    frees' = (frees rrt) ++ ps
 
 -- free phy rrt = do
 --     case Map.lookup phy (phy2reg rrt) of

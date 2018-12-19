@@ -113,6 +113,12 @@ invalidateLoads :: Addr -> ROB -> ROB
 invalidateLoads addr (ROB q) = ROB q' where
     q' = Q.mapQ (mapEntry (invalidateLoad addr)) q
 
+-- Returns all mappings to physical registers stored in the ROB.
+mappedPhyRegs :: ROB -> [PhyReg]
+mappedPhyRegs (ROB q) = foldr f [] (Q.elemsNewOld q) where
+    f (_, RegMap _ phy) acc = phy:acc
+    f _ acc = acc
+
 -- Returns contents arranged newest to oldest. Useful for testing.
 contents :: ROB -> [Entry]
 contents (ROB q) = Q.elemsNewOld q
