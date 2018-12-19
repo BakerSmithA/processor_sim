@@ -11,7 +11,7 @@ import Types
 import Debug.Trace
 
 regVal :: RegIdx -> State -> Res Val
-regVal r st = trace ("CHECK: " ++ debugShow st ++ "\n//////\n") $ do
+regVal r st = do
     phy  <- St.getPhyReg r st
     mVal <- St.newestRegVal phy st
     case mVal of
