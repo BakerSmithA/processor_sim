@@ -32,7 +32,7 @@ fetchN n start st = stopAtBranch $ map f (Mem.take n start (instrs st)) where
 fetch :: State -> Res [FPipeInstr]
 fetch st = do
      pc <- St.pcVal st
-     let n = St.numFetch st
+     let n = trace ("FETCH AT: " ++ show pc) St.numFetch st
      return $ fetchN n (fromIntegral pc) st
 
 -- Places executed results in reorder buffer.
@@ -62,7 +62,7 @@ writeBack st1 = do
     -- Whether to flush the pipeline.
     case savedPC of
         Nothing -> return (st7, NoFlush)
-        Just pc -> do
+        Just pc -> trace ("FLUSH: " ++ show pc) $ do
             st8 <- St.flush pc st7
             return (st8, Flush)
 
@@ -122,24 +122,27 @@ shouldStall st p = f || d || rs where
     rs      = not (RS.isEmpty (bRS st))
 
 -- Shifts instructions through pipeline.
-advancePipeline :: [FPipeInstr] -> State -> Pipeline -> Res (State, Pipeline)
-advancePipeline fetched st1 p = do
-    (st2, p') <- P.advance (fetched, st1) decode exec CPU.commit writeBack p
-    return (st2, p')
+advancePipeline :: [FPipeInstr] -> State -> Pipeline -> Res (State, Pipeline, ShouldFlush)
+advancePipeline fetched st1 p = P.advance (fetched, st1) decode exec CPU.commit writeBack p
 
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)
 cycle st1 p = do
     fetched <- fetch st1
-    (st2, p') <- advancePipeline fetched st1 p
-    st3 <- St.incPC (fromIntegral $ length fetched) st2
-    return (st3, p')
+    (st2, p', shouldFlush) <- advancePipeline fetched st1 p
+    case shouldFlush of
+        NoFlush -> do
+            st3 <- St.incPC (fromIntegral $ length fetched) st2
+            return (st3, p')
+        Flush ->
+            -- The PC is reset if a flush occurred. Therefore, don't increment.
+            return (st2, p')
 
 -- Shift instructions through pipeline without fetching a new instruction.
 -- PC is also NOT updated.
 cycleStall :: State -> Pipeline -> Res (State, Pipeline)
 cycleStall st1 p = do
-    (st2, p') <- advancePipeline [] st1 p
+    (st2, p', _) <- advancePipeline [] st1 p
     return (st2, p')
 
 -- Run processor to completion, i.e. until exit system call occurs.
@@ -150,7 +153,7 @@ runPipeline st p = do
                 else CPU.cycleStall st p
     (st', p') <- x
     -- runPipeline (St.incCycles st') p'
-    trace (show p ++ "\n" ++ debugShow st ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    trace (show p' ++ "\n" ++ debugShow st' ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State
