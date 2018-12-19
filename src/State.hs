@@ -16,6 +16,7 @@ import RRT
 import RS (MemRS, ArithLogicRS, BranchRS, OutRS)
 import qualified RS as RS
 import Types
+import ExecUnit as Unit
 import Debug.Trace
 
 -- Stores current state of CPU at a point in time.
@@ -47,11 +48,18 @@ data State = State {
   , bypass :: Bypass
   , rob    :: ROB
   , rrt    :: RRT
-   -- Load/Store Queue
-  , memRS  :: MemRS
-  , alRS   :: ArithLogicRS
-  , bRS    :: BranchRS
-  , outRS  :: OutRS
+
+  , memRS    :: MemRS
+  , memUnits :: [ExecUnit (PipeData EMemInstr)]
+
+  , alRS    :: ArithLogicRS
+  , alUnits :: [ExecUnit (PipeData EALInstr)]
+
+  , bRS     :: BranchRS
+  , bUnits  :: [ExecUnit (PipeData EBranchInstr)]
+
+  , outRS   :: OutRS
+  , outUnit :: [ExecUnit (PipeData EOutInstr)]
 
    -- Stats
   , cycles :: Int
@@ -117,19 +125,24 @@ defaultedMem vals rrt = map f (zip [0..] vals) where
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
-empty pc sp lr bp ret instrs = State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS alRS bRS outRS 0 0 where
-    numFetch  = 2
-    maxPhyReg = 31
-    mem       = Mem.zeroed 255
-    regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
-    instrs'   = Mem.fromList instrs
-    bypass    = BP.empty
-    rob       = ROB.empty 15
-    rrt       = RRT.fromRegs [pc, sp, lr, bp, ret] maxPhyReg
-    memRS     = RS.empty
-    alRS      = RS.empty
-    bRS       = RS.empty
-    outRS     = RS.empty
+empty pc sp lr bp ret instrs =
+    State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS memUnits alRS alUnits bRS bUnits outRS outUnits 0 0 where
+        numFetch  = 2
+        maxPhyReg = 31
+        mem       = Mem.zeroed 255
+        regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
+        instrs'   = Mem.fromList instrs
+        bypass    = BP.empty
+        rob       = ROB.empty 15
+        rrt       = RRT.fromRegs [pc, sp, lr, bp, ret] maxPhyReg
+        memRS     = RS.empty
+        memUnits  = [Unit.empty]
+        alRS      = RS.empty
+        alUnits   = [Unit.empty]
+        bRS       = RS.empty
+        bUnits    = [Unit.empty]
+        outRS     = RS.empty
+        outUnits  = [Unit.empty]
 
 -- Create default Res with 32 ints of memory, and 16 registers.
 emptyDefault :: [FInstr] -> State
