@@ -41,18 +41,24 @@ alloc (ROB q) = (i, ROB q') where
     (i, q') = Q.enq emptyEntry q
 
 -- Return all instructions that can be committed, i.e. are ready and are at the
--- start of the queue.
-commitable :: ROB -> ([(WriteBack, FreedReg, SavedPC, RegMap)], ROB)
-commitable (ROB q) = (wbs, ROB q') where
-    (wbs, q') = commitable' q
+-- start of the queue, up to the oldest invalid load (if one exists).
+commitable :: ROB -> ([(WriteBack, FreedReg, RegMap)], Maybe SavedPC, ROB)
+commitable (ROB q) = (wbs, savedPC, ROB q') where
+    (wbs, savedPC, q') = commitable' q
     commitable' q =
         case Q.peek q of
-            Nothing -> ([], q)
+            Nothing -> ([], Nothing, q)
             Just (entry, regMap) ->
                 case entry of
-                    Nothing -> ([], q)
-                    Just (wb,freed,pc) -> ((wb,freed,pc,regMap):wbs, q') where
-                        (wbs, q') = commitable' (Q.rem q (Nothing, NoMap))
+                    Nothing -> ([], Nothing, q)
+                    Just (wb, freed, pc) ->
+                        if isInvalidLoad wb
+                            then ([], Just pc, q)
+                            else ((wb,freed,regMap):wbs, savedPC, q') where
+                                (wbs, savedPC, q') = commitable' (Q.rem q emptyEntry)
+
+                    -- Just (wb,freed,pc) -> ((wb,freed,pc,regMap):wbs, q') where
+                    --     (wbs, q') = commitable' (Q.rem q emptyEntry)
 
 -- Stores a mapping from an architectural to physical register in the ROB.
 -- This allows mappings to be reverted if a flush occurs.

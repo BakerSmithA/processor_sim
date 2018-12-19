@@ -118,7 +118,7 @@ defaultedMem vals rrt = map f (zip [0..] vals) where
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs = State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS alRS bRS outRS 0 0 where
-    numFetch  = 1
+    numFetch  = 2
     maxPhyReg = 31
     mem       = Mem.zeroed 255
     regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
@@ -252,10 +252,10 @@ addROB st wbs =
 
 -- Takes instruction that can be executed from ROB, to be passed to
 -- write back stage.
-commitROB :: State -> ([(WriteBack, FreedReg, SavedPC, RegMap)], State)
+commitROB :: State -> ([(WriteBack, FreedReg, RegMap)], Maybe SavedPC, State)
 commitROB st =
-    let (out, rob') = ROB.commitable (rob st)
-    in (out, st { rob = rob' })
+    let (out, savedPC, rob') = ROB.commitable (rob st)
+    in (out, savedPC, st { rob = rob' })
 
 -- Allocates a mapping from an architectural to a physical register and stores
 -- it in the ROB. Only if the instruction graduates from the ROB then the mapping

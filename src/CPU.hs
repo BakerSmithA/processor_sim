@@ -51,9 +51,8 @@ addOutput s st = return st { output = (output st) ++ s }
 writeBack :: State -> Res (State, ShouldFlush)
 writeBack st1 = do
     let st2                = CPU.invalidateLoads st1
-        (is, st3)          = St.commitROB st2
-        (validIs, savedPC) = validWriteBacks is
-        (wbs, frees, maps) = split validIs
+        (is, savedPC, st3) = St.commitROB st2
+        (wbs, frees, maps) = split is
         st4                = setRRTMappings maps st3
 
     st6 <- writeBackInstrs wbs st4

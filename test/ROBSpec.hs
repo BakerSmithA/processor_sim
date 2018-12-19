@@ -27,9 +27,10 @@ robSpec = describe "Reorder Buffer" $ do
                 rob7 = set i2 (WriteMem 5 15) (Just 1) 1 rob6
                 rob8 = set i4 (writeReg 1 5)  Nothing  2 rob7
 
-                (cs, _) = ROB.commitable rob8
+                (cs, savedPC, _) = ROB.commitable rob8
 
-            cs `shouldBe` [(writeReg 0 10, Nothing, 0, NoMap), (WriteMem 5 15, Just 1, 1, NoMap)]
+            cs `shouldBe` [(writeReg 0 10, Nothing, NoMap), (WriteMem 5 15, Just 1, NoMap)]
+            savedPC `shouldBe` Nothing
 
         it "returns new state of ROB" $ do
             let rob1 = ROB.empty 5
@@ -44,11 +45,12 @@ robSpec = describe "Reorder Buffer" $ do
                 -- i3 filled in later.
                 rob8 = set i4 (writeReg 1 5)  Nothing 3 rob7
 
-                (_, rob9) = ROB.commitable rob8
-                rob10     = set i3 (writeReg 0 1) Nothing 2 rob9
-                (cs, _)   = ROB.commitable rob10
+                (_, _, rob9)     = ROB.commitable rob8
+                rob10            = set i3 (writeReg 0 1) Nothing 2 rob9
+                (cs, savedPC, _) = ROB.commitable rob10
 
-            cs `shouldBe` [(writeReg 0 1, Nothing, 2, NoMap), (writeReg 1 5,  Nothing, 3, NoMap)]
+            cs `shouldBe` [(writeReg 0 1, Nothing, NoMap), (writeReg 1 5,  Nothing, NoMap)]
+            savedPC `shouldBe` Nothing
 
         it "allows allocation after commiting" $ do
             let rob1 = ROB.empty 5
@@ -56,15 +58,16 @@ robSpec = describe "Reorder Buffer" $ do
                 (i1, rob2) = ROB.alloc rob1
                 (i2, rob3) = ROB.alloc rob2
 
-                rob4      = ROB.set i1 (writeReg 0 1) Nothing 0 rob3
-                (_, rob5) = ROB.commitable rob4
+                rob4         = ROB.set i1 (writeReg 0 1) Nothing 0 rob3
+                (_, _, rob5) = ROB.commitable rob4
 
                 (i3, rob6) = ROB.alloc rob5
                 rob7       = ROB.set i2 (writeReg 1 2) Nothing 1 rob6
                 rob8       = ROB.set i3 (writeReg 2 3) Nothing 2 rob7
-                (cs, _)    = ROB.commitable rob8
+                (cs, savedPC, _) = ROB.commitable rob8
 
-            cs `shouldBe` [(writeReg 1 2, Nothing, 1, NoMap), (writeReg 2 3, Nothing, 2, NoMap)]
+            cs `shouldBe` [(writeReg 1 2, Nothing, NoMap), (writeReg 2 3, Nothing, NoMap)]
+            savedPC `shouldBe` Nothing
 
     context "invalidate loads" $ do
         it "invalidates loads with matching addresses" $ do

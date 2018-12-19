@@ -33,3 +33,7 @@ invalidateLoad :: Addr -> WriteBack -> WriteBack
 invalidateLoad addr (WriteReg r v ld) = WriteReg r v ld' where
     ld' = invalidateLoadData addr ld
 invalidateLoad _ wb = wb
+
+isInvalidLoad :: WriteBack -> Bool
+isInvalidLoad (WriteReg _ _ InvalidLoad) = True
+isInvalidLoad _ = False
