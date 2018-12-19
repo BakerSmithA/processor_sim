@@ -16,6 +16,7 @@ import RRT
 import RS (MemRS, ArithLogicRS, BranchRS, OutRS)
 import qualified RS as RS
 import Types
+import Debug.Trace
 
 -- Stores current state of CPU at a point in time.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -96,8 +97,8 @@ instance Show State where
 debugShow :: State -> String
 debugShow st =
         "\nBypass : "  ++ show (bypass st)
-     -- ++ "\nRRT    : "  ++ show (rrt st)
-     ++ "\nROB    : "  ++ show (rob st)
+     ++ "\nRRT    : "  ++ show (rrt st)
+     ++ "\nROB    :\n"  ++ show (rob st)
      ++ "\nMem RS : "  ++ show (memRS st)
      ++ "\nAL  RS : "  ++ show (alRS st)
      ++ "\nB   RS : "  ++ show (bRS st)
@@ -221,11 +222,13 @@ setRegVal i val st =
 
 -- Used to clear a register (make non-ready) after its mapping from an
 -- architectural register has been removed.
-clearFreedReg :: FreedReg -> State -> Res State
-clearFreedReg mPhy st =
+freeReg :: FreedReg -> State -> Res State
+freeReg mPhy st1 =
     case mPhy of
-        Nothing  -> return st
-        Just phy -> setRegVal phy Nothing st
+        Nothing  -> return st1
+        Just phy -> do
+            st2 <- setRegVal phy Nothing st1
+            return (st2 { rrt=RRT.free phy (rrt st2) })
 
 -- Set the value at a memory address, or Crash if invalid address.
 setMemVal :: Addr -> Val -> State -> Res State
@@ -249,10 +252,28 @@ addROB st wbs =
 
 -- Takes instruction that can be executed from ROB, to be passed to
 -- write back stage.
-commitROB :: State -> ([(WriteBack, FreedReg, SavedPC)], State)
+commitROB :: State -> ([(WriteBack, FreedReg, RegMap)], Maybe SavedPC, State)
 commitROB st =
-    let (out, rob') = ROB.commitable (rob st)
-    in (out, st { rob = rob' })
+    let (out, savedPC, rob') = ROB.commitable (rob st)
+    in (out, savedPC, st { rob = rob' })
+
+-- Allocates a mapping from an architectural to a physical register and stores
+-- it in the ROB. Only if the instruction graduates from the ROB then the mapping
+-- is stored in the RRT.
+-- By initially storing mappings in the ROB, then they can be easily reverted
+-- if a flush occurs.
+allocPendingReg :: ROBIdx -> RegIdx -> State -> Res (PhyReg, State)
+allocPendingReg robIdx reg st =
+    case RRT.assign (rrt st) of
+        Nothing -> crash NoFreePhyRegs st
+        Just (phy, rrt') -> return (phy, st') where
+            st' = st { rrt=rrt', rob = ROB.setRegMap robIdx reg phy (rob st) }
+
+-- Sets the mapping from an architectural register to a physical register in the RRT.
+-- The mapping was previously stored in the ROB.
+confirmRegMap :: RegMap -> State -> State
+confirmRegMap regMap st = st { rrt=rrt' } where
+    rrt' = RRT.insMapping regMap (rrt st)
 
 -- Takes a free physical register and returns its index.
 -- Also returns the physical register that was freed, if the architectural
@@ -263,13 +284,25 @@ allocPhyReg reg st =
         Nothing -> crash NoFreePhyRegs st
         Just (phy, rrt', freed) -> return ((phy, freed), st { rrt=rrt' })
 
+getMaybePhyReg :: RegIdx -> State -> Res (Maybe PhyReg)
+getMaybePhyReg reg st =
+    case ROB.regMap reg (rob st) of
+        Just phy -> return (Just phy)
+        Nothing  ->
+            case RRT.get reg (rrt st) of
+                Nothing  -> return Nothing
+                Just phy -> return (Just phy)
+
 -- Returns physical register mapped to register name, or crashes if there
 -- is no mapping.
 getPhyReg :: RegIdx -> State -> Res PhyReg
 getPhyReg reg st =
-    case RRT.get reg (rrt st) of
-        Nothing  -> crash (NoPhyRegAssigned reg) st
+    case ROB.regMap reg (rob st) of
         Just phy -> return phy
+        Nothing  ->
+            case RRT.get reg (rrt st) of
+                Nothing  -> crash (NoPhyRegAssigned reg) st
+                Just phy -> return phy
 
 -- Adds an instruction to its corresponding reservation station, e.g. branch
 -- instruction goes to branch RS.
@@ -311,10 +344,11 @@ invalidateLoads :: Addr -> State -> State
 invalidateLoads addr st = st { rob=ROB.invalidateLoads addr (rob st) }
 
 -- State after flusing the pipeline.
-flush :: SavedPC -> State -> Res State
-flush savedPC st = setPC savedPC $ st {
+flush :: SavedPC -> [PhyReg] -> State -> Res State
+flush savedPC frees st = setPC savedPC $ st {
     bypass = BP.empty
   , rob = ROB.flush (rob st)
+  , rrt = RRT.freeAll frees (rrt st)
 
   , memRS = RS.empty
   , alRS = RS.empty

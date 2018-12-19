@@ -4,6 +4,13 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Types
 
+-- Pending mapping from architectural to physical register. Stored in ROB so
+-- it can be flushed.
+data RegMap
+    = NoMap
+    | RegMap RegIdx PhyReg
+    deriving (Eq, Show)
+
 -- Register Rename Table, holds a mapping from names of registers in source
 -- code, e.g. reg 2, to physical registers, e.g. reg 45.
 data RRT = RRT {
@@ -47,6 +54,38 @@ ins name (RRT reg2phy phy2reg frees) = Just (phy, rrt', freedReg) where
     rest'      = maybe rest (\r -> rest ++ [r]) freedReg
     freedReg   = Map.lookup name reg2phy
     (phy:rest) = frees
+
+-- Insert mapping saved in ROB.
+insMapping :: RegMap -> RRT -> RRT
+insMapping NoMap rrt = rrt
+insMapping (RegMap reg phy) rrt = rrt { reg2phy=reg2phy', phy2reg=phy2reg' } where
+    reg2phy' = Map.insert reg phy (reg2phy rrt)
+    phy2reg' = Map.insert phy reg (phy2reg rrt)
+
+-- Makes a 'pending' assignment between an architectural and physical register.
+-- The mapping is stored in the ROB.
+assign :: RRT -> Maybe (PhyReg, RRT)
+assign (RRT _ _ []) = Nothing
+assign rrt = Just (phy, rrt') where
+    rrt'       = rrt { frees=rest }
+    (phy:rest) = (frees rrt)
+
+free :: PhyReg -> RRT -> RRT
+free phy rrt = rrt' where
+    rrt'   = rrt { frees=frees' }
+    frees' = (frees rrt) ++ [phy]
+
+freeAll :: [PhyReg] -> RRT -> RRT
+freeAll ps rrt = rrt { frees=frees' } where
+    frees' = (frees rrt) ++ ps
+
+-- free phy rrt = do
+--     case Map.lookup phy (phy2reg rrt) of
+--         Nothing  -> error ("Tried to free unmapped reg: " ++ show phy ++ ", " ++ show rrt)
+--         Just reg -> rrt { reg2phy=reg2phy', phy2reg=phy2reg', frees=frees' } where
+--             reg2phy' = Map.delete reg (reg2phy rrt)
+--             phy2reg' = Map.delete phy (phy2reg rrt)
+--             frees'   = (frees rrt) ++ [phy]
 
 -- Return physical register mapped to name of register in source code, or
 -- Nothing if no mapping exists.

@@ -52,7 +52,7 @@ advance :: (Monad m) => Fetched a
                      -> Committer m a
                      -> Writer m a
                      -> Pipeline
-                     -> m (a, Pipeline)
+                     -> m (a, Pipeline, ShouldFlush)
 
 advance (f, x1) decode exec commit write p = do
     (d, x2)     <- decode (fetched p) x1
@@ -61,5 +61,5 @@ advance (f, x1) decode exec commit write p = do
     (x5, flush) <- write              x4
 
     case flush of
-        NoFlush -> return (x5, Pipeline f d e)
-        Flush   -> return (x5, flushed)
+        NoFlush -> return (x5, Pipeline f d e, NoFlush)
+        Flush   -> return (x5, flushed, Flush)

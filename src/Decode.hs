@@ -19,9 +19,9 @@ decode fis s = foldM f ([], s) fis where
 
 decodeI :: FPipeInstr -> StateT State Res DPipeInstr
 decodeI (fi, savedPC) = do
-    di <- mapIM renameDst lookupSrc (const lookupLR) fi
-    let (di', freed) = MSt.runState (separateFreed di) Nothing
     robIdx <- allocROB
+    di <- mapIM (renameDst robIdx) lookupSrc (const lookupLR) fi
+    let (di', freed) = MSt.runState (separateFreed di) Nothing
     return (di', robIdx, freed, savedPC)
 
 -- Takes freed register stored with destination register in instruction, and
@@ -37,8 +37,12 @@ separateFreed = mapIM f return return where
 -- Also returns the physical register that was freed, if the architectural
 -- register was already assigned to a physical register. This allows
 -- the value in this register to the invalidated at the write-back stage.
-renameDst :: RegIdx -> StateT State Res (PhyReg, FreedReg)
-renameDst r = StateT (\st -> St.allocPhyReg r st)
+renameDst :: ROBIdx -> RegIdx -> StateT State Res (PhyReg, FreedReg)
+renameDst robIdx r = StateT $ \st -> do
+    -- Free the previous mapping.
+    freedReg <- St.getMaybePhyReg r st
+    (phy, st') <- St.allocPendingReg robIdx r st
+    return ((phy, freedReg), st')
 
 -- Looks up the mapping from a source register to a physical register.
 lookupSrc :: RegIdx -> StateT State Res PhyReg
