@@ -1,5 +1,6 @@
 module RS where
 
+import Control.Monad (foldM)
 import Instr
 import Types
 
@@ -35,9 +36,13 @@ run :: (Monad m)
     -- Returns any instructions ready to be executed, and the new state of the RS.
     -> m (Maybe (PipeData b), RS a)
 
-run fill checkDone rs1 = do
-    rs2 <- fillOperands fill rs1
-    return (promote checkDone rs2)
+run fill checkDone rs = foldM f (Nothing, []) (reverse rs) where
+    f (Just i,  rs) entry = return (Just i, entry:rs)
+    f (Nothing, rs) entry = do
+        filled <- mapPipeDataM' (\idx i -> fill idx i) entry
+        case mapPipeDataM checkDone filled of
+            Nothing -> return (Nothing, entry:rs)
+            Just ei -> return (Just ei, rs)
 
 -- Fills in operands in an instruction.
 fillOperands :: (Monad m) => (ROBIdx -> a -> m a) -> RS a -> m (RS a)
