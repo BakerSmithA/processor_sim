@@ -130,7 +130,7 @@ empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs =
     State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS memUnits alRS alUnits bRS bUnits outRS outUnits 0 0 where
         numFetch  = 4
-        maxPhyReg = 15
+        maxPhyReg = 31
         mem       = Mem.zeroed 255
         regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
         instrs'   = Mem.fromList instrs
@@ -220,12 +220,11 @@ pcVal = namedRegVal pcIdx
 setPC :: Val -> State -> Res State
 setPC newPC st = do
     pcRegIdx <- namedReg pcIdx st
-    pcReg <- trace ("-- SET PC (" ++ show pcRegIdx ++ ") TO: " ++ show newPC) $ namedReg pcIdx st
+    pcReg <- namedReg pcIdx st
     st1 <- setRegVal pcReg (Just $ newPC) st
-    let st2 = st1 { bypass=(BP.BypassReg pcRegIdx newPC):(bypass st1) }
+    let st2 = st1 { bypass=(bypass st1) ++ [BP.BypassReg pcRegIdx newPC] }
     pcRegIdx <- namedReg pcIdx st2
-    x <- pcVal st2
-    trace ("-- CHECK PC (" ++ show pcRegIdx ++ "): " ++ show x) $ return st2
+    return st2
 
 -- Increment PC by given amount.
 incPC :: Val -> State -> Res State
@@ -235,7 +234,7 @@ incPC n st = do
 
 -- Sets the value of a register in the physical register file.
 setRegVal :: PhyReg -> Maybe Val -> State -> Res State
-setRegVal i val st = trace ("setRegVal: " ++ show i ++ " -> " ++ show val) $
+setRegVal i val st = 
     case Reg.store i val (regs st) of
         Nothing   -> crash (RegOutOfRange i) st
         Just regs -> return st { regs = regs }

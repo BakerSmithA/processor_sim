@@ -33,7 +33,7 @@ fetch :: State -> Res [FPipeInstr]
 fetch st = do
      pc <- St.pcVal st
      let n = St.numFetch st
-     trace ("FETCH FROM " ++ show pc) $ return $ fetchN n (fromIntegral pc) st
+     return $ fetchN n (fromIntegral pc) st
 
 -- Places executed results in reorder buffer.
 commit :: [PipeData WriteBack] -> State -> Res State
@@ -61,9 +61,9 @@ writeBack st1 = do
     let st7 = St.incExec (length is) st6
 
     -- Whether to flush the pipeline.
-    trace ("WB: " ++ show wbs) $ case savedPC of
+    case savedPC of
         Nothing -> return (st7, NoFlush, invalidAddr)
-        Just pc -> trace "FLUSH" $ do
+        Just pc -> do
             -- Need to free any mapped registers still in the ROB otherwise
             -- they will be lost when the flush resets the ROB.
             let remainingFrees = ROB.mappedPhyRegs (rob st7)
@@ -152,7 +152,7 @@ cycle st1 p = do
             let n = fromIntegral $ length fetched
             st3 <- St.incPC n st2
             pc <- St.pcVal st3
-            trace ("BEFORE PC: " ++ show bpc ++ ", FETCHED: " ++ show n ++ ", INC PC: " ++ show pc ++ ", SHOULD BE: " ++ show (bpc + n)) $ return (st3, p')
+            return (st3, p')
         Flush ->
             -- The PC is reset if a flush occurred. Therefore, don't increment.
             return (st2, p')
@@ -171,8 +171,8 @@ runPipeline st p = do
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
-    -- runPipeline (St.incCycles st') p'
-    trace (show p' ++ "\n" ++ debugShow st' ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    runPipeline (St.incCycles st') p'
+    -- trace (show p' ++ "\n" ++ debugShow st' ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State
