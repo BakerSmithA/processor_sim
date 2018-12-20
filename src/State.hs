@@ -1,6 +1,7 @@
 module State where
 
 import Control.Applicative
+import Control.Monad (foldM)
 import Data.Word (Word32)
 import Mem (Mem)
 import qualified Mem as Mem
@@ -15,9 +16,10 @@ import Error
 import WriteBack
 import RRT
 import RS (MemRS, ArithLogicRS, BranchRS, OutRS)
+import RS (RS)
 import qualified RS as RS
 import Types
-import Debug.Trace
+import ExecUnit as Unit
 
 -- Stores current state of CPU at a point in time.
 -- Uses Von Newmann architecture, and so data and instructions are separate.
@@ -48,11 +50,18 @@ data State = State {
   , bypass :: Bypass
   , rob    :: ROB
   , rrt    :: RRT
-   -- Load/Store Queue
-  , memRS  :: MemRS
-  , alRS   :: ArithLogicRS
-  , bRS    :: BranchRS
-  , outRS  :: OutRS
+
+  , memRS    :: MemRS
+  , memUnits :: [MemUnit]
+
+  , alRS     :: ArithLogicRS
+  , alUnits  :: [ALUnit]
+
+  , bRS      :: BranchRS
+  , bUnits   :: [BUnit]
+
+  , outRS    :: OutRS
+  , outUnits :: [OutUnit]
 
    -- Stats
   , cycles :: Int
@@ -100,7 +109,7 @@ debugShow :: State -> String
 debugShow st =
         "\nBypass : "  ++ show (bypass st)
      ++ "\nRRT    : "  ++ show (rrt st)
-     ++ "\nROB    :\n"  ++ show (rob st)
+     ++ "\nROB    :\n" ++ show (rob st)
      ++ "\nMem RS : "  ++ show (memRS st)
      ++ "\nAL  RS : "  ++ show (alRS st)
      ++ "\nB   RS : "  ++ show (bRS st)
@@ -119,19 +128,24 @@ defaultedMem vals rrt = map f (zip [0..] vals) where
 
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
-empty pc sp lr bp ret instrs = State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS alRS bRS outRS 0 0 where
-    numFetch  = 2
-    maxPhyReg = 31
-    mem       = Mem.zeroed 255
-    regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
-    instrs'   = Mem.fromList instrs
-    bypass    = BP.empty
-    rob       = ROB.empty 15
-    rrt       = RRT.fromRegs [pc, sp, lr, bp, ret] maxPhyReg
-    memRS     = RS.empty
-    alRS      = RS.empty
-    bRS       = RS.empty
-    outRS     = RS.empty
+empty pc sp lr bp ret instrs =
+    State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS memUnits alRS alUnits bRS bUnits outRS outUnits 0 0 where
+        numFetch  = 3
+        maxPhyReg = 31
+        mem       = Mem.zeroed 255
+        regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
+        instrs'   = Mem.fromList instrs
+        bypass    = BP.empty
+        rob       = ROB.empty 31
+        rrt       = RRT.fromRegs [pc, sp, lr, bp, ret] maxPhyReg
+        memRS     = RS.empty
+        memUnits  = [Unit.empty, Unit.empty, Unit.empty, Unit.empty]
+        alRS      = RS.empty
+        alUnits   = [Unit.empty, Unit.empty, Unit.empty, Unit.empty]
+        bRS       = RS.empty
+        bUnits    = [Unit.empty]
+        outRS     = RS.empty
+        outUnits  = [Unit.empty]
 
 -- Create default Res with 32 ints of memory, and 16 registers.
 emptyDefault :: [FInstr] -> State
@@ -206,8 +220,11 @@ pcVal = namedRegVal pcIdx
 -- Set the PC to a given value.
 setPC :: Val -> State -> Res State
 setPC newPC st = do
+    pcRegIdx <- namedReg pcIdx st
     pcReg <- namedReg pcIdx st
-    setRegVal pcReg (Just $ newPC) st
+    st1 <- setRegVal pcReg (Just $ newPC) st
+    let st2 = st1 { bypass=(bypass st1) ++ [BP.BypassReg pcRegIdx newPC] }
+    return st2
 
 -- Increment PC by given amount.
 incPC :: Val -> State -> Res State
@@ -316,23 +333,66 @@ addRS (Out    di, idx, freed, savedPC) st = st { outRS = RS.add (RS.rsOutInstr d
 
 -- Returns instructions which have had all operands filled in and are ready
 -- to execute.
-runRS :: State -> Res ([EPipeInstr], State)
-runRS st = do
-    let rv robIdx phy  = findRegVal (Q.SubNewToOld robIdx) phy st
-        mv robIdx addr = findMemVal (Q.SubNewToOld robIdx) addr st
+runRS :: State
+      -> (EMemInstr -> Res WriteBack)
+      -> (EALInstr -> Res WriteBack)
+      -> (State -> EBranchInstr -> Res WriteBack)
+      -> (EOutInstr -> Res WriteBack)
+      -> Res ([PipeData WriteBack], State)
 
-    (memExecs, memRS) <- RS.runMemRS rv mv (memRS st)
-    (alExecs,  alRS)  <- RS.runAL    rv    (alRS  st)
-    (bExecs,   bRS)   <- RS.runB     rv    (bRS   st)
-    (outExecs, outRS) <- RS.runOut   rv    (outRS st)
+runRS st1 lsu alu bu ou = do
+    let rv robIdx phy  = findRegVal (Q.SubNewToOld robIdx) phy st1
+        mv robIdx addr = findMemVal (Q.SubNewToOld robIdx) addr st1
 
-    let st'       = st { memRS=memRS, alRS=alRS, bRS=bRS, outRS=outRS}
-        memExecs' = fmap (mapPipeData Mem)    memExecs
-        alExecs'  = fmap (mapPipeData AL)     alExecs
-        bExecs'   = fmap (mapPipeData Branch) bExecs
-        outExecs' = fmap (mapPipeData Out)    outExecs
+    -- Try and fill in any available operands to instructions waiting in RS.
+    memRS1 <- RS.fillMemRS rv mv (memRS st1)
+    alRS1  <- RS.fillALRS  rv    (alRS  st1)
+    bRS1   <- RS.fillBRS   rv    (bRS   st1)
+    outRS1 <- RS.fillOutRS rv    (outRS st1)
 
-    return (memExecs' ++ alExecs' ++ bExecs' ++ outExecs', st')
+    -- Take out any instructions which are ready and for which there is an
+    -- execution unit available.
+    (memUs1, memRS2) <- match memRS1 RS.promoteMemRS lsu (memUnits st1)
+    (alUs1,  alRS2)  <- match alRS1  RS.promoteALRS  alu (alUnits  st1)
+    (bUs1,   bRS2)   <- match bRS1   RS.promoteBRS   (bu st1)  (bUnits   st1)
+    (outUs1, outRS2) <- match outRS1 RS.promoteOutRS ou  (outUnits st1)
+
+    -- 'Run' instructions in exec units. Here, they actual wait some amount of
+    -- time until the value in finally calculated by the caller of this function.
+    let (memExecs1, memUs2) = runExecUnits memUs1
+        (alExecs1,  alUs2)  = runExecUnits alUs1
+        (bExecs1,   bUs2)   = runExecUnits bUs1
+        (outExecs1, outUs2) = runExecUnits outUs1
+
+        st2 = st1 {
+            memRS=memRS2,    alRS=alRS2,    bRS=bRS2,    outRS=outRS2
+          , memUnits=memUs2, alUnits=alUs2, bUnits=bUs2, outUnits=outUs2
+        }
+
+    return (memExecs1 ++ alExecs1 ++ bExecs1 ++ outExecs1, st2)
+
+-- Gives instructions in RS that have all operands filled to available exec units.
+match :: RS a -> (RS a -> (Maybe (PipeData b), RS a)) -> (b -> Res WriteBack) -> [ExecUnit (PipeData WriteBack)] -> Res ([ExecUnit (PipeData WriteBack)], RS a)
+match rs promote execUnit units = foldM f ([], rs) units where
+    f (accUnits, accRS) unit =
+        case Unit.isFree unit of
+            False -> return (unit:accUnits, accRS)
+            -- Start an execution unit containing any ready to run instructions.
+            True -> do
+                let (i, accRS') = promote accRS
+                case i of
+                    Nothing -> return (Unit.empty:accUnits, accRS')
+                    Just ei -> do
+                        wb <- mapPipeDataM execUnit ei
+                        return ((Unit.containing wb):accUnits, accRS')
+
+-- Retrieve ready instructions from execution unit.
+runExecUnits :: [ExecUnit b] -> ([b], [ExecUnit b])
+runExecUnits = foldl f ([], []) where
+    f (accExec, accUnits) unit =
+        case Unit.value unit of
+            Nothing -> (accExec, unit:accUnits)
+            Just ei -> (ei:accExec, Unit.empty:accUnits)
 
 -- Returns state which contains bypass value that was just written as part of
 -- the write-back stage of the pipeline. This makes this value available to
@@ -343,7 +403,9 @@ bypassed wbs st = withBypass b st where
 
 -- Invalidates loads in ROB with same address.
 invalidateLoads :: Addr -> State -> State
-invalidateLoads addr st = st { rob=ROB.invalidateLoads addr (rob st) }
+invalidateLoads addr st = st { rob=rob', memUnits=memUnits' } where
+    rob'      = ROB.invalidateLoads addr (rob st)
+    memUnits' = map (fmap (mapPipeData (invalidateLoad addr))) (memUnits st)
 
 -- State after flusing the pipeline.
 flush :: SavedPC -> [PhyReg] -> State -> Res State
@@ -356,4 +418,9 @@ flush savedPC frees st = setPC savedPC $ st {
   , alRS = RS.empty
   , bRS = RS.empty
   , outRS = RS.empty
+
+  , memUnits = map (const Unit.empty) (memUnits st)
+  , alUnits  = map (const Unit.empty) (alUnits  st)
+  , bUnits   = map (const Unit.empty) (bUnits   st)
+  , outUnits = map (const Unit.empty) (outUnits st)
 }

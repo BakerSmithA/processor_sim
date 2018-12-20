@@ -24,27 +24,20 @@ add = (:)
 isEmpty :: RS a -> Bool
 isEmpty = null
 
-run :: (Functor m, Monad m)
-    -- Fills in operands in an instruction.
-    => (ROBIdx -> a -> m a)
-    -- Checks whether an instruction has all operands filled, and returns an
-    -- executable version of the instruction if so.
-    -> (a -> Maybe b)
-    -- Reservation station to operate over.
-    -> RS a
-    -- Returns any instructions ready to be executed, and the new state of the RS.
-    -> m ([PipeData b], RS a)
+-- Fills in operands in an instruction.
+fillOperands :: (Monad m) => (ROBIdx -> a -> m a) -> RS a -> m (RS a)
+fillOperands fill = mapM f where
+    f = mapPipeDataM' (\idx i -> fill idx i)
 
-run fill promote rs1 = do
-    -- Do not modify any filled instructions that are still in the RS.
-    rs2 <- mapM (mapPipeDataM' fill) rs1
-    return (foldr checkDone ([], []) rs2) where
-        checkDone i (execIs, rs) =
-            case mapPipeDataM promote i of
-                -- The instruction did not have all operands filled in.
-                Nothing -> (execIs, i:rs)
-                -- The instruction has all operands filled in.
-                Just ei -> (ei:execIs, rs)
+-- Removes the oldest instruction found in the RS which has all operands filled.
+-- Returns RS without any removed instructions.
+promote :: (a -> Maybe b) -> RS a -> (Maybe (PipeData b), RS a)
+promote checkDone = foldr f (Nothing, []) where
+    f entry (Just i,  rs) = (Just i, entry:rs)
+    f entry (Nothing, rs) =
+        case mapPipeDataM checkDone entry of
+            Nothing -> (Nothing, entry:rs)
+            Just ei -> (Just ei, rs)
 
 -- Load store queue.
 type MemRS = RS RSMemInstr
@@ -53,12 +46,15 @@ type MemRS = RS RSMemInstr
 rsMemInstr :: DMemInstr -> RSMemInstr
 rsMemInstr = mapMem (\r -> (r, Nothing)) Left
 
--- Tries to fill in operands of instructions in MemRS, and remove instructions
--- which can be run.
-runMemRS :: (Functor m, Monad m) => RegVal m -> MemVal m -> MemRS -> m ([PipeData EMemInstr], MemRS)
-runMemRS regVal memVal memRS = run (fillMem regVal memVal) promoteMem memRS
+-- Fills in operands of any memory instructions in the RS.
+fillMemRS :: (Monad m) => RegVal m -> MemVal m -> MemRS -> m MemRS
+fillMemRS regVal memVal = fillOperands (fillMem regVal memVal)
 
--- Fills in operands of a memory instruction.
+-- Promotes the oldest instruction in the RS with all instructions filled.
+promoteMemRS :: MemRS -> (Maybe (PipeData EMemInstr), MemRS)
+promoteMemRS = promote promoteMem
+
+-- Fills in operands of a single memory instruction.
 -- Goes to memory to load a value for load instructions.
 fillMem :: (Functor m, Monad m) => RegVal m -> MemVal m -> ROBIdx -> RSMemInstr -> m RSMemInstr
 fillMem regVal memVal robIdx = fill where
@@ -112,10 +108,13 @@ type ArithLogicRS = RS RSALInstr
 rsALInstr :: DALInstr -> RSALInstr
 rsALInstr = mapAL id Left
 
--- Tries to fill in operands of instructions in RS, and remove instructions
--- which can be run.
-runAL :: (Functor m, Monad m) => RegVal m -> ArithLogicRS -> m ([PipeData EALInstr], ArithLogicRS)
-runAL regVal = run (fillAL regVal) promoteAL
+-- Fills in operands of any AL instructions in the RS.
+fillALRS :: (Monad m) => RegVal m -> ArithLogicRS -> m ArithLogicRS
+fillALRS regVal = fillOperands (fillAL regVal)
+
+-- Promotes the oldest instruction in the RS with all instructions filled.
+promoteALRS :: ArithLogicRS -> (Maybe (PipeData EALInstr), ArithLogicRS)
+promoteALRS = promote promoteAL
 
 -- Fills in operands of an AL instruction.
 fillAL :: (Functor m, Monad m) => RegVal m -> ROBIdx -> RSALInstr -> m RSALInstr
@@ -133,10 +132,13 @@ type BranchRS = RS RSBranchInstr
 rsBInstr :: DBranchInstr -> RSBranchInstr
 rsBInstr = mapB Left Left
 
--- Tries to fill in operands of instructions in RS, and remove instructions
--- which can be run.
-runB :: (Functor m, Monad m) => RegVal m -> BranchRS -> m ([PipeData EBranchInstr], BranchRS)
-runB regVal = run (fillB regVal) promoteB
+-- Fills in operands of any branch instructions in the RS.
+fillBRS :: (Monad m) => RegVal m -> BranchRS -> m BranchRS
+fillBRS regVal = fillOperands (fillB regVal)
+
+-- Promotes the oldest instruction in the RS with all instructions filled.
+promoteBRS :: BranchRS -> (Maybe (PipeData EBranchInstr), BranchRS)
+promoteBRS = promote promoteB
 
 -- Fills in operands of a branch instruction. For return instructions,
 -- takes return address from link register.
@@ -155,10 +157,13 @@ type OutRS = RS RSOutInstr
 rsOutInstr :: DOutInstr -> RSOutInstr
 rsOutInstr = mapOut Left
 
--- Tries to fill in operands of instructions in RS, and remove instructions
--- which can be run.
-runOut :: (Functor m, Monad m) => RegVal m -> OutRS -> m ([PipeData EOutInstr], OutRS)
-runOut regVal = run (fillOut regVal) promoteOut
+-- Fills in operands of any output instructions in the RS.
+fillOutRS :: (Monad m) => RegVal m -> OutRS -> m OutRS
+fillOutRS regVal = fillOperands (fillOut regVal)
+
+-- Promotes the oldest instruction in the RS with all instructions filled.
+promoteOutRS :: OutRS -> (Maybe (PipeData EOutInstr), OutRS)
+promoteOutRS = promote promoteOut
 
 -- Fills in operands of an output instruction.
 fillOut :: (Functor m, Monad m) => RegVal m -> ROBIdx -> RSOutInstr -> m RSOutInstr

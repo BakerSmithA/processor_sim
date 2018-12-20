@@ -7,17 +7,24 @@ import qualified Parser as P
 import qualified Data.ByteString as B
 import System.Environment
 
-runVm :: [FInstr] -> IO ()
-runVm []     = putStrLn "No instructions to run"
-runVm instrs = do
-    let vm = run (State.emptyDefault instrs)
-    putStrLn $ State.output vm
-    putStrLn (show vm)
-
 newlines :: FInstr -> String
 newlines (Branch (Ret _)) = "\n"
 newlines (Branch SysCall) = "\n"
 newlines _                = ""
+
+showInstrs :: [FInstr] -> String
+showInstrs is = unlines strNumbered where
+    strNumbered = map (\(n, i) -> (show n) ++ ":\t" ++ (show i) ++ newlines i) numbered
+    numbered    = zip [0..] is
+
+runVm :: [FInstr] -> IO ()
+runVm []     = putStrLn "No instructions to run"
+runVm instrs = do
+    let vm = run (State.emptyDefault instrs)
+    putStrLn $ showInstrs instrs
+    putStrLn "\n"
+    putStrLn $ State.output vm
+    putStrLn (show vm)
 
 runBytecode :: FilePath -> IO ()
 runBytecode path = do

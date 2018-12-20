@@ -8,11 +8,11 @@ import qualified Mem as Mem
 import WriteBack
 import Decode
 import Types
-import ExecUnit
+import Exec
 import qualified RS
 import RRT (RegMap(..))
 import qualified ROB
-import Debug.Trace
+-- import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
 stopAtBranch :: [FPipeInstr] -> [FPipeInstr]
@@ -48,9 +48,9 @@ addOutput :: String -> State -> Res State
 addOutput s st = return st { output = (output st) ++ s }
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
-writeBack :: State -> Res (State, ShouldFlush)
+writeBack :: State -> Res (State, ShouldFlush, Maybe Addr)
 writeBack st1 = do
-    let st2                = CPU.invalidateLoads st1
+    let (st2, invalidAddr) = CPU.invalidateLoads st1
         (is, savedPC, st3) = St.commitROB st2
         (wbs, frees, maps) = split is
         st4                = setRRTMappings maps st3
@@ -62,24 +62,24 @@ writeBack st1 = do
 
     -- Whether to flush the pipeline.
     case savedPC of
-        Nothing -> return (st7, NoFlush)
+        Nothing -> return (st7, NoFlush, invalidAddr)
         Just pc -> do
             -- Need to free any mapped registers still in the ROB otherwise
             -- they will be lost when the flush resets the ROB.
             let remainingFrees = ROB.mappedPhyRegs (rob st7)
             st8 <- St.flush pc remainingFrees st7
-            return (st8, Flush)
+            return (st8, Flush, invalidAddr)
 
 -- Invalidates loads in the ROB if the next writeback instruction to be committed
 -- is a memory write that has a clashing address.
-invalidateLoads :: State -> State
+invalidateLoads :: State -> (State, Maybe Addr)
 invalidateLoads st =
     case ROB.peek (rob st) of
-        Nothing         -> st
+        Nothing         -> (st, Nothing)
         Just (wb, _, _) ->
             case wb of
-                WriteMem a _ -> St.invalidateLoads a st
-                _            -> st
+                WriteMem a _ -> (St.invalidateLoads a st, Just a)
+                _            -> (st, Nothing)
 
 -- Return all writeback instructions up to an invalid load, if there is one
 -- in the supplied list. Returns whether there was an invalid load, and whether
@@ -120,16 +120,26 @@ invalidateRegs frees st = foldM f st frees where
 -- to be executed, i.e. if there are branch instructions in the fetch or decode
 -- stages. Do not need to check for execute stage because write-back results
 -- are available via bypass.
-shouldStall :: State -> Pipeline -> Bool
-shouldStall st p = f || d || rs || rob where
+shouldStallFetch :: State -> Pipeline -> Bool
+shouldStallFetch st p = f || d || rs || rob where
     f       = any isBranch (fmap fst (fetched p))
     d       = any isBranch (fmap pipeInstr (decoded p))
     rs      = not (RS.isEmpty (bRS st))
     rob     = False
 
+shouldStallDecode :: State -> Bool
+shouldStallDecode _ = False
+
+shouldStallExec :: State -> Bool
+shouldStallExec _ = False
+
+shouldStallCommit :: State -> Bool
+shouldStallCommit _ = False
+
 -- Shifts instructions through pipeline.
 advancePipeline :: [FPipeInstr] -> State -> Pipeline -> Res (State, Pipeline, ShouldFlush)
-advancePipeline fetched st1 p = P.advance (fetched, st1) decode exec CPU.commit writeBack p
+advancePipeline fetched st1 p =
+    P.advance (fetched, st1) decode shouldStallDecode exec shouldStallExec CPU.commit shouldStallCommit writeBack p
 
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)
@@ -138,7 +148,8 @@ cycle st1 p = do
     (st2, p', shouldFlush) <- advancePipeline fetched st1 p
     case shouldFlush of
         NoFlush -> do
-            st3 <- St.incPC (fromIntegral $ length fetched) st2
+            let n = fromIntegral $ length fetched
+            st3 <- St.incPC n st2
             return (st3, p')
         Flush ->
             -- The PC is reset if a flush occurred. Therefore, don't increment.
@@ -154,7 +165,7 @@ cycleStall st1 p = do
 -- Run processor to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> Res (State, Pipeline)
 runPipeline st p = do
-    let x = if not (shouldStall st p)
+    let x = if not (shouldStallFetch st p)
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
