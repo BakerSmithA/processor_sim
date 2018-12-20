@@ -234,7 +234,7 @@ incPC n st = do
 
 -- Sets the value of a register in the physical register file.
 setRegVal :: PhyReg -> Maybe Val -> State -> Res State
-setRegVal i val st = 
+setRegVal i val st =
     case Reg.store i val (regs st) of
         Nothing   -> crash (RegOutOfRange i) st
         Just regs -> return st { regs = regs }
