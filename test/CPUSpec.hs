@@ -8,7 +8,6 @@ import qualified Mem as Mem
 import Data.Int (Int32)
 import CPU
 import Types
-import Debug.Trace
 
 regVal :: RegIdx -> State -> Res Val
 regVal r st = do

@@ -12,7 +12,7 @@ import Exec
 import qualified RS
 import RRT (RegMap(..))
 import qualified ROB
-import Debug.Trace
+-- import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
 stopAtBranch :: [FPipeInstr] -> [FPipeInstr]
@@ -148,10 +148,8 @@ cycle st1 p = do
     (st2, p', shouldFlush) <- advancePipeline fetched st1 p
     case shouldFlush of
         NoFlush -> do
-            bpc <- St.pcVal st2
             let n = fromIntegral $ length fetched
             st3 <- St.incPC n st2
-            pc <- St.pcVal st3
             return (st3, p')
         Flush ->
             -- The PC is reset if a flush occurred. Therefore, don't increment.

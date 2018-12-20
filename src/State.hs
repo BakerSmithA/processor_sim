@@ -129,7 +129,7 @@ defaultedMem vals rrt = map f (zip [0..] vals) where
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs =
     State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS memUnits alRS alUnits bRS bUnits outRS outUnits 0 0 where
-        numFetch  = 4
+        numFetch  = 3
         maxPhyReg = 31
         mem       = Mem.zeroed 255
         regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
