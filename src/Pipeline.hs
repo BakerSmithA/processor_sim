@@ -3,6 +3,7 @@ module Pipeline where
 import Instr
 import WriteBack
 import Types
+import Debug.Trace
 
 -- Returned by write-back stage of pipeline to indicate whether pipeline should
 -- be flushed.
@@ -68,18 +69,26 @@ advance :: (Monad m) => Fetched a
 advance (f, x1) decode stallDecode exec stallExec commit stallCommit write p = do
     -- If any of the stages below stall, then this also needs to stall to
     -- avoid instructions being overwritten.
-    let inDecode = stalled (stallDecode x1 || stallExec x1 || stallCommit x1) (fetched p)
-    (d, x2) <- decode inDecode x1
+    let f' = if (stallDecode x1 || stallExec x1 || stallCommit x1)
+                then (fetched p)
+                else f
 
-    let inExec = stalled (stallExec x2 || stallCommit x2) (decoded p)
-    (e, x3) <- exec inExec x2
+    (d, x2) <- if (stallDecode x1 || stallExec x1 || stallCommit x1)
+                    then decode [] x1
+                    else decode (fetched p) x1
 
-    let inCommit = stalled (stallCommit x3) (executed p)
-    x4                       <- commit inCommit x3
+    (e, x3) <- if (stallExec x2 || stallCommit x2)
+                    then return (executed p, x2)
+                    else exec (decoded p) x2
+
+    x4 <- if (stallCommit x3)
+              then return x3
+              else commit (executed p) x3
+
     (x5, flush, invalidAddr) <- write x4
 
     case flush of
-        NoFlush -> return (x5, Pipeline f d (invalidateLoads invalidAddr e), NoFlush)
+        NoFlush -> return (x5, Pipeline f' d (invalidateLoads invalidAddr e), NoFlush)
         Flush   -> return (x5, flushed, Flush)
 
 stalled :: Bool -> [b] -> [b]

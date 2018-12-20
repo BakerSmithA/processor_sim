@@ -12,6 +12,7 @@ import Exec
 import qualified RS
 import RRT (RegMap(..))
 import qualified ROB
+import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
 stopAtBranch :: [FPipeInstr] -> [FPipeInstr]
@@ -120,13 +121,18 @@ invalidateRegs frees st = foldM f st frees where
 -- stages. Do not need to check for execute stage because write-back results
 -- are available via bypass.
 shouldStallFetch :: State -> Pipeline -> Bool
-shouldStallFetch st p = f || d || rs where
+shouldStallFetch st p = f || d || rs || rob where
     f       = any isBranch (fmap fst (fetched p))
     d       = any isBranch (fmap pipeInstr (decoded p))
     rs      = not (RS.isEmpty (bRS st))
+    rob     = shouldStallDecode st
 
+-- Stall if there is not enough space in ROB for anymore instructions.
 shouldStallDecode :: State -> Bool
-shouldStallDecode _ = False
+shouldStallDecode st =
+    let freeSpaces = ROB.freeSpace (rob st)
+        n = fromIntegral $ St.numFetch st
+    in (freeSpaces - n) <= 0
 
 shouldStallExec :: State -> Bool
 shouldStallExec _ = False

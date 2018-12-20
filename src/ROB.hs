@@ -30,6 +30,10 @@ empty :: ROBIdx -> ROB
 empty len = ROB (Q.fromList es) where
     es = replicate len emptyEntry
 
+-- Return number of empty spaces in ROB.
+freeSpace :: ROB -> Int
+freeSpace (ROB q) = Q.freeSpace q
+
 -- Removes all elements from ROB.
 flush :: ROB -> ROB
 flush (ROB q) = empty (Q.totalSize q)

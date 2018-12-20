@@ -48,11 +48,16 @@ inRange i (Range s e l) | s == e = False
 isEmpty :: Range -> Bool
 isEmpty (Range s e _) = s == e
 
+-- Returns number of 'slots' left in range.
+rangeFreeSpace :: Range -> Int
+rangeFreeSpace r@(Range _ _ l) = l - (length (indices r))
+
 -- Return all indices in range, not including start.
 indices :: Range -> [Int]
 indices (Range s e l) | s == e = []
                       | s <  e = [(s+1)..e]
                       | s >  e = [(s+1)..(l-1)] ++ [0..e]
+                      | otherwise = error "Should not be here"
 
 -- Queue to which elements can be ADDED to START, and from which elements can
 -- be TAKEN from the END.
@@ -68,6 +73,10 @@ data Queue a = Queue {
 -- The total size assigned the queue, including invalid elements.
 totalSize :: Queue a -> Int
 totalSize (Queue _ (Range _ _ l)) = l
+
+-- Number of slots available in queue.
+freeSpace :: Queue a -> Int
+freeSpace (Queue _ r) = rangeFreeSpace r
 
 mapQ :: (a -> a) -> Queue a -> Queue a
 mapQ f (Queue es r) = Queue es' r where
