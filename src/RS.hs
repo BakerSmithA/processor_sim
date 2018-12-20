@@ -188,7 +188,7 @@ rightToMaybe = either (const Nothing) Just
 -- If the value of an address has already been fetched, no action is performed.
 -- Otherwise, if the address can be calculated (because both operands have been
 -- filled in) then goes to memory to get the value.
-tryCachedMemVal :: (Monad m) => MemVal m -> ROBIdx -> Maybe Val -> Either PhyReg Val -> Either PhyReg Val -> m (Maybe Val)
+tryCachedMemVal :: (Functor m, Monad m) => MemVal m -> ROBIdx -> Maybe Val -> Either PhyReg Val -> Either PhyReg Val -> m (Maybe Val)
 tryCachedMemVal memVal robIdx val base off =
     case val of
         Just v  -> return (Just v)

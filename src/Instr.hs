@@ -180,7 +180,7 @@ type RSInstr = Instr RSMemInstr RSALInstr RSBranchInstr RSOutInstr
 -- Instruction to execute.
 type EInstr = Instr EMemInstr EALInstr EBranchInstr EOutInstr
 
-mapIM :: (Monad m) => (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> (retS1 -> m retS2) -> SameInstr d1 s1 retS1 -> m (SameInstr d2 s2 retS2)
+mapIM :: (Monad m) => (d1 -> m d2) -> (s1 -> m s2) -> (retS1 -> m retS2) -> SameInstr d1 s1 retS1 -> m (SameInstr d2 s2 retS2)
 mapIM fd fs _    (Mem    i) = mapMemM fd fs      i >>= \i' -> return (Mem i')
 mapIM fd fs _    (AL     i) = mapALM  fd fs      i >>= \i' -> return (AL i')
 mapIM _  fs fret (Branch i) = mapBM      fs fret i >>= \i' -> return (Branch i')
