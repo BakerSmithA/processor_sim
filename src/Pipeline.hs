@@ -3,7 +3,6 @@ module Pipeline where
 import Instr
 import WriteBack
 import Types
-import Debug.Trace
 
 -- Returned by write-back stage of pipeline to indicate whether pipeline should
 -- be flushed.
@@ -51,40 +50,27 @@ flushed = empty
 -- Supplies new instruction into pipleine, and shifts in-flight instructions
 -- through pipeline. Returns write-back result, and new state of pipeline.
 advance :: (Monad m) => Fetched a
-
                      -> Decoder m a
                      -> ShouldStall a
-
                      -> Executer m a
-                     -> ShouldStall a
-
                      -> Committer m a
-                     -> ShouldStall a
-
                      -> Writer m a
-
                      -> Pipeline
                      -> m (a, Pipeline, ShouldFlush)
 
-advance (f, x1) decode stallDecode exec stallExec commit stallCommit write p = do
+advance (f, x1) decode stallDecode exec commit write p = do
     -- If any of the stages below stall, then this also needs to stall to
     -- avoid instructions being overwritten.
-    let f' = if (stallDecode x1 || stallExec x1 || stallCommit x1)
+    let f' = if stallDecode x1
                 then (fetched p)
                 else f
 
-    (d, x2) <- if (stallDecode x1 || stallExec x1 || stallCommit x1)
+    (d, x2) <- if stallDecode x1
                     then decode [] x1
                     else decode (fetched p) x1
 
-    (e, x3) <- if (stallExec x2 || stallCommit x2)
-                    then return (executed p, x2)
-                    else exec (decoded p) x2
-
-    x4 <- if (stallCommit x3)
-              then return x3
-              else commit (executed p) x3
-
+    (e, x3)                  <- exec (decoded p) x2
+    x4                       <- commit (executed p) x3
     (x5, flush, invalidAddr) <- write x4
 
     case flush of

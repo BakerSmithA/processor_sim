@@ -12,7 +12,7 @@ import Exec
 import qualified RS
 import RRT (RegMap(..))
 import qualified ROB
-import Debug.Trace
+-- import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
 stopAtBranch :: [FPipeInstr] -> [FPipeInstr]
@@ -134,16 +134,10 @@ shouldStallDecode st =
         n = fromIntegral $ St.numFetch st
     in (freeSpaces - n) <= 0
 
-shouldStallExec :: State -> Bool
-shouldStallExec _ = False
-
-shouldStallCommit :: State -> Bool
-shouldStallCommit _ = False
-
 -- Shifts instructions through pipeline.
 advancePipeline :: [FPipeInstr] -> State -> Pipeline -> Res (State, Pipeline, ShouldFlush)
 advancePipeline fetched st1 p =
-    P.advance (fetched, st1) decode shouldStallDecode exec shouldStallExec CPU.commit shouldStallCommit writeBack p
+    P.advance (fetched, st1) decode shouldStallDecode exec CPU.commit writeBack p
 
 -- Shift instructions through pipeline, fetching a new instruction on each cycle.
 cycle :: State -> Pipeline -> Res (State, Pipeline)
