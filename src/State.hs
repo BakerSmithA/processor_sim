@@ -1,5 +1,6 @@
 module State where
 
+import Control.Applicative
 import Data.Word (Word32)
 import Mem (Mem)
 import qualified Mem as Mem
@@ -81,6 +82,7 @@ instance Applicative Res where
     (Exit st)    <*> _ = Exit st
 
 instance Monad Res where
+    return = pure
     -- (>>=) :: m a -> (a -> m b) -> m b
     (Res x)      >>= f = f x
     (Crash e st) >>= _ = Crash e st

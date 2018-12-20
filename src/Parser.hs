@@ -25,6 +25,8 @@ instance Applicative Parser where
         return (op x, bs'')
 
 instance Monad Parser where
+    return = pure
+
     -- m a >>= (a -> m b) -> m b
     Parser px >>= f = Parser $ \bs -> do
         (x, bs') <- px bs
