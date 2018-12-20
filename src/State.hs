@@ -107,15 +107,23 @@ instance Show State where
 
 debugShow :: State -> String
 debugShow st =
-        "\nBypass : "  ++ show (bypass st)
-     ++ "\nRRT    : "  ++ show (rrt st)
-     ++ "\nROB    :\n" ++ show (rob st)
-     ++ "\nMem RS : "  ++ show (memRS st)
-     ++ "\nAL  RS : "  ++ show (alRS st)
-     ++ "\nB   RS : "  ++ show (bRS st)
-     ++ "\nOut RS : "  ++ show (outRS st)
-     ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
-     ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
+        "\nBypass   : "  ++ show (bypass st)
+     ++ "\nRRT      : "  ++ show (rrt st)
+     ++ "\nROB      :\n" ++ show (rob st)
+     ++ "\nMem RS   : "  ++ show (memRS st)
+     ++ "\nMem Unit : "  ++ show (memUnits st)
+     ++ "\n"
+     ++ "\nAL  RS   : "  ++ show (alRS st)
+     ++ "\nAL  Unit : "  ++ show (alUnits st)
+     ++ "\n"
+     ++ "\nB   RS   : "  ++ show (bRS st)
+     ++ "\nB   Unit : "  ++ show (bUnits st)
+     ++ "\n"
+     ++ "\nOut RS   : "  ++ show (outRS st)
+     ++ "\nOut Unit : "  ++ show (outUnits st)
+     ++ "\n"
+     ++ "\nReg      : "  ++ Mem.showNumbered (regs st)
+     ++ "\nMem      :\n" ++ Mem.showBlocks 16 (mem st)
 
 -- Defaults value of assigned physical registers to 0.
 -- This is because there are registers they may be used without being
@@ -385,7 +393,7 @@ match rs promote execUnit units = foldM f ([], rs) units where
                     Nothing -> return (Unit.empty:accUnits, accRS')
                     Just ei -> do
                         wb <- mapPipeDataM execUnit ei
-                        return ((Unit.containing (Timer.start 3 wb)):accUnits, accRS')
+                        return ((Unit.containing (Timer.start 2 wb)):accUnits, accRS')
 
 -- Retrieve ready instructions from execution unit.
 runExecUnits :: [ExecUnit b] -> ([b], [ExecUnit b])
