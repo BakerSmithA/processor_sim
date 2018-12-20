@@ -6,10 +6,13 @@ import Instr
 import WriteBack
 import Types
 
-exec :: [DPipeInstr] -> State ->  Res ([(PipeData WriteBack)], State)
+exec :: [DPipeInstr] -> State ->  Res ([(PipeData WriteBack)], Bool, State)
 exec dis st1 = do
     (wbs, st2) <- issue dis st1
-    return (wbs, St.bypassed (fmap pipeInstr wbs) st2)
+    return (wbs, shouldFlushFetched dis, St.bypassed (fmap pipeInstr wbs) st2)
+
+shouldFlushFetched :: [DPipeInstr] -> Bool
+shouldFlushFetched decoded = any isBranch (fmap pipeInstr decoded)
 
 -- Add decoded instructions to RS, and remove instructions from RS which have
 -- all operands filled.

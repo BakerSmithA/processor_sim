@@ -12,19 +12,13 @@ import Exec
 import qualified RS
 import RRT (RegMap(..))
 import qualified ROB
--- import Debug.Trace
-
--- Removes any instructions that occur after a branch.
-stopAtBranch :: [FPipeInstr] -> [FPipeInstr]
-stopAtBranch [] = []
-stopAtBranch (i:is) | isBranch (fst i) = [i]
-                    | otherwise        = i:(stopAtBranch is)
+import Debug.Trace
 
 -- Fetches the number of instructions specified, stopping at the end of
 -- instructions, or if a branch is encountered (the branch will be included in
 -- returned instrs).
 fetchN :: Addr -> Addr -> State -> [FPipeInstr]
-fetchN n start st = stopAtBranch $ map f (Mem.take n start (instrs st)) where
+fetchN n start st = map f (Mem.take n start (instrs st)) where
     f (i, savedPC) = (i, fromIntegral savedPC)
 
 -- Fetches a number of instructions, starting at the instruction pointed to by
@@ -121,11 +115,9 @@ invalidateRegs frees st = foldM f st frees where
 -- stages. Do not need to check for execute stage because write-back results
 -- are available via bypass.
 shouldStallFetch :: State -> Pipeline -> Bool
-shouldStallFetch st p = f || d || rs || rob where
-    f       = any isBranch (fmap fst (fetched p))
-    d       = any isBranch (fmap pipeInstr (decoded p))
-    rs      = not (RS.isEmpty (bRS st))
-    rob     = False
+shouldStallFetch st p = d || rs where
+    d  = any isBranch (fmap pipeInstr (decoded p))
+    rs = not (RS.isEmpty (bRS st))
 
 shouldStallDecode :: State -> Bool
 shouldStallDecode _ = False
@@ -169,8 +161,8 @@ runPipeline st p = do
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
-    runPipeline (St.incCycles st') p'
-    -- trace (show p' ++ "\n" ++ debugShow st' ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    -- runPipeline (St.incCycles st') p'
+    trace (show p' ++ "\n" ++ debugShow st' ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State

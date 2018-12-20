@@ -10,6 +10,8 @@ data ShouldFlush
     = Flush
     | NoFlush
 
+type ShouldFlushFetched = Bool
+
 -- 5 stage pipeline: fetch, decode, execute, commit, and write-back.
 -- The instructions stored in the pipeline represent instructions on wires
 -- between stages.
@@ -31,7 +33,7 @@ type Fetched a = ([FPipeInstr], a)
 -- Decodes a fetched instruction, or Nothing if stalls at this stage.
 type Decoder m a = [FPipeInstr] -> a -> m ([DPipeInstr], a)
 -- Executes a decoded instruction.
-type Executer m a = [DPipeInstr] -> a -> m ([PipeData WriteBack], a)
+type Executer m a = [DPipeInstr] -> a -> m ([PipeData WriteBack], ShouldFlushFetched, a)
 -- Commits any executed instructions in ROB, and returns instructions that can be committed.
 type Committer m a = [PipeData WriteBack] -> a -> m a
 -- Writes instructions results to memory/registers.
@@ -72,14 +74,14 @@ advance (f, x1) decode stallDecode exec stallExec commit stallCommit write p = d
     (d, x2) <- decode inDecode x1
 
     let inExec = stalled (stallExec x2 || stallCommit x2) (decoded p)
-    (e, x3) <- exec inExec x2
+    (e, flushFetched, x3) <- exec inExec x2
 
     let inCommit = stalled (stallCommit x3) (executed p)
     x4                       <- commit inCommit x3
     (x5, flush, invalidAddr) <- write x4
 
     case flush of
-        NoFlush -> return (x5, Pipeline f d (invalidateLoads invalidAddr e), NoFlush)
+        NoFlush -> return (x5, Pipeline (stalled flushFetched f) d (invalidateLoads invalidAddr e), NoFlush)
         Flush   -> return (x5, flushed, Flush)
 
 stalled :: Bool -> [b] -> [b]
