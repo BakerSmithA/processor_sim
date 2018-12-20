@@ -9,26 +9,28 @@ import Types
 
 exec :: [DPipeInstr] -> State ->  Res ([(PipeData WriteBack)], State)
 exec dis st1 = do
-    (eis, st2) <- issue dis st1
-    execEs eis st2
+    (wbs, st2) <- issue dis st1
+    return (wbs, St.bypassed (fmap pipeInstr wbs) st2)
+
+    -- execEs eis st2
 
 -- Add all decoded instruction to a reservation station, then promote any completed,
 -- instructions, and finally execute those and return the writeback instructions.
-execEs :: [EPipeInstr] -> State -> Res ([(PipeData WriteBack)], State)
-execEs eis st = do
-    wbs <- foldM f [] eis
-    return (wbs, St.bypassed (fmap pipeInstr wbs) st)
-        where
-            f allWbs ei = do
-                wbs <- execI ei st
-                return (wbs:allWbs)
+-- execEs :: [EPipeInstr] -> State -> Res ([(PipeData WriteBack)], State)
+-- execEs eis st = do
+--     wbs <- foldM f [] eis
+--     return (wbs, St.bypassed (fmap pipeInstr wbs) st)
+--         where
+--             f allWbs ei = do
+--                 wbs <- execI ei st
+--                 return (wbs:allWbs)
 
 -- Add decoded instructions to RS, and remove instructions from RS which have
 -- all operands filled.
-issue :: [DPipeInstr] -> State -> Res ([EPipeInstr], State)
+issue :: [DPipeInstr] -> State -> Res ([PipeData WriteBack], State)
 issue dis st1 = do
     let st2 = foldr St.addRS st1 dis
-    St.runRS st2
+    St.runRS st2 lsu alu bu ou
 
 -- Add decoded instruction to a reservation station, then promote any completed,
 -- instructions, and finally execute those and return the writeback instructions.

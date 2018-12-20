@@ -2,6 +2,7 @@ module Pipeline where
 
 import Instr
 import WriteBack
+import Types
 
 -- Returned by write-back stage of pipeline to indicate whether pipeline should
 -- be flushed.
@@ -34,7 +35,7 @@ type Executer m a = [DPipeInstr] -> a -> m ([PipeData WriteBack], a)
 -- Commits any executed instructions in ROB, and returns instructions that can be committed.
 type Committer m a = [PipeData WriteBack] -> a -> m a
 -- Writes instructions results to memory/registers.
-type Writer m a = a -> m (a, ShouldFlush)
+type Writer m a = a -> m (a, ShouldFlush, Maybe Addr)
 
 type ShouldStall a = a -> Bool
 
@@ -74,13 +75,17 @@ advance (f, x1) decode stallDecode exec stallExec commit stallCommit write p = d
     (e, x3) <- exec inExec x2
 
     let inCommit = stalled (stallCommit x3) (executed p)
-    x4          <- commit inCommit x3
-    (x5, flush) <- write x4
+    x4                       <- commit inCommit x3
+    (x5, flush, invalidAddr) <- write x4
 
     case flush of
-        NoFlush -> return (x5, Pipeline f d e, NoFlush)
+        NoFlush -> return (x5, Pipeline f d (invalidateLoads invalidAddr e), NoFlush)
         Flush   -> return (x5, flushed, Flush)
 
 stalled :: Bool -> [b] -> [b]
 stalled True  _  = []
 stalled False xs = xs
+
+invalidateLoads :: Maybe Addr -> [PipeData WriteBack] -> [PipeData WriteBack]
+invalidateLoads (Nothing)   wbs = wbs
+invalidateLoads (Just addr) wbs = map (mapPipeData (invalidateLoad addr)) wbs

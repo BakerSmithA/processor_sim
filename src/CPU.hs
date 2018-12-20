@@ -48,9 +48,9 @@ addOutput :: String -> State -> Res State
 addOutput s st = return st { output = (output st) ++ s }
 
 -- Perform write-back stage of pipeline, writing result back to register/memory.
-writeBack :: State -> Res (State, ShouldFlush)
+writeBack :: State -> Res (State, ShouldFlush, Maybe Addr)
 writeBack st1 = do
-    let st2                = CPU.invalidateLoads st1
+    let (st2, invalidAddr) = CPU.invalidateLoads st1
         (is, savedPC, st3) = St.commitROB st2
         (wbs, frees, maps) = split is
         st4                = setRRTMappings maps st3
@@ -62,24 +62,24 @@ writeBack st1 = do
 
     -- Whether to flush the pipeline.
     case savedPC of
-        Nothing -> return (st7, NoFlush)
+        Nothing -> return (st7, NoFlush, invalidAddr)
         Just pc -> do
             -- Need to free any mapped registers still in the ROB otherwise
             -- they will be lost when the flush resets the ROB.
             let remainingFrees = ROB.mappedPhyRegs (rob st7)
             st8 <- St.flush pc remainingFrees st7
-            return (st8, Flush)
+            return (st8, Flush, invalidAddr)
 
 -- Invalidates loads in the ROB if the next writeback instruction to be committed
 -- is a memory write that has a clashing address.
-invalidateLoads :: State -> State
+invalidateLoads :: State -> (State, Maybe Addr)
 invalidateLoads st =
     case ROB.peek (rob st) of
-        Nothing         -> st
+        Nothing         -> (st, Nothing)
         Just (wb, _, _) ->
             case wb of
-                WriteMem a _ -> St.invalidateLoads a st
-                _            -> st
+                WriteMem a _ -> (St.invalidateLoads a st, Just a)
+                _            -> (st, Nothing)
 
 -- Return all writeback instructions up to an invalid load, if there is one
 -- in the supplied list. Returns whether there was an invalid load, and whether

@@ -1,5 +1,6 @@
 module State where
 
+import Control.Monad (foldM)
 import Data.Word (Word32)
 import Mem (Mem)
 import qualified Mem as Mem
@@ -137,9 +138,9 @@ empty pc sp lr bp ret instrs =
         rob       = ROB.empty 15
         rrt       = RRT.fromRegs [pc, sp, lr, bp, ret] maxPhyReg
         memRS     = RS.empty
-        memUnits  = [Unit.empty]
+        memUnits  = [Unit.empty, Unit.empty]
         alRS      = RS.empty
-        alUnits   = [Unit.empty]
+        alUnits   = [Unit.empty, Unit.empty]
         bRS       = RS.empty
         bUnits    = [Unit.empty]
         outRS     = RS.empty
@@ -328,8 +329,14 @@ addRS (Out    di, idx, freed, savedPC) st = st { outRS = RS.add (RS.rsOutInstr d
 
 -- Returns instructions which have had all operands filled in and are ready
 -- to execute.
-runRS :: State -> Res ([EPipeInstr], State)
-runRS st1 = do
+runRS :: State
+      -> (EMemInstr -> Res WriteBack)
+      -> (EALInstr -> Res WriteBack)
+      -> (State -> EBranchInstr -> Res WriteBack)
+      -> (EOutInstr -> Res WriteBack)
+      -> Res ([PipeData WriteBack], State)
+
+runRS st1 lsu alu bu ou = do
     let rv robIdx phy  = findRegVal (Q.SubNewToOld robIdx) phy st1
         mv robIdx addr = findMemVal (Q.SubNewToOld robIdx) addr st1
 
@@ -341,10 +348,10 @@ runRS st1 = do
 
     -- Take out any instructions which are ready and for which there is an
     -- execution unit available.
-    let (memUs1, memRS2) = match memRS1 RS.promoteMemRS (memUnits st1)
-        (alUs1,  alRS2)  = match alRS1  RS.promoteALRS  (alUnits  st1)
-        (bUs1,   bRS2)   = match bRS1   RS.promoteBRS   (bUnits   st1)
-        (outUs1, outRS2) = match outRS1 RS.promoteOutRS (outUnits st1)
+    (memUs1, memRS2) <- match memRS1 RS.promoteMemRS lsu (memUnits st1)
+    (alUs1,  alRS2)  <- match alRS1  RS.promoteALRS  alu (alUnits  st1)
+    (bUs1,   bRS2)   <- match bRS1   RS.promoteBRS   (bu st1)  (bUnits   st1)
+    (outUs1, outRS2) <- match outRS1 RS.promoteOutRS ou  (outUnits st1)
 
     -- 'Run' instructions in exec units. Here, they actual wait some amount of
     -- time until the value in finally calculated by the caller of this function.
@@ -353,28 +360,27 @@ runRS st1 = do
         (bExecs1,   bUs2)   = runExecUnits bUs1
         (outExecs1, outUs2) = runExecUnits outUs1
 
-    -- Package instructions together to be computed properly.
-    let memExecs2 = fmap (mapPipeData Mem)    memExecs1
-        alExecs2  = fmap (mapPipeData AL)     alExecs1
-        bExecs2   = fmap (mapPipeData Branch) bExecs1
-        outExecs2 = fmap (mapPipeData Out)    outExecs1
-
         st2 = st1 {
             memRS=memRS2,    alRS=alRS2,    bRS=bRS2,    outRS=outRS2
           , memUnits=memUs2, alUnits=alUs2, bUnits=bUs2, outUnits=outUs2
         }
 
-    return (memExecs2 ++ alExecs2 ++ bExecs2 ++ outExecs2, st2)
+    return (memExecs1 ++ alExecs1 ++ bExecs1 ++ outExecs1, st2)
 
 -- Gives instructions in RS that have all operands filled to available exec units.
-match :: RS a -> (RS a -> (Maybe (PipeData b), RS a)) -> [ExecUnit (PipeData b)] -> ([ExecUnit (PipeData b)], RS a)
-match rs promote units = foldl f ([], rs) units where
+match :: RS a -> (RS a -> (Maybe (PipeData b), RS a)) -> (b -> Res WriteBack) -> [ExecUnit (PipeData WriteBack)] -> Res ([ExecUnit (PipeData WriteBack)], RS a)
+match rs promote execUnit units = foldM f ([], rs) units where
     f (accUnits, accRS) unit =
         case Unit.isFree unit of
-            False -> (unit:accUnits, accRS)
+            False -> return (unit:accUnits, accRS)
             -- Start an execution unit containing any ready to run instructions.
-            True  -> ((Unit.containing i):accUnits, accRS') where
-                (i, accRS') = promote accRS
+            True -> do
+                let (i, accRS') = promote accRS
+                case i of
+                    Nothing -> return (Unit.empty:accUnits, accRS')
+                    Just ei -> do
+                        wb <- mapPipeDataM execUnit ei
+                        return ((Unit.containing wb):accUnits, accRS')
 
 -- Retrieve ready instructions from execution unit.
 runExecUnits :: [ExecUnit b] -> ([b], [ExecUnit b])
@@ -393,7 +399,9 @@ bypassed wbs st = withBypass b st where
 
 -- Invalidates loads in ROB with same address.
 invalidateLoads :: Addr -> State -> State
-invalidateLoads addr st = st { rob=ROB.invalidateLoads addr (rob st) }
+invalidateLoads addr st = st { rob=rob', memUnits=memUnits' } where
+    rob'      = ROB.invalidateLoads addr (rob st)
+    memUnits' = map (fmap (mapPipeData (invalidateLoad addr))) (memUnits st)
 
 -- State after flusing the pipeline.
 flush :: SavedPC -> [PhyReg] -> State -> Res State
