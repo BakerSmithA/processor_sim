@@ -11,8 +11,14 @@ type ALUnit  = ExecUnit (PipeData EALInstr)
 type BUnit   = ExecUnit (PipeData EBranchInstr)
 type OutUnit = ExecUnit (PipeData EOutInstr)
 
+value :: ExecUnit a -> Maybe a
+value (ExecUnit x) = x
+
 empty :: ExecUnit a
 empty = ExecUnit Nothing
+
+containing :: Maybe a -> ExecUnit a
+containing = ExecUnit
 
 isFree :: ExecUnit a -> Bool
 isFree (ExecUnit Nothing) = True

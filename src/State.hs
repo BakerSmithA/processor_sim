@@ -368,28 +368,21 @@ runRS st1 = do
 
 -- Gives instructions in RS that have all operands filled to available exec units.
 match :: RS a -> (RS a -> (Maybe (PipeData b), RS a)) -> [ExecUnit (PipeData b)] -> ([ExecUnit (PipeData b)], RS a)
-match = undefined
+match rs promote units = foldl f ([], rs) units where
+    f (accUnits, accRS) unit =
+        case Unit.isFree unit of
+            False -> (unit:accUnits, accRS)
+            -- Start an execution unit containing any ready to run instructions.
+            True  -> ((Unit.containing i):accUnits, accRS') where
+                (i, accRS') = promote accRS
 
 -- Retrieve ready instructions from execution unit.
 runExecUnits :: [ExecUnit b] -> ([b], [ExecUnit b])
-runExecUnits = undefined
-
--- runRS st = do
---     let rv robIdx phy  = findRegVal (Q.SubNewToOld robIdx) phy st
---         mv robIdx addr = findMemVal (Q.SubNewToOld robIdx) addr st
---
---     (memExecs, memRS) <- RS.runMemRS rv mv (memRS st)
---     (alExecs,  alRS)  <- RS.runAL    rv    (alRS  st)
---     (bExecs,   bRS)   <- RS.runB     rv    (bRS   st)
---     (outExecs, outRS) <- RS.runOut   rv    (outRS st)
---
---     let st'       = st { memRS=memRS, alRS=alRS, bRS=bRS, outRS=outRS}
---         memExecs' = fmap (mapPipeData Mem)    memExecs
---         alExecs'  = fmap (mapPipeData AL)     alExecs
---         bExecs'   = fmap (mapPipeData Branch) bExecs
---         outExecs' = fmap (mapPipeData Out)    outExecs
---
---     return (memExecs' ++ alExecs' ++ bExecs' ++ outExecs', st')
+runExecUnits = foldl f ([], []) where
+    f (accExec, accUnits) unit =
+        case Unit.value unit of
+            Nothing -> (accExec, unit:accUnits)
+            Just ei -> (ei:accExec, Unit.empty:accUnits)
 
 -- Returns state which contains bypass value that was just written as part of
 -- the write-back stage of the pipeline. This makes this value available to
