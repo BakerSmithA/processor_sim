@@ -115,7 +115,7 @@ type ArithLogicRS = RS RSALInstr EALInstr
 rsALInstr :: DALInstr -> RSALInstr
 rsALInstr = mapAL id Left
 
--- Fills in operands of any memory AL in the RS.
+-- Fills in operands of any AL instructions in the RS.
 fillALRS :: (Monad m) => RegVal m -> ArithLogicRS -> m ArithLogicRS
 fillALRS regVal = fillOperands (fillAL regVal)
 
@@ -135,14 +135,13 @@ promoteAL = mapALM return f where
 
 type BranchRS = RS RSBranchInstr EBranchInstr
 
--- Prepare a decoded instruction to be placed in the RS.
-rsBInstr :: DBranchInstr -> RSBranchInstr
-rsBInstr = mapB Left Left
+-- Fills in operands of any branch instructions in the RS.
+fillBRS :: (Monad m) => RegVal m -> BranchRS -> m BranchRS
+fillBRS regVal = fillOperands (fillB regVal)
 
--- Tries to fill in operands of instructions in RS, and remove instructions
--- which can be run.
-runB :: (Monad m) => RegVal m -> BranchRS -> m ([PipeData EBranchInstr], BranchRS)
-runB regVal = run (fillB regVal) promoteB
+-- Promotes the oldest instruction in the RS with all instructions filled.
+promoteBRS :: BranchRS -> Maybe (PipeData EBranchInstr)
+promoteBRS = promote promoteB
 
 -- Fills in operands of a branch instruction. For return instructions,
 -- takes return address from link register.
@@ -161,10 +160,13 @@ type OutRS = RS RSOutInstr EOutInstr
 rsOutInstr :: DOutInstr -> RSOutInstr
 rsOutInstr = mapOut Left
 
--- Tries to fill in operands of instructions in RS, and remove instructions
--- which can be run.
-runOut :: (Monad m) => RegVal m -> OutRS -> m ([PipeData EOutInstr], OutRS)
-runOut regVal = run (fillOut regVal) promoteOut
+-- Fills in operands of any output instructions in the RS.
+fillOutRS :: (Monad m) => RegVal m -> OutRS -> m OutRS
+fillOutRS regVal = fillOperands (fillOut regVal)
+
+-- Promotes the oldest instruction in the RS with all instructions filled.
+promoteOutRS :: OutRS -> Maybe (PipeData EOutInstr)
+promoteOutRS = promote promoteOut
 
 -- Fills in operands of an output instruction.
 fillOut :: (Monad m) => RegVal m -> ROBIdx -> RSOutInstr -> m RSOutInstr
