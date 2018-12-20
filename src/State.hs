@@ -103,12 +103,18 @@ instance Show State where
     show st =
           "Cycles         : "  ++ show (cycles st)
      ++ "\nInstrs         : "  ++ show (instrsExec st)
-     ++ "\nIpC            : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double)
+     ++ "\nIpC            : "  ++ show (roundDp (ipc st) 2)
      ++ "\nCycles Stalled : "  ++ show (cyclesStalled st)
      ++ "\nFlushes        : "  ++ show (flushes st)
      ++ "\n"
      ++ "\nReg            : "    ++ Mem.showNumbered (regs st)
      ++ "\nMem            :\n\n" ++ Mem.showBlocks 16 (mem st)
+
+ipc :: State -> Double
+ipc st = (fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double
+
+roundDp :: Double -> Int -> Double
+roundDp x n = (fromInteger $ round $ x * (10^n)) / (10.0^^n)
 
 debugShow :: State -> String
 debugShow st =
