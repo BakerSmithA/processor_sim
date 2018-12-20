@@ -42,9 +42,9 @@ fillOperands fill = mapM f where
 
 -- Removes the oldest instruction found in the RS which has all operands filled.
 promote :: (a -> Maybe b) -> RS a b -> Maybe (PipeData b)
-promote checkDone rs = undefined
-
--- promote checkDone rs = undefined--tryPick (mapPipeDataM checkDone) (reverse rs)
+promote checkDone rs = tryPick f (reverse rs) where
+    f (Waiting i) = mapPipeDataM checkDone i
+    f (Filled  i) = return i
 
 -- Load store queue.
 type MemRS = RS RSMemInstr EMemInstr
