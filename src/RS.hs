@@ -129,6 +129,10 @@ promoteAL = mapALM return f where
 
 type BranchRS = RS RSBranchInstr
 
+-- Prepare a decoded instruction to be placed in the RS.
+rsBInstr :: DBranchInstr -> RSBranchInstr
+rsBInstr = mapB Left Left
+
 -- Fills in operands of any branch instructions in the RS.
 fillBRS :: (Monad m) => RegVal m -> BranchRS -> m BranchRS
 fillBRS regVal = fillOperands (fillB regVal)
