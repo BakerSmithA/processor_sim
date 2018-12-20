@@ -24,7 +24,7 @@ add = (:)
 isEmpty :: RS a -> Bool
 isEmpty = null
 
-run :: (Monad m)
+run :: (Functor m, Monad m)
     -- Fills in operands in an instruction.
     => (ROBIdx -> a -> m a)
     -- Checks whether an instruction has all operands filled, and returns an
@@ -55,12 +55,12 @@ rsMemInstr = mapMem (\r -> (r, Nothing)) Left
 
 -- Tries to fill in operands of instructions in MemRS, and remove instructions
 -- which can be run.
-runMemRS :: (Monad m) => RegVal m -> MemVal m -> MemRS -> m ([PipeData EMemInstr], MemRS)
+runMemRS :: (Functor m, Monad m) => RegVal m -> MemVal m -> MemRS -> m ([PipeData EMemInstr], MemRS)
 runMemRS regVal memVal memRS = run (fillMem regVal memVal) promoteMem memRS
 
 -- Fills in operands of a memory instruction.
 -- Goes to memory to load a value for load instructions.
-fillMem :: (Monad m) => RegVal m -> MemVal m -> ROBIdx -> RSMemInstr -> m RSMemInstr
+fillMem :: (Functor m, Monad m) => RegVal m -> MemVal m -> ROBIdx -> RSMemInstr -> m RSMemInstr
 fillMem regVal memVal robIdx = fill where
     fill (LoadIdx (dst, val) base off) = do
         base' <- cachedRegVal regVal robIdx base
@@ -114,11 +114,11 @@ rsALInstr = mapAL id Left
 
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.
-runAL :: (Monad m) => RegVal m -> ArithLogicRS -> m ([PipeData EALInstr], ArithLogicRS)
+runAL :: (Functor m, Monad m) => RegVal m -> ArithLogicRS -> m ([PipeData EALInstr], ArithLogicRS)
 runAL regVal = run (fillAL regVal) promoteAL
 
 -- Fills in operands of an AL instruction.
-fillAL :: (Monad m) => RegVal m -> ROBIdx -> RSALInstr -> m RSALInstr
+fillAL :: (Functor m, Monad m) => RegVal m -> ROBIdx -> RSALInstr -> m RSALInstr
 fillAL regVal robIdx = mapALM return (fillRSrc regVal robIdx)
 
 -- If the AL instruction has all operands filled in, then returns an executable
@@ -135,12 +135,12 @@ rsBInstr = mapB Left Left
 
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.
-runB :: (Monad m) => RegVal m -> BranchRS -> m ([PipeData EBranchInstr], BranchRS)
+runB :: (Functor m, Monad m) => RegVal m -> BranchRS -> m ([PipeData EBranchInstr], BranchRS)
 runB regVal = run (fillB regVal) promoteB
 
 -- Fills in operands of a branch instruction. For return instructions,
 -- takes return address from link register.
-fillB :: (Monad m) => RegVal m -> ROBIdx -> RSBranchInstr -> m RSBranchInstr
+fillB :: (Functor m, Monad m) => RegVal m -> ROBIdx -> RSBranchInstr -> m RSBranchInstr
 fillB regVal robIdx = mapBM (fillRSrc regVal robIdx) (fillRSrc regVal robIdx)
 
 -- If the branch instruction has all operands filled in, then returns an
@@ -157,11 +157,11 @@ rsOutInstr = mapOut Left
 
 -- Tries to fill in operands of instructions in RS, and remove instructions
 -- which can be run.
-runOut :: (Monad m) => RegVal m -> OutRS -> m ([PipeData EOutInstr], OutRS)
+runOut :: (Functor m, Monad m) => RegVal m -> OutRS -> m ([PipeData EOutInstr], OutRS)
 runOut regVal = run (fillOut regVal) promoteOut
 
 -- Fills in operands of an output instruction.
-fillOut :: (Monad m) => RegVal m -> ROBIdx -> RSOutInstr -> m RSOutInstr
+fillOut :: (Functor m, Monad m) => RegVal m -> ROBIdx -> RSOutInstr -> m RSOutInstr
 fillOut regVal robIdx = mapOutM (fillRSrc regVal robIdx)
 
 -- If an output instruction has all operands filled in, then returns an
@@ -174,7 +174,7 @@ promoteOut = mapOutM f where
 
 -- If an operand register already has it value fetched, no action is taken.
 -- Otherwise, the register file is queried.
-fillRSrc :: (Monad m) => RegVal m -> ROBIdx -> Either PhyReg Val -> m (Either PhyReg Val)
+fillRSrc :: (Functor m, Monad m) => RegVal m -> ROBIdx -> Either PhyReg Val -> m (Either PhyReg Val)
 fillRSrc regVal robIdx = either f (return . Right) where
     f phy = do
         maybeVal <- regVal robIdx phy
@@ -204,7 +204,7 @@ tryCachedMemVal memVal robIdx val base off =
 -- If the supplied Either already contains the value of the register, then
 -- no action is taken. If the Either does not contain the value, the regVal
 -- function is used to retrieve it.
-cachedRegVal :: (Monad m) => RegVal m -> ROBIdx -> Either PhyReg Val -> m (Either PhyReg Val)
+cachedRegVal :: (Functor m, Monad m) => RegVal m -> ROBIdx -> Either PhyReg Val -> m (Either PhyReg Val)
 cachedRegVal regVal robIdx = either fetchVal (return . Right) where
     fetchVal r = do
         maybeVal <- regVal robIdx r
