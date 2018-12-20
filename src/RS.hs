@@ -115,10 +115,13 @@ type ArithLogicRS = RS RSALInstr EALInstr
 rsALInstr :: DALInstr -> RSALInstr
 rsALInstr = mapAL id Left
 
--- Tries to fill in operands of instructions in RS, and remove instructions
--- which can be run.
-runAL :: (Monad m) => RegVal m -> ArithLogicRS -> m ([PipeData EALInstr], ArithLogicRS)
-runAL regVal = run (fillAL regVal) promoteAL
+-- Fills in operands of any memory AL in the RS.
+fillALRS :: (Monad m) => RegVal m -> ArithLogicRS -> m ArithLogicRS
+fillALRS regVal = fillOperands (fillAL regVal)
+
+-- Promotes the oldest instruction in the RS with all instructions filled.
+promoteALRS :: ArithLogicRS -> Maybe (PipeData EALInstr)
+promoteALRS = promote promoteAL
 
 -- Fills in operands of an AL instruction.
 fillAL :: (Monad m) => RegVal m -> ROBIdx -> RSALInstr -> m RSALInstr
