@@ -158,7 +158,7 @@ cycle st1 p = do
 cycleStall :: State -> Pipeline -> Res (State, Pipeline)
 cycleStall st1 p = do
     (st2, p', _) <- advancePipeline [] st1 p
-    return (st2, p')
+    return (St.incCyclesStalled st2, p')
 
 -- Run processor to completion, i.e. until exit system call occurs.
 runPipeline :: State -> Pipeline -> Res (State, Pipeline)
