@@ -414,4 +414,9 @@ flush savedPC frees st = setPC savedPC $ st {
   , alRS = RS.empty
   , bRS = RS.empty
   , outRS = RS.empty
+
+  , memUnits = map (const Unit.empty) (memUnits st)
+  , alUnits  = map (const Unit.empty) (alUnits  st)
+  , bUnits   = map (const Unit.empty) (bUnits   st)
+  , outUnits = map (const Unit.empty) (outUnits st)
 }
