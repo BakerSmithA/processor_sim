@@ -101,17 +101,24 @@ instance Monad Res where
 
 instance Show State where
     show st =
-          "Cycles         : "  ++ show (cycles st)
-     ++ "\nInstrs         : "  ++ show (instrsExec st)
-     ++ "\nIpC            : "  ++ show (roundDp (ipc st) 2)
+        "\nInstrs         : "  ++ show (instrsExec st)
+     ++ "\nCycles         : "  ++ show (cycles st)
      ++ "\nCycles Stalled : "  ++ show (cyclesStalled st)
      ++ "\nFlushes        : "  ++ show (flushes st)
+     ++ "\nIpC            : "  ++ show (roundDp (ipc st) 2)
+     ++ "\nIpC wo. stalls : "  ++ show (roundDp (ipcWithoutStalls st) 2)
      ++ "\n"
      ++ "\nReg            : "    ++ Mem.showNumbered (regs st)
      ++ "\nMem            :\n\n" ++ Mem.showBlocks 16 (mem st)
 
+-- Instructions per cycle.
 ipc :: State -> Double
 ipc st = (fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double
+
+-- Predicted IpC if no cycles were stalled.
+ipcWithoutStalls :: State -> Double
+ipcWithoutStalls st = (fromIntegral $ (instrsExec st)) / (n :: Double) where
+    n = (fromIntegral $ (cycles st) - (cyclesStalled st))
 
 roundDp :: Double -> Int -> Double
 roundDp x n = (fromInteger $ round $ x * (10^n)) / (10.0^^n)
