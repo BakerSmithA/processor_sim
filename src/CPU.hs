@@ -63,7 +63,7 @@ writeBack st1 = do
     -- Whether to flush the pipeline.
     case savedPC of
         Nothing -> return (st7, NoFlush)
-        Just pc -> do
+        Just pc -> trace "FLUSH" $ do
             -- Need to free any mapped registers still in the ROB otherwise
             -- they will be lost when the flush resets the ROB.
             let remainingFrees = ROB.mappedPhyRegs (rob st7)

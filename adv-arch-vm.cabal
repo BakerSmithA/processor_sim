@@ -76,7 +76,7 @@ test-suite spec
                      , Decode
                      , RS
                      , Exec
-                     , RSSpec
+                     -- , RSSpec
                      , Types
                      , BypassSpec
                      , Timer

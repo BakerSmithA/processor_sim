@@ -2,7 +2,6 @@ module RS where
 
 import Instr
 import Types
-import Helper (tryPick)
 
 -- Need to supply ROB index so the logically most recent update to a value
 -- can be retrieved.
@@ -24,6 +23,21 @@ add = (:)
 
 isEmpty :: RS a -> Bool
 isEmpty = null
+
+run :: (Monad m)
+    -- Fills in operands in an instruction.
+    => (ROBIdx -> a -> m a)
+    -- Checks whether an instruction has all operands filled, and returns an
+    -- executable version of the instruction if so.
+    -> (a -> Maybe b)
+    -- Reservation station to operate over.
+    -> RS a
+    -- Returns any instructions ready to be executed, and the new state of the RS.
+    -> m (Maybe (PipeData b), RS a)
+
+run fill checkDone rs1 = do
+    rs2 <- fillOperands fill rs1
+    return (promote checkDone rs2)
 
 -- Fills in operands in an instruction.
 fillOperands :: (Monad m) => (ROBIdx -> a -> m a) -> RS a -> m (RS a)
@@ -47,13 +61,10 @@ type MemRS = RS RSMemInstr
 rsMemInstr :: DMemInstr -> RSMemInstr
 rsMemInstr = mapMem (\r -> (r, Nothing)) Left
 
--- Fills in operands of any memory instructions in the RS.
-fillMemRS :: (Monad m) => RegVal m -> MemVal m -> MemRS -> m MemRS
-fillMemRS regVal memVal = fillOperands (fillMem regVal memVal)
-
--- Promotes the oldest instruction in the RS with all instructions filled.
-promoteMemRS :: MemRS -> (Maybe (PipeData EMemInstr), MemRS)
-promoteMemRS = promote promoteMem
+-- Fills in operands of any memory instructions in the RS and promotes the
+-- oldest instruction in the RS with all instructions filled.
+runMemRS :: (Monad m) => RegVal m -> MemVal m -> MemRS -> m (Maybe (PipeData EMemInstr), MemRS)
+runMemRS regVal memVal = run (fillMem regVal memVal) promoteMem
 
 -- Fills in operands of a single memory instruction.
 -- Goes to memory to load a value for load instructions.
@@ -109,13 +120,10 @@ type ArithLogicRS = RS RSALInstr
 rsALInstr :: DALInstr -> RSALInstr
 rsALInstr = mapAL id Left
 
--- Fills in operands of any AL instructions in the RS.
-fillALRS :: (Monad m) => RegVal m -> ArithLogicRS -> m ArithLogicRS
-fillALRS regVal = fillOperands (fillAL regVal)
-
--- Promotes the oldest instruction in the RS with all instructions filled.
-promoteALRS :: ArithLogicRS -> (Maybe (PipeData EALInstr), ArithLogicRS)
-promoteALRS = promote promoteAL
+-- Fills in operands of any AL instructions in the RS and promotes the
+-- oldest instruction in the RS with all instructions filled.
+runALRS :: (Monad m) => RegVal m -> ArithLogicRS -> m (Maybe (PipeData EALInstr), ArithLogicRS)
+runALRS regVal = run (fillAL regVal) promoteAL
 
 -- Fills in operands of an AL instruction.
 fillAL :: (Monad m) => RegVal m -> ROBIdx -> RSALInstr -> m RSALInstr
@@ -133,13 +141,10 @@ type BranchRS = RS RSBranchInstr
 rsBInstr :: DBranchInstr -> RSBranchInstr
 rsBInstr = mapB Left Left
 
--- Fills in operands of any branch instructions in the RS.
-fillBRS :: (Monad m) => RegVal m -> BranchRS -> m BranchRS
-fillBRS regVal = fillOperands (fillB regVal)
-
--- Promotes the oldest instruction in the RS with all instructions filled.
-promoteBRS :: BranchRS -> (Maybe (PipeData EBranchInstr), BranchRS)
-promoteBRS = promote promoteB
+-- Fills in operands of any branch instructions in the RS and promotes the
+-- oldest instruction in the RS with all instructions filled.
+runBRS :: (Monad m) => RegVal m -> BranchRS -> m (Maybe (PipeData EBranchInstr), BranchRS)
+runBRS regVal = run (fillB regVal) promoteB
 
 -- Fills in operands of a branch instruction. For return instructions,
 -- takes return address from link register.
@@ -158,13 +163,10 @@ type OutRS = RS RSOutInstr
 rsOutInstr :: DOutInstr -> RSOutInstr
 rsOutInstr = mapOut Left
 
--- Fills in operands of any output instructions in the RS.
-fillOutRS :: (Monad m) => RegVal m -> OutRS -> m OutRS
-fillOutRS regVal = fillOperands (fillOut regVal)
-
--- Promotes the oldest instruction in the RS with all instructions filled.
-promoteOutRS :: OutRS -> (Maybe (PipeData EOutInstr), OutRS)
-promoteOutRS = promote promoteOut
+-- Fills in operands of any out instructions in the RS and promotes the
+-- oldest instruction in the RS with all instructions filled.
+runOutRS :: (Monad m) => RegVal m -> OutRS -> m (Maybe (PipeData EOutInstr), OutRS)
+runOutRS regVal = run (fillOut regVal) promoteOut
 
 -- Fills in operands of an output instruction.
 fillOut :: (Monad m) => RegVal m -> ROBIdx -> RSOutInstr -> m RSOutInstr

@@ -1,6 +1,7 @@
 module State where
 
 import Data.Word (Word32)
+import Control.Monad (foldM)
 import Mem (Mem)
 import qualified Mem as Mem
 import qualified Mem as Reg
@@ -106,8 +107,8 @@ instance Show State where
 debugShow :: State -> String
 debugShow st =
         "\nBypass : "  ++ show (bypass st)
-     ++ "\nRRT    : "  ++ show (rrt st)
-     ++ "\nROB    :\n"  ++ show (rob st)
+     -- ++ "\nRRT    : "  ++ show (rrt st)
+     ++ "\nROB    :\n" ++ show (rob st)
      ++ "\nMem RS : "  ++ show (memRS st)
      ++ "\nAL  RS : "  ++ show (alRS st)
      ++ "\nB   RS : "  ++ show (bRS st)
@@ -137,7 +138,7 @@ empty pc sp lr bp ret instrs =
         rob       = ROB.empty 15
         rrt       = RRT.fromRegs [pc, sp, lr, bp, ret] maxPhyReg
         memRS     = RS.empty
-        memUnits  = [Unit.empty]
+        memUnits  = [Unit.empty, Unit.empty]
         alRS      = RS.empty
         alUnits   = [Unit.empty]
         bRS       = RS.empty
@@ -333,21 +334,13 @@ runRS st1 = do
     let rv robIdx phy  = findRegVal (Q.SubNewToOld robIdx) phy st1
         mv robIdx addr = findMemVal (Q.SubNewToOld robIdx) addr st1
 
-    -- Try and fill in any available operands to instructions waiting in RS.
-    memRS1 <- RS.fillMemRS rv mv (memRS st1)
-    alRS1  <- RS.fillALRS  rv    (alRS  st1)
-    bRS1   <- RS.fillBRS   rv    (bRS   st1)
-    outRS1 <- RS.fillOutRS rv    (outRS st1)
+    (memUs1, memRS1) <- match (memRS st1) (RS.runMemRS rv mv) (memUnits st1)
+    (alUs1,  alRS1)  <- match (alRS  st1) (RS.runALRS  rv)    (alUnits  st1)
+    (bUs1,   bRS1)   <- match (bRS   st1) (RS.runBRS   rv)    (bUnits   st1)
+    (outUs1, outRS1) <- match (outRS st1) (RS.runOutRS rv)    (outUnits st1)
 
-    -- Take out any instructions which are ready and for which there is an
-    -- execution unit available.
-    let (memUs1, memRS2) = match memRS1 RS.promoteMemRS (memUnits st1)
-        (alUs1,  alRS2)  = match alRS1  RS.promoteALRS  (alUnits  st1)
-        (bUs1,   bRS2)   = match bRS1   RS.promoteBRS   (bUnits   st1)
-        (outUs1, outRS2) = match outRS1 RS.promoteOutRS (outUnits st1)
-
-    -- 'Run' instructions in exec units. Here, they actual wait some amount of
-    -- time until the value in finally calculated by the caller of this function.
+    -- 'Run' instructions in exec units. Here, they wait some amount of time
+    -- until the value is finally calculated by the caller of this function.
     let (memExecs1, memUs2) = runExecUnits memUs1
         (alExecs1,  alUs2)  = runExecUnits alUs1
         (bExecs1,   bUs2)   = runExecUnits bUs1
@@ -360,21 +353,22 @@ runRS st1 = do
         outExecs2 = fmap (mapPipeData Out)    outExecs1
 
         st2 = st1 {
-            memRS=memRS2,    alRS=alRS2,    bRS=bRS2,    outRS=outRS2
+            memRS=memRS1,    alRS=alRS1,    bRS=bRS1,    outRS=outRS1
           , memUnits=memUs2, alUnits=alUs2, bUnits=bUs2, outUnits=outUs2
         }
 
     return (memExecs2 ++ alExecs2 ++ bExecs2 ++ outExecs2, st2)
 
 -- Gives instructions in RS that have all operands filled to available exec units.
-match :: RS a -> (RS a -> (Maybe (PipeData b), RS a)) -> [ExecUnit (PipeData b)] -> ([ExecUnit (PipeData b)], RS a)
-match rs promote units = foldl f ([], rs) units where
+match :: (Monad m) => RS a -> (RS a -> m (Maybe (PipeData b), RS a)) -> [ExecUnit (PipeData b)] -> m ([ExecUnit (PipeData b)], RS a)
+match rs run units = foldM f ([], rs) units where
     f (accUnits, accRS) unit =
         case Unit.isFree unit of
-            False -> (unit:accUnits, accRS)
+            False -> return (unit:accUnits, accRS)
             -- Start an execution unit containing any ready to run instructions.
-            True  -> ((Unit.containing i):accUnits, accRS') where
-                (i, accRS') = promote accRS
+            True -> do
+                (i, accRS') <- run accRS
+                return ((Unit.containing i):accUnits, accRS')
 
 -- Retrieve ready instructions from execution unit.
 runExecUnits :: [ExecUnit b] -> ([b], [ExecUnit b])
