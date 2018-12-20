@@ -14,6 +14,7 @@ import Error
 import WriteBack
 import RRT
 import RS (MemRS, ArithLogicRS, BranchRS, OutRS)
+import RS (RS)
 import qualified RS as RS
 import Types
 import ExecUnit as Unit
@@ -52,14 +53,14 @@ data State = State {
   , memRS    :: MemRS
   , memUnits :: [MemUnit]
 
-  , alRS    :: ArithLogicRS
-  , alUnits :: [ALUnit]
+  , alRS     :: ArithLogicRS
+  , alUnits  :: [ALUnit]
 
-  , bRS     :: BranchRS
-  , bUnits  :: [BUnit]
+  , bRS      :: BranchRS
+  , bUnits   :: [BUnit]
 
-  , outRS   :: OutRS
-  , outUnit :: [OutUnit]
+  , outRS    :: OutRS
+  , outUnits :: [OutUnit]
 
    -- Stats
   , cycles :: Int
@@ -328,22 +329,67 @@ addRS (Out    di, idx, freed, savedPC) st = st { outRS = RS.add (RS.rsOutInstr d
 -- Returns instructions which have had all operands filled in and are ready
 -- to execute.
 runRS :: State -> Res ([EPipeInstr], State)
-runRS st = do
-    let rv robIdx phy  = findRegVal (Q.SubNewToOld robIdx) phy st
-        mv robIdx addr = findMemVal (Q.SubNewToOld robIdx) addr st
+runRS st1 = do
+    let rv robIdx phy  = findRegVal (Q.SubNewToOld robIdx) phy st1
+        mv robIdx addr = findMemVal (Q.SubNewToOld robIdx) addr st1
 
-    (memExecs, memRS) <- RS.runMemRS rv mv (memRS st)
-    (alExecs,  alRS)  <- RS.runAL    rv    (alRS  st)
-    (bExecs,   bRS)   <- RS.runB     rv    (bRS   st)
-    (outExecs, outRS) <- RS.runOut   rv    (outRS st)
+    -- Try and fill in any available operands to instructions waiting in RS.
+    memRS1 <- RS.fillMemRS rv mv (memRS st1)
+    alRS1  <- RS.fillALRS  rv    (alRS  st1)
+    bRS1   <- RS.fillBRS   rv    (bRS   st1)
+    outRS1 <- RS.fillOutRS rv    (outRS st1)
 
-    let st'       = st { memRS=memRS, alRS=alRS, bRS=bRS, outRS=outRS}
-        memExecs' = fmap (mapPipeData Mem)    memExecs
-        alExecs'  = fmap (mapPipeData AL)     alExecs
-        bExecs'   = fmap (mapPipeData Branch) bExecs
-        outExecs' = fmap (mapPipeData Out)    outExecs
+    -- Take out any instructions which are ready and for which there is an
+    -- execution unit available.
+    let (memUs1, memRS2) = match memRS1 RS.promoteMemRS (memUnits st1)
+        (alUs1,  alRS2)  = match alRS1  RS.promoteALRS  (alUnits  st1)
+        (bUs1,   bRS2)   = match bRS1   RS.promoteBRS   (bUnits   st1)
+        (outUs1, outRS2) = match outRS1 RS.promoteOutRS (outUnits st1)
 
-    return (memExecs' ++ alExecs' ++ bExecs' ++ outExecs', st')
+    -- 'Run' instructions in exec units. Here, they actual wait some amount of
+    -- time until the value in finally calculated by the caller of this function.
+    let (memExecs1, memUs2) = runExecUnits memUs1
+        (alExecs1,  alUs2)  = runExecUnits alUs1
+        (bExecs1,   bUs2)   = runExecUnits bUs1
+        (outExecs1, outUs2) = runExecUnits outUs1
+
+    -- Package instructions together to be computed properly.
+    let memExecs2 = fmap (mapPipeData Mem)    memExecs1
+        alExecs2  = fmap (mapPipeData AL)     alExecs1
+        bExecs2   = fmap (mapPipeData Branch) bExecs1
+        outExecs2 = fmap (mapPipeData Out)    outExecs1
+
+        st2 = st1 {
+            memRS=memRS2,    alRS=alRS2,    bRS=bRS2,    outRS=outRS2
+          , memUnits=memUs2, alUnits=alUs2, bUnits=bUs2, outUnits=outUs2
+        }
+
+    return (memExecs2 ++ alExecs2 ++ bExecs2 ++ outExecs2, st2)
+
+-- Gives instructions in RS that have all operands filled to available exec units.
+match :: RS a -> (RS a -> (Maybe (PipeData b), RS a)) -> [ExecUnit (PipeData b)] -> ([ExecUnit (PipeData b)], RS a)
+match = undefined
+
+-- Retrieve ready instructions from execution unit.
+runExecUnits :: [ExecUnit b] -> ([b], [ExecUnit b])
+runExecUnits = undefined
+
+-- runRS st = do
+--     let rv robIdx phy  = findRegVal (Q.SubNewToOld robIdx) phy st
+--         mv robIdx addr = findMemVal (Q.SubNewToOld robIdx) addr st
+--
+--     (memExecs, memRS) <- RS.runMemRS rv mv (memRS st)
+--     (alExecs,  alRS)  <- RS.runAL    rv    (alRS  st)
+--     (bExecs,   bRS)   <- RS.runB     rv    (bRS   st)
+--     (outExecs, outRS) <- RS.runOut   rv    (outRS st)
+--
+--     let st'       = st { memRS=memRS, alRS=alRS, bRS=bRS, outRS=outRS}
+--         memExecs' = fmap (mapPipeData Mem)    memExecs
+--         alExecs'  = fmap (mapPipeData AL)     alExecs
+--         bExecs'   = fmap (mapPipeData Branch) bExecs
+--         outExecs' = fmap (mapPipeData Out)    outExecs
+--
+--     return (memExecs' ++ alExecs' ++ bExecs' ++ outExecs', st')
 
 -- Returns state which contains bypass value that was just written as part of
 -- the write-back stage of the pipeline. This makes this value available to
