@@ -15,7 +15,7 @@ showNumbered (Mem arr _) = intercalate ", " numbered where
     numbered = fmap (\(i, x) -> show (i :: Integer) ++ ":" ++ show x) (zip [0..] (elems arr))
 
 -- Return string where memory is displayed in blocks.
-showBlocks :: (Show v) => Int -> Mem k v -> String
+showBlocks :: (Show v, Ix k) => Int -> Mem k v -> String
 showBlocks _         (Empty)     = "Empty"
 showBlocks lineWidth (Mem arr _) = unlines (map showLine (group lineWidth (elems arr))) where
     showLine line = concatMap ((++"\t") . show) line
