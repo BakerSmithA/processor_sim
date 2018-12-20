@@ -12,6 +12,7 @@ import Exec
 import qualified RS
 import RRT (RegMap(..))
 import qualified ROB
+import qualified ExecUnit as Unit
 import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
@@ -121,11 +122,11 @@ invalidateRegs frees st = foldM f st frees where
 -- stages. Do not need to check for execute stage because write-back results
 -- are available via bypass.
 shouldStallFetch :: State -> Pipeline -> Bool
-shouldStallFetch st p = f || d || rs || rob where
-    f       = any isBranch (fmap fst (fetched p))
-    d       = any isBranch (fmap pipeInstr (decoded p))
-    rs      = not (RS.isEmpty (bRS st))
-    rob     = False
+shouldStallFetch st p = f || d || rs || unit where
+    f    = any isBranch (fmap fst (fetched p))
+    d    = any isBranch (fmap pipeInstr (decoded p))
+    rs   = not (RS.isEmpty (bRS st))
+    unit = any Unit.isFull (bUnits st)
 
 shouldStallDecode :: State -> Bool
 shouldStallDecode _ = False

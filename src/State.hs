@@ -19,6 +19,7 @@ import RS (RS)
 import qualified RS as RS
 import Types
 import ExecUnit as Unit
+import Timer as Timer
 import Debug.Trace
 
 -- Stores current state of CPU at a point in time.
@@ -129,7 +130,7 @@ defaultedMem vals rrt = map f (zip [0..] vals) where
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs =
     State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS memUnits alRS alUnits bRS bUnits outRS outUnits 0 0 where
-        numFetch  = 4
+        numFetch  = 2
         maxPhyReg = 31
         mem       = Mem.zeroed 255
         regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
@@ -384,7 +385,7 @@ match rs promote execUnit units = foldM f ([], rs) units where
                     Nothing -> return (Unit.empty:accUnits, accRS')
                     Just ei -> do
                         wb <- mapPipeDataM execUnit ei
-                        return ((Unit.containing wb):accUnits, accRS')
+                        return ((Unit.containing (Timer.start 3 wb)):accUnits, accRS')
 
 -- Retrieve ready instructions from execution unit.
 runExecUnits :: [ExecUnit b] -> ([b], [ExecUnit b])
@@ -392,7 +393,18 @@ runExecUnits = foldl f ([], []) where
     f (accExec, accUnits) unit =
         case Unit.value unit of
             Nothing -> (accExec, unit:accUnits)
-            Just ei -> (ei:accExec, Unit.empty:accUnits)
+            -- Check if timer is done, if so return value, otherwise decrement
+            -- cycles remaining.
+            Just wb ->
+                case tick wb of
+                    Done val        -> (val:accExec, Unit.empty:accUnits)
+                    Tick cycles val -> (accExec, (Unit.containing (Tick cycles val)):accUnits)
+
+-- runExecUnits = foldl f ([], []) where
+--     f (accExec, accUnits) unit =
+--         case Unit.value unit of
+--             Nothing -> (accExec, unit:accUnits)
+--             Just ei -> (ei:accExec, Unit.empty:accUnits)
 
 -- Returns state which contains bypass value that was just written as part of
 -- the write-back stage of the pipeline. This makes this value available to
