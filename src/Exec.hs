@@ -12,19 +12,6 @@ exec dis st1 = do
     (wbs, st2) <- issue dis st1
     return (wbs, St.bypassed (fmap pipeInstr wbs) st2)
 
-    -- execEs eis st2
-
--- Add all decoded instruction to a reservation station, then promote any completed,
--- instructions, and finally execute those and return the writeback instructions.
--- execEs :: [EPipeInstr] -> State -> Res ([(PipeData WriteBack)], State)
--- execEs eis st = do
---     wbs <- foldM f [] eis
---     return (wbs, St.bypassed (fmap pipeInstr wbs) st)
---         where
---             f allWbs ei = do
---                 wbs <- execI ei st
---                 return (wbs:allWbs)
-
 -- Add decoded instructions to RS, and remove instructions from RS which have
 -- all operands filled.
 issue :: [DPipeInstr] -> State -> Res ([PipeData WriteBack], State)

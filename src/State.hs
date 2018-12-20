@@ -108,7 +108,7 @@ debugShow :: State -> String
 debugShow st =
         "\nBypass : "  ++ show (bypass st)
      ++ "\nRRT    : "  ++ show (rrt st)
-     ++ "\nROB    :\n"  ++ show (rob st)
+     ++ "\nROB    :\n" ++ show (rob st)
      ++ "\nMem RS : "  ++ show (memRS st)
      ++ "\nAL  RS : "  ++ show (alRS st)
      ++ "\nB   RS : "  ++ show (bRS st)
@@ -129,8 +129,8 @@ defaultedMem vals rrt = map f (zip [0..] vals) where
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs =
     State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS memUnits alRS alUnits bRS bUnits outRS outUnits 0 0 where
-        numFetch  = 2
-        maxPhyReg = 31
+        numFetch  = 4
+        maxPhyReg = 15
         mem       = Mem.zeroed 255
         regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
         instrs'   = Mem.fromList instrs
@@ -138,9 +138,9 @@ empty pc sp lr bp ret instrs =
         rob       = ROB.empty 31
         rrt       = RRT.fromRegs [pc, sp, lr, bp, ret] maxPhyReg
         memRS     = RS.empty
-        memUnits  = [Unit.empty, Unit.empty]
+        memUnits  = [Unit.empty, Unit.empty, Unit.empty, Unit.empty]
         alRS      = RS.empty
-        alUnits   = [Unit.empty, Unit.empty]
+        alUnits   = [Unit.empty, Unit.empty, Unit.empty, Unit.empty]
         bRS       = RS.empty
         bUnits    = [Unit.empty]
         outRS     = RS.empty
@@ -219,8 +219,13 @@ pcVal = namedRegVal pcIdx
 -- Set the PC to a given value.
 setPC :: Val -> State -> Res State
 setPC newPC st = do
-    pcReg <- namedReg pcIdx st
-    setRegVal pcReg (Just $ newPC) st
+    pcRegIdx <- namedReg pcIdx st
+    pcReg <- trace ("-- SET PC (" ++ show pcRegIdx ++ ") TO: " ++ show newPC) $ namedReg pcIdx st
+    st1 <- setRegVal pcReg (Just $ newPC) st
+    let st2 = st1 { bypass=(BP.BypassReg pcRegIdx newPC):(bypass st1) }
+    pcRegIdx <- namedReg pcIdx st2
+    x <- pcVal st2
+    trace ("-- CHECK PC (" ++ show pcRegIdx ++ "): " ++ show x) $ return st2
 
 -- Increment PC by given amount.
 incPC :: Val -> State -> Res State
@@ -230,7 +235,7 @@ incPC n st = do
 
 -- Sets the value of a register in the physical register file.
 setRegVal :: PhyReg -> Maybe Val -> State -> Res State
-setRegVal i val st =
+setRegVal i val st = trace ("setRegVal: " ++ show i ++ " -> " ++ show val) $
     case Reg.store i val (regs st) of
         Nothing   -> crash (RegOutOfRange i) st
         Just regs -> return st { regs = regs }
