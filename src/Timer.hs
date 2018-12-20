@@ -9,6 +9,10 @@ data Timer a
     | Tick CyclesRem a
     deriving (Eq, Show)
 
+instance Functor Timer where
+    fmap f (Done x)        = Done (f x)
+    fmap f (Tick cycles x) = Tick cycles (f x)
+
 start :: CyclesRem -> a -> Timer a
 start r x = Tick r x
 

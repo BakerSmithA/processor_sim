@@ -19,6 +19,7 @@ import RS (RS)
 import qualified RS as RS
 import Types
 import ExecUnit as Unit
+import Timer as Timer
 import Debug.Trace
 
 -- Stores current state of CPU at a point in time.
@@ -138,9 +139,9 @@ empty pc sp lr bp ret instrs =
         rob       = ROB.empty 31
         rrt       = RRT.fromRegs [pc, sp, lr, bp, ret] maxPhyReg
         memRS     = RS.empty
-        memUnits  = [Unit.empty, Unit.empty]
+        memUnits  = [Unit.empty, Unit.empty, Unit.empty]
         alRS      = RS.empty
-        alUnits   = [Unit.empty, Unit.empty]
+        alUnits   = [Unit.empty, Unit.empty, Unit.empty]
         bRS       = RS.empty
         bUnits    = [Unit.empty]
         outRS     = RS.empty
@@ -380,7 +381,7 @@ match rs promote execUnit units = foldM f ([], rs) units where
                     Nothing -> return (Unit.empty:accUnits, accRS')
                     Just ei -> do
                         wb <- mapPipeDataM execUnit ei
-                        return ((Unit.containing wb):accUnits, accRS')
+                        return ((Unit.containing (Timer.start 1 wb)):accUnits, accRS')
 
 -- Retrieve ready instructions from execution unit.
 runExecUnits :: [ExecUnit b] -> ([b], [ExecUnit b])
@@ -388,7 +389,12 @@ runExecUnits = foldl f ([], []) where
     f (accExec, accUnits) unit =
         case Unit.value unit of
             Nothing -> (accExec, unit:accUnits)
-            Just ei -> (ei:accExec, Unit.empty:accUnits)
+            -- Check if timer is done, if so return value, otherwise decrement
+            -- cycles remaining.
+            Just wb ->
+                case tick wb of
+                    Done val        -> (val:accExec, Unit.empty:accUnits)
+                    Tick cycles val -> (accExec, (Unit.containing (Tick cycles val)):accUnits)
 
 -- Returns state which contains bypass value that was just written as part of
 -- the write-back stage of the pipeline. This makes this value available to
@@ -411,7 +417,12 @@ flush savedPC frees st = setPC savedPC $ st {
   , rrt = RRT.freeAll frees (rrt st)
 
   , memRS = RS.empty
-  , alRS = RS.empty
-  , bRS = RS.empty
+  , alRS  = RS.empty
+  , bRS   = RS.empty
   , outRS = RS.empty
+
+  , memUnits = map (const Unit.empty) (memUnits st)
+  , alUnits  = map (const Unit.empty) (alUnits  st)
+  , bUnits   = map (const Unit.empty) (bUnits   st)
+  , outUnits = map (const Unit.empty) (outUnits st)
 }
