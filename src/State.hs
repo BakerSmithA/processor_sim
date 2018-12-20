@@ -50,16 +50,16 @@ data State = State {
   , rrt    :: RRT
 
   , memRS    :: MemRS
-  , memUnits :: [ExecUnit (PipeData EMemInstr)]
+  , memUnits :: [MemUnit]
 
   , alRS    :: ArithLogicRS
-  , alUnits :: [ExecUnit (PipeData EALInstr)]
+  , alUnits :: [ALUnit]
 
   , bRS     :: BranchRS
-  , bUnits  :: [ExecUnit (PipeData EBranchInstr)]
+  , bUnits  :: [BUnit]
 
   , outRS   :: OutRS
-  , outUnit :: [ExecUnit (PipeData EOutInstr)]
+  , outUnit :: [OutUnit]
 
    -- Stats
   , cycles :: Int
