@@ -21,27 +21,30 @@ mapMISt _ (Filled  x) = return (Filled x)
 
 -- General pupose reservation station. Is specialised for different types of
 -- instructions.
-type RS a b = [PipeData (InstrState b a)]
+type RS a b = [InstrState (PipeData b) (PipeData a)]
 
 empty :: RS a b
 empty = []
 
 fromList :: [PipeData a] -> RS a b
-fromList = fmap (mapPipeData Waiting)
+fromList = fmap Waiting
 
 add :: PipeData a -> RS a b -> RS a b
-add x rs = (mapPipeData Waiting x):rs
+add x rs = (Waiting x):rs
 
 isEmpty :: RS a b -> Bool
 isEmpty = null
 
 -- Fills in operands in an instruction.
 fillOperands :: (Monad m) => (ROBIdx -> a -> m a) -> RS a b -> m (RS a b)
-fillOperands fill rs = mapM (mapPipeDataM' (\idx i -> mapMISt (fill idx) i)) rs
+fillOperands fill = mapM f where
+    f = mapMISt (\x -> mapPipeDataM' (\idx i -> fill idx i) x)
 
 -- Removes the oldest instruction found in the RS which has all operands filled.
 promote :: (a -> Maybe b) -> RS a b -> Maybe (PipeData b)
-promote checkDone rs = tryPick (mapPipeDataM checkDone) (reverse rs)
+promote checkDone rs = undefined
+
+-- promote checkDone rs = undefined--tryPick (mapPipeDataM checkDone) (reverse rs)
 
 -- Load store queue.
 type MemRS = RS RSMemInstr EMemInstr
@@ -50,15 +53,15 @@ type MemRS = RS RSMemInstr EMemInstr
 rsMemInstr :: DMemInstr -> RSMemInstr
 rsMemInstr = mapMem (\r -> (r, Nothing)) Left
 
--- Tries to fill in operands of instructions in MemRS, and remove instructions
--- which can be run.
--- runMemRS :: (Monad m) => RegVal m -> MemVal m -> MemRS -> m ([PipeData EMemInstr], MemRS)
--- runMemRS regVal memVal memRS = run (fillMem regVal memVal) promoteMem memRS
+-- Fills in operands of any memory instructions in the RS.
+fillMemRS :: (Monad m) => RegVal m -> MemVal m -> MemRS -> m MemRS
+fillMemRS regVal memVal = fillOperands (fillMem regVal memVal)
 
-fillMemx :: RegVal m -> MemVal m -> MemRS -> m MemRS
-fillMemx regVal memVal rs = fillOperands (fillMem regVal memVal)
+-- Promotes the oldest instruction in the RS with all instructions filled.
+promoteMemRS :: MemRS -> Maybe (PipeData EMemInstr)
+promoteMemRS = promote promoteMem
 
--- Fills in operands of a memory instruction.
+-- Fills in operands of a single memory instruction.
 -- Goes to memory to load a value for load instructions.
 fillMem :: (Monad m) => RegVal m -> MemVal m -> ROBIdx -> RSMemInstr -> m RSMemInstr
 fillMem regVal memVal robIdx = fill where
