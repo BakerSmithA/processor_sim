@@ -12,7 +12,6 @@ import Exec
 import qualified RS
 import RRT (RegMap(..))
 import qualified ROB
--- import Debug.Trace
 
 -- Removes any instructions that occur after a branch.
 stopAtBranch :: [FPipeInstr] -> [FPipeInstr]
@@ -68,7 +67,7 @@ writeBack st1 = do
             -- they will be lost when the flush resets the ROB.
             let remainingFrees = ROB.mappedPhyRegs (rob st7)
             st8 <- St.flush pc remainingFrees st7
-            return (st8, Flush, invalidAddr)
+            return (St.incFlushes st8, Flush, invalidAddr)
 
 -- Invalidates loads in the ROB if the next writeback instruction to be committed
 -- is a memory write that has a clashing address.
@@ -121,11 +120,10 @@ invalidateRegs frees st = foldM f st frees where
 -- stages. Do not need to check for execute stage because write-back results
 -- are available via bypass.
 shouldStallFetch :: State -> Pipeline -> Bool
-shouldStallFetch st p = f || d || rs || rob where
+shouldStallFetch st p = f || d || rs where
     f       = any isBranch (fmap fst (fetched p))
     d       = any isBranch (fmap pipeInstr (decoded p))
     rs      = not (RS.isEmpty (bRS st))
-    rob     = False
 
 shouldStallDecode :: State -> Bool
 shouldStallDecode _ = False

@@ -64,8 +64,9 @@ data State = State {
   , outUnits :: [OutUnit]
 
    -- Stats
-  , cycles :: Int
+  , cycles     :: Int
   , instrsExec :: Int
+  , flushes    :: Int
 
 } deriving (Eq)
 
@@ -99,11 +100,12 @@ instance Monad Res where
 
 instance Show State where
     show st =
-          "Cycles : "  ++ show (cycles st)
-     ++ "\nInstrs : "  ++ show (instrsExec st)
-     ++ "\nIpC    : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double)
-     ++ "\nReg    : "  ++ Mem.showNumbered (regs st)
-     ++ "\nMem    :\n" ++ Mem.showBlocks 16 (mem st)
+          "Cycles  : "  ++ show (cycles st)
+     ++ "\nInstrs  : "  ++ show (instrsExec st)
+     ++ "\nIpC     : "  ++ show ((fromIntegral $ instrsExec st) / (fromIntegral $ cycles st) :: Double)
+     ++ "\nFlushes : "  ++ show (flushes st)
+     ++ "\nReg     : "  ++ Mem.showNumbered (regs st)
+     ++ "\nMem     :\n" ++ Mem.showBlocks 16 (mem st)
 
 debugShow :: State -> String
 debugShow st =
@@ -129,8 +131,8 @@ defaultedMem vals rrt = map f (zip [0..] vals) where
 -- Create state containing no values in memory or registers.
 empty :: RegIdx -> RegIdx -> RegIdx -> RegIdx -> RegIdx -> [FInstr] -> State
 empty pc sp lr bp ret instrs =
-    State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS memUnits alRS alUnits bRS bUnits outRS outUnits 0 0 where
-        numFetch  = 3
+    State numFetch mem regs instrs' pc sp lr bp ret [] bypass rob rrt memRS memUnits alRS alUnits bRS bUnits outRS outUnits 0 0 0 where
+        numFetch  = 2
         maxPhyReg = 31
         mem       = Mem.zeroed 255
         regs      = Mem.fromList (defaultedMem (replicate (maxPhyReg+1) Nothing) rrt)
@@ -167,6 +169,10 @@ incCycles st = st { cycles = (cycles st) + 1 }
 -- Increments the number of instrucions exectuted.
 incExec :: Int -> State -> State
 incExec n st = st { instrsExec = (instrsExec st) + n }
+
+-- Increments the number of flushes performed.
+incFlushes :: State -> State
+incFlushes st = st { flushes = (flushes st) + 1}
 
 -- Return value of a register with matching index. Crash if invalid index.
 findRegVal :: Q.Search -> PhyReg -> State -> Res (Maybe Val)
