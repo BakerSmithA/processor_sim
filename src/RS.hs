@@ -2,6 +2,7 @@ module RS where
 
 import Instr
 import Types
+import Helper (tryPick)
 
 -- Need to supply ROB index so the logically most recent update to a value
 -- can be retrieved.
@@ -34,30 +35,13 @@ add x rs = (mapPipeData Waiting x):rs
 isEmpty :: RS a b -> Bool
 isEmpty = null
 
-run :: (Monad m)
-    -- Fills in operands in an instruction.
-    => (ROBIdx -> a -> m a)
-    -- Checks whether an instruction has all operands filled, and returns an
-    -- executable version of the instruction if so.
-    -> (a -> Maybe b)
-    -- Reservation station to operate over.
-    -> RS a b
-    -- Returns any instructions ready to be executed, and the new state of the RS.
-    -> m ([PipeData b], RS a b)
+-- Fills in operands in an instruction.
+fillOperands :: (Monad m) => (ROBIdx -> a -> m a) -> RS a b -> m (RS a b)
+fillOperands fill rs = mapM (mapPipeDataM' (\idx i -> mapMISt (fill idx) i)) rs
 
-run fill promote rs1 = do
-    -- Do not modify any filled instructions that are still in the RS.
-    rs2 <- mapM (mapPipeDataM' (\idx i -> mapMISt (fill idx) i)) rs1
-    -- Remove instruction that have all operands filled.
-    return (foldr checkDone ([], []) rs2) where
-        -- If already filled, simply remove.
-        checkDone (instrState, robIdx, freed, savedPC) (execIs, rs) =
-            case instrState of
-                (Filled  i) -> ((i, robIdx, freed, savedPC):execIs, rs)
-                (Waiting i) ->
-                    case promote i of
-                        Nothing -> (execIs, (Waiting i, robIdx, freed, savedPC):rs)
-                        Just ei -> ((ei, robIdx, freed, savedPC):execIs, rs)
+-- Removes the oldest instruction found in the RS which has all operands filled.
+promote :: (a -> Maybe b) -> RS a b -> Maybe (PipeData b)
+promote checkDone rs = tryPick (mapPipeDataM checkDone) (reverse rs)
 
 -- Load store queue.
 type MemRS = RS RSMemInstr EMemInstr
@@ -68,8 +52,11 @@ rsMemInstr = mapMem (\r -> (r, Nothing)) Left
 
 -- Tries to fill in operands of instructions in MemRS, and remove instructions
 -- which can be run.
-runMemRS :: (Monad m) => RegVal m -> MemVal m -> MemRS -> m ([PipeData EMemInstr], MemRS)
-runMemRS regVal memVal memRS = run (fillMem regVal memVal) promoteMem memRS
+-- runMemRS :: (Monad m) => RegVal m -> MemVal m -> MemRS -> m ([PipeData EMemInstr], MemRS)
+-- runMemRS regVal memVal memRS = run (fillMem regVal memVal) promoteMem memRS
+
+fillMemx :: RegVal m -> MemVal m -> MemRS -> m MemRS
+fillMemx regVal memVal rs = fillOperands (fillMem regVal memVal)
 
 -- Fills in operands of a memory instruction.
 -- Goes to memory to load a value for load instructions.
