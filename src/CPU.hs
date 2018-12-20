@@ -63,7 +63,7 @@ writeBack st1 = do
     -- Whether to flush the pipeline.
     case savedPC of
         Nothing -> return (st7, NoFlush, invalidAddr)
-        Just pc -> do
+        Just pc -> trace "FLUSH" $ do
             -- Need to free any mapped registers still in the ROB otherwise
             -- they will be lost when the flush resets the ROB.
             let remainingFrees = ROB.mappedPhyRegs (rob st7)
@@ -171,8 +171,8 @@ runPipeline st p = do
                 then CPU.cycle st p
                 else CPU.cycleStall st p
     (st', p') <- x
-    runPipeline (St.incCycles st') p'
-    -- trace (show p' ++ "\n" ++ debugShow st' ++ "\n====\n") $ runPipeline (St.incCycles st') p'
+    -- runPipeline (St.incCycles st') p'
+    trace (show p' ++ "\n" ++ debugShow st' ++ "\n====\n") $ runPipeline (St.incCycles st') p'
 
 -- Run Res to completion starting with an empty pipeline.
 run :: State -> State
