@@ -61,9 +61,6 @@ commitable (ROB q) = (wbs, savedPC, ROB q') where
                             else ((wb,freed,regMap):wbs, savedPC, q') where
                                 (wbs, savedPC, q') = commitable' (Q.rem q emptyEntry)
 
-                    -- Just (wb,freed,pc) -> ((wb,freed,pc,regMap):wbs, q') where
-                    --     (wbs, q') = commitable' (Q.rem q emptyEntry)
-
 -- Stores a mapping from an architectural to physical register in the ROB.
 -- This allows mappings to be reverted if a flush occurs.
 setRegMap :: ROBIdx -> RegIdx -> PhyReg -> ROB -> ROB
