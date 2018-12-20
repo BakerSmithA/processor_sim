@@ -56,29 +56,29 @@ test-suite spec
                      , transformers
                      , mtl
   other-modules:       Instr
-                     , Mem
-                     , State
-                     , Parser
-                     , ParserSpec
-                     , Error
-                     , Pipeline
-                     , CPUSpec
-                     , Bypass
-                     , CPU
-                     , Helper
-                     , RRT
-                     , RRTSpec
-                     , Queue
-                     , QueueSpec
-                     , ROB
-                     , ROBSpec
-                     , WriteBack
-                     , Decode
-                     , RS
-                     , Exec
-                     , RSSpec
-                     , Types
-                     , BypassSpec
-                     , Timer
+                     -- , Mem
+                     -- , State
+                     -- , Parser
+                     -- , ParserSpec
+                     -- , Error
+                     -- , Pipeline
+                     -- , CPUSpec
+                     -- , Bypass
+                     -- , CPU
+                     -- , Helper
+                     -- , RRT
+                     -- , RRTSpec
+                     -- , Queue
+                     -- , QueueSpec
+                     -- , ROB
+                     -- , ROBSpec
+                     -- , WriteBack
+                     -- , Decode
+                     -- , RS
+                     -- , Exec
+                     -- , RSSpec
+                     -- , Types
+                     -- , BypassSpec
+                     -- , Timer
   hs-source-dirs:      src, test
   default-language:    Haskell2010

@@ -9,45 +9,39 @@ import Helper (tryPick)
 type RegVal m = ROBIdx -> PhyReg -> m (Maybe Val)
 type MemVal m = ROBIdx -> Addr -> m Val
 
-data InstrState a b
-    = Waiting b
-    | Filled a
-    deriving (Eq, Show)
-
--- Only modify instruction if it has not been filled.
-mapMISt :: (Monad m) => (c -> m d) -> InstrState a c -> m (InstrState a d)
-mapMISt f (Waiting x) = f x >>= \x' -> return (Waiting x')
-mapMISt _ (Filled  x) = return (Filled x)
-
 -- General pupose reservation station. Is specialised for different types of
 -- instructions.
-type RS a b = [InstrState (PipeData b) (PipeData a)]
+type RS a = [PipeData a]
 
-empty :: RS a b
+empty :: RS a
 empty = []
 
-fromList :: [PipeData a] -> RS a b
-fromList = fmap Waiting
+fromList :: [PipeData a] -> RS a
+fromList = id
 
-add :: PipeData a -> RS a b -> RS a b
-add x rs = (Waiting x):rs
+add :: PipeData a -> RS a -> RS a
+add = (:)
 
-isEmpty :: RS a b -> Bool
+isEmpty :: RS a -> Bool
 isEmpty = null
 
 -- Fills in operands in an instruction.
-fillOperands :: (Monad m) => (ROBIdx -> a -> m a) -> RS a b -> m (RS a b)
+fillOperands :: (Monad m) => (ROBIdx -> a -> m a) -> RS a -> m (RS a)
 fillOperands fill = mapM f where
-    f = mapMISt (\x -> mapPipeDataM' (\idx i -> fill idx i) x)
+    f = mapPipeDataM' (\idx i -> fill idx i)
 
 -- Removes the oldest instruction found in the RS which has all operands filled.
-promote :: (a -> Maybe b) -> RS a b -> Maybe (PipeData b)
-promote checkDone rs = tryPick f (reverse rs) where
-    f (Waiting i) = mapPipeDataM checkDone i
-    f (Filled  i) = return i
+-- Returns RS without any removed instructions.
+promote :: (a -> Maybe b) -> RS a -> (Maybe (PipeData b), RS a)
+promote checkDone = foldr f (Nothing, []) where
+    f entry (Just i,  rs) = (Just i, entry:rs)
+    f entry (Nothing, rs) =
+        case mapPipeDataM checkDone entry of
+            Nothing -> (Nothing, entry:rs)
+            Just ei -> (Just ei, rs)
 
 -- Load store queue.
-type MemRS = RS RSMemInstr EMemInstr
+type MemRS = RS RSMemInstr
 
 -- Prepare a decoded instruction to be placed in the MemRS.
 rsMemInstr :: DMemInstr -> RSMemInstr
@@ -58,7 +52,7 @@ fillMemRS :: (Monad m) => RegVal m -> MemVal m -> MemRS -> m MemRS
 fillMemRS regVal memVal = fillOperands (fillMem regVal memVal)
 
 -- Promotes the oldest instruction in the RS with all instructions filled.
-promoteMemRS :: MemRS -> Maybe (PipeData EMemInstr)
+promoteMemRS :: MemRS -> (Maybe (PipeData EMemInstr), MemRS)
 promoteMemRS = promote promoteMem
 
 -- Fills in operands of a single memory instruction.
@@ -109,7 +103,7 @@ promoteMem (StoreBaseIdx src base off) = do
     off'  <- rightToMaybe off
     return (EStore src' (fromIntegral $ base' + off'))
 
-type ArithLogicRS = RS RSALInstr EALInstr
+type ArithLogicRS = RS RSALInstr
 
 -- Prepare a decoded instruction to be placed in the RS.
 rsALInstr :: DALInstr -> RSALInstr
@@ -120,7 +114,7 @@ fillALRS :: (Monad m) => RegVal m -> ArithLogicRS -> m ArithLogicRS
 fillALRS regVal = fillOperands (fillAL regVal)
 
 -- Promotes the oldest instruction in the RS with all instructions filled.
-promoteALRS :: ArithLogicRS -> Maybe (PipeData EALInstr)
+promoteALRS :: ArithLogicRS -> (Maybe (PipeData EALInstr), ArithLogicRS)
 promoteALRS = promote promoteAL
 
 -- Fills in operands of an AL instruction.
@@ -133,14 +127,14 @@ promoteAL :: RSALInstr -> Maybe EALInstr
 promoteAL = mapALM return f where
     f = either (const Nothing) Just
 
-type BranchRS = RS RSBranchInstr EBranchInstr
+type BranchRS = RS RSBranchInstr
 
 -- Fills in operands of any branch instructions in the RS.
 fillBRS :: (Monad m) => RegVal m -> BranchRS -> m BranchRS
 fillBRS regVal = fillOperands (fillB regVal)
 
 -- Promotes the oldest instruction in the RS with all instructions filled.
-promoteBRS :: BranchRS -> Maybe (PipeData EBranchInstr)
+promoteBRS :: BranchRS -> (Maybe (PipeData EBranchInstr), BranchRS)
 promoteBRS = promote promoteB
 
 -- Fills in operands of a branch instruction. For return instructions,
@@ -154,7 +148,7 @@ promoteB :: RSBranchInstr -> Maybe EBranchInstr
 promoteB = mapBM f f where
     f = either (const Nothing) Just
 
-type OutRS = RS RSOutInstr EOutInstr
+type OutRS = RS RSOutInstr
 
 -- Prepare a decoded instruction to be placed in the RS.
 rsOutInstr :: DOutInstr -> RSOutInstr
@@ -165,7 +159,7 @@ fillOutRS :: (Monad m) => RegVal m -> OutRS -> m OutRS
 fillOutRS regVal = fillOperands (fillOut regVal)
 
 -- Promotes the oldest instruction in the RS with all instructions filled.
-promoteOutRS :: OutRS -> Maybe (PipeData EOutInstr)
+promoteOutRS :: OutRS -> (Maybe (PipeData EOutInstr), OutRS)
 promoteOutRS = promote promoteOut
 
 -- Fills in operands of an output instruction.
