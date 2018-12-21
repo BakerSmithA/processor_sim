@@ -163,7 +163,7 @@ empty pc sp lr bp ret instrs =
         bRS       = RS.empty
         bUnits    = [Unit.empty]
         outRS     = RS.empty
-        outUnits  = [Unit.empty]
+        outUnits  = [Unit.empty, Unit.empty]
 
 -- Create default Res with 32 ints of memory, and 16 registers.
 emptyDefault :: [FInstr] -> State
