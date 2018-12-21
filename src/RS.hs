@@ -25,7 +25,7 @@ isEmpty :: RS a -> Bool
 isEmpty = null
 
 -- Fills in operands in an instruction.
-fillOperands :: (Monad m) => (ROBIdx -> a -> m a) -> RS a -> m (RS a)
+fillOperands :: (Functor m, Monad m) => (ROBIdx -> a -> m a) -> RS a -> m (RS a)
 fillOperands fill = mapM f where
     f = mapPipeDataM' (\idx i -> fill idx i)
 
@@ -47,7 +47,7 @@ rsMemInstr :: DMemInstr -> RSMemInstr
 rsMemInstr = mapMem (\r -> (r, Nothing)) Left
 
 -- Fills in operands of any memory instructions in the RS.
-fillMemRS :: (Monad m) => RegVal m -> MemVal m -> MemRS -> m MemRS
+fillMemRS :: (Functor m, Monad m) => RegVal m -> MemVal m -> MemRS -> m MemRS
 fillMemRS regVal memVal = fillOperands (fillMem regVal memVal)
 
 -- Promotes the oldest instruction in the RS with all instructions filled.
@@ -109,7 +109,7 @@ rsALInstr :: DALInstr -> RSALInstr
 rsALInstr = mapAL id Left
 
 -- Fills in operands of any AL instructions in the RS.
-fillALRS :: (Monad m) => RegVal m -> ArithLogicRS -> m ArithLogicRS
+fillALRS :: (Functor m, Monad m) => RegVal m -> ArithLogicRS -> m ArithLogicRS
 fillALRS regVal = fillOperands (fillAL regVal)
 
 -- Promotes the oldest instruction in the RS with all instructions filled.
@@ -133,7 +133,7 @@ rsBInstr :: DBranchInstr -> RSBranchInstr
 rsBInstr = mapB Left Left
 
 -- Fills in operands of any branch instructions in the RS.
-fillBRS :: (Monad m) => RegVal m -> BranchRS -> m BranchRS
+fillBRS :: (Functor m, Monad m) => RegVal m -> BranchRS -> m BranchRS
 fillBRS regVal = fillOperands (fillB regVal)
 
 -- Promotes the oldest instruction in the RS with all instructions filled.
@@ -158,7 +158,7 @@ rsOutInstr :: DOutInstr -> RSOutInstr
 rsOutInstr = mapOut Left
 
 -- Fills in operands of any output instructions in the RS.
-fillOutRS :: (Monad m) => RegVal m -> OutRS -> m OutRS
+fillOutRS :: (Functor m, Monad m) => RegVal m -> OutRS -> m OutRS
 fillOutRS regVal = fillOperands (fillOut regVal)
 
 -- Promotes the oldest instruction in the RS with all instructions filled.
