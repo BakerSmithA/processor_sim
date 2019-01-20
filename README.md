@@ -26,4 +26,4 @@ To run the processor, the following stages of the pipeline are run:
 4. **Commit**; instructions are placed in the reorder buffer. This allows instructions to be written back to memory or registers in the same order as they were fetched. This also allows speculatively executed instructions to be discarded.
 5. **Writeback**; instructions are written back to memory or registers.
 
-<img src="images/design.png" width="500">
+<img src="images/design.png" width="600">
