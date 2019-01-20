@@ -1,4 +1,4 @@
-# Processor
+# Processor Simulator
 Simulator of a pipelined, superscalar processor. 
 
 # Install 
