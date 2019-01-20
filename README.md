@@ -17,6 +17,46 @@ The processor runs binary files representing assembly instructions (see *Assembl
 
 # Assembly Instructions
 
+The instruction set consists of 24 instructions. The notation used is:
+
+| Symbol | Meaning |
+|--------|---------|
+| `r`    | Register at index `r` |
+| `mem[x]` | Value of memory at index `x` |
+| `#i` | Immediate with value `i` |
+| `pc` | Program counter |
+| `lr` | Link Register |
+
+| Instruction Mnemonic | Action |
+|-------------|--------|
+| `LoadIdx r base #off` | `r <- mem[base + #off]` |
+| `LoadBaseIdx r base off` | `r <- mem[base + off]` |
+| `StoreIdx r base #off` | `mem[base + #off] <- r` |
+| `StoreBaseIdx r base off` | `mem[base + off] <- r` |
+||
+| `MoveI r #i` | `r <- #i` |
+| `Move r src` | `r <- src` |
+| `Add r x y` | `r <- x + y` |
+| `AddI r x #i` | `r <- x + #i` |
+| `Sub r x y` | `r <- x - y` | 
+| `SubI r x #i` | `r <- x - #i` |
+| `Mult r x y` | `r <- x * y` |
+| `Div r x y` | `r <- x / y` |
+| `Eq r x y` | `r <- x == y` |
+| `Lt r x y` | `r <- x < y` |
+| `Or r x y` | `r <- x || y` |
+| `And r x y` | `r <- x && y` |
+| `Not r x` | `r <- !x` |
+||
+| `B addr` | `pc <- addr` |
+| `BT addr` | `if (r == 1) then pc <- addr` |
+| `BF addr` | `if (r == 0) then pc <- addr` |
+| `Ret` | `pc <- lr` |
+| `SysCall` | End execution |
+||
+| `Print r` | Print value of register `r` to output |
+| `PrintLn` | Print a newline to output |
+
 # Design
 To run the processor, the following stages of the pipeline are run:
 
