@@ -13,7 +13,7 @@ Clone the repo, and then run the following commands. The compiled output can be 
 ```
 
 # Running
-The processor runs binary files representing assembly instructions (see *Assembly Instructions*). To avoid having to write this manually, the C-- compiler is available [here](https://github.com/BakerSmithA/c--compiler). To run a compiled binary file, simply supply the filename as an argument to this simulator.
+The processor runs binary files representing assembly instructions (see *Assembly Instructions*). To avoid having to write this manually, the C-- compiler is available [here](https://github.com/BakerSmithA/c--compiler) which outputs binary for the simulator. To run a compiled binary file, simply supply the filename as an argument to this simulator.
 
 # Design
 To run the processor, the following stages of the pipeline are run:
