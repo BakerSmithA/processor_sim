@@ -55,7 +55,7 @@ The instruction set consists of 24 instructions. The notation used is:
 | `Div r x y` | `r <- x / y` |
 | `Eq r x y` | `r <- x == y` |
 | `Lt r x y` | `r <- x < y` |
-| `Or r x y` | `r <- x || y` |
+| `Or r x y` | `r <- x \|\| y` |
 | `And r x y` | `r <- x && y` |
 | `Not r x` | `r <- !x` |
 ||
